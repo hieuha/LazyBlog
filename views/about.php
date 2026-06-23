@@ -147,6 +147,18 @@ $streakUnitLabel = match ($stats['streak']['unit']) {
             </div>
         </section>
 
+        <!-- BIO body — full markdown. Reads first so the narrative lands
+             before the gamified BADGES grid; CONTACT/STACK below acts
+             as a sign-off footer. -->
+        <?php if ($hasBody): ?>
+            <section class="about-panel hud-frame">
+                <div class="about-panel-label">&gt; BIO</div>
+                <div class="post-body about-body">
+                    <?= $bodyHtml ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <?php if ($stats['badges'] !== []): ?>
             <section class="about-panel hud-frame about-badges">
                 <div class="about-panel-label">&gt; BADGES</div>
@@ -181,18 +193,6 @@ $streakUnitLabel = match ($stats['streak']['unit']) {
                         </li>
                     <?php endforeach; ?>
                 </ul>
-            </section>
-        <?php endif; ?>
-
-        <!-- BIO body — full markdown. Sits above CONTACT/STACK so the
-             narrative reads before the supporting metadata; the
-             two-column grid below acts as a sign-off footer. -->
-        <?php if ($hasBody): ?>
-            <section class="about-panel hud-frame">
-                <div class="about-panel-label">&gt; BIO</div>
-                <div class="post-body about-body">
-                    <?= $bodyHtml ?>
-                </div>
             </section>
         <?php endif; ?>
 

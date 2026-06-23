@@ -26,14 +26,21 @@ JSON-driven badge catalogue at `content/badges.json` covers post-count
 milestones, markdown-element patterns (image-rich, code-heavy,
 link-curator), tag specialisation, time-of-day Easter eggs (night owl,
 lunch break, Friday night transmission), calendar anniversaries, and
-multi-year streaks — 12 reusable kinds, 30+ shipped entries, edit in
+multi-year streaks — 13 reusable kinds, 30+ shipped entries, edit in
 place. Hidden badges only appear in the HTML once unlocked, so the
 surprise survives a "view source" peek.
 
-**Hardened, ergonomic.** CSP, CSRF, atomic file writes, session
-hardening. Stylesheets split by concern and cache-busted via
-`filemtime` so deploys invalidate browser caches per-file without
-manual asset rotation. Backup with `rsync`. Restore in seconds.
+**Rich media in markdown.** `![alt](url.webm)` (or a bare URL on its
+own line) auto-renders as a `<video>` player — `#bg` opts into
+Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
+collapse into a CSS Grid gallery (`count-2` through `count-6`) with
+title-attribute captions. YouTube URLs still auto-embed as iframes.
+
+**Hardened, ergonomic.** CSP (incl. `media-src`), CSRF, atomic file
+writes, session hardening, scheme-whitelisted image URLs. Stylesheets
+split by concern and cache-busted via `filemtime` so deploys
+invalidate browser caches per-file without manual asset rotation.
+Backup with `rsync`. Restore in seconds.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -43,11 +50,13 @@ manual asset rotation. Backup with `rsync`. Restore in seconds.
 │  TOC + scrollspy      ·  code-block copy buttons    │
 │  Browser admin UI     ·  EasyMDE + server-side prev │
 │  Image full-bleed     ·  theme-tint multiply blend  │
-│  YouTube auto-embed   ·  GFM tables · admonitions   │
+│  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
+│  Image gallery grid   ·  caption via title-attr     │
 │  Search + Archive     ·  reading-progress meter     │
 │  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
 │  Writing streak card  ·  JSON-driven badge catalog  │
+│  GFM tables           ·  admonitions + freq-tags    │
 └─────────────────────────────────────────────────────┘
 ```
 

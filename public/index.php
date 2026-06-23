@@ -75,6 +75,22 @@ $adminAboutCtl = new App\Controllers\AdminAboutController($aboutRepo);
 
 $router = new App\Router();
 
+// Plugins boot BEFORE core route registration. Reserved-path rejection in
+// PluginRegistry::canRegister() keeps core paths (`/posts/*`, `/admin/*`,
+// `/feed.xml`, etc.) always-on regardless of plugin order. Each enabled
+// plugin's register() may add public/admin routes, nav links, and route-
+// scoped CSS/JS. Empty PLUGINS env = zero boot cost.
+$pluginRegistry = new App\PluginRegistry(
+    pluginsDir: __DIR__ . '/../plugins',
+    enabledCsv: (string) App\Config::get('PLUGINS', ''),
+    contentRoot: __DIR__ . '/../content/plugins',
+);
+$pluginRegistry->boot($router);
+App\Http::setPluginRegistry($pluginRegistry);
+
+$pluginAssetCtl = new App\Controllers\PluginAssetController($pluginRegistry);
+$router->get('/plugin-assets/{slug}/{file}', fn (array $p) => $pluginAssetCtl->serve($p));
+
 // Most-specific patterns first.
 // Admin (auth-gated inside the controller).
 $router->get('/admin/login', fn () => $admin->loginForm());

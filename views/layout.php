@@ -259,6 +259,22 @@ $favicon = 'data:image/svg+xml,'
             <meta name="csrf-token" content="<?= Http::e(App\Csrf::token()) ?>">
         <?php endif; ?>
     <?php endif; ?>
+
+    <?php
+    // Plugin-contributed CSS, route-scoped: only loads when the current
+    // request path matches a prefix registered by a plugin. Empty when
+    // no plugin matches or PLUGINS env is empty.
+    $plugins = Http::plugins();
+    $pluginAssets = $plugins !== null
+        ? $plugins->assets()->forPath($path)
+        : ['css' => [], 'js' => []];
+    foreach ($pluginAssets['css'] as $href) {
+        if (preg_match('#^/plugin-assets/([^/]+)/(.+)$#', $href, $m)) {
+            $href = Http::pluginAsset($m[1], $m[2]);
+        }
+        echo '<link rel="stylesheet" href="' . Http::e($href) . "\">\n";
+    }
+    ?>
 </head>
 <body class="<?php
     $bodyClasses = [];
@@ -302,6 +318,22 @@ $favicon = 'data:image/svg+xml,'
         <?php if ($hasAbout): ?>
             <a class="header-btn" href="/about" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
         <?php endif; ?>
+        <?php
+        // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href)
+        // during register(); registry exposes the merged list here.
+        if ($plugins !== null):
+            foreach ($plugins->nav()->header() as $navItem):
+                $navCurrent = $path === $navItem['href']
+                    || str_starts_with($path, rtrim($navItem['href'], '/') . '/');
+                ?>
+                <a class="header-btn"
+                   href="<?= Http::e($navItem['href']) ?>"
+                   aria-label="<?= Http::e($navItem['label']) ?>"
+                   <?= $navCurrent ? 'aria-current="page"' : '' ?>>[ <?= Http::e(strtoupper($navItem['label'])) ?> ]</a>
+                <?php
+            endforeach;
+        endif;
+        ?>
         <?php if (App\Auth::check()): ?>
             <a class="header-btn" href="/admin" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
         <?php endif; ?>
@@ -317,6 +349,20 @@ $favicon = 'data:image/svg+xml,'
 </main>
 
 <footer>
+    <?php
+    // Plugin-contributed footer nav, only when at least one plugin opts in.
+    $pluginFooter = $plugins !== null ? $plugins->nav()->footer() : [];
+    if ($pluginFooter !== []):
+    ?>
+        <div class="footer-block">
+            <div class="footer-label">§ EXTENSIONS</div>
+            <div class="footer-tags">
+                <?php foreach ($pluginFooter as $navItem): ?>
+                    <a class="tag-chip" href="<?= Http::e($navItem['href']) ?>"><?= Http::e($navItem['label']) ?></a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
     <?php if ($footerTags !== []): ?>
         <div class="footer-block">
             <div class="footer-label">§ TAGS — FREQUENCIES</div>
@@ -362,6 +408,15 @@ $favicon = 'data:image/svg+xml,'
 <?php if ($isPost): ?>
     <script defer src="<?= Http::e(Http::asset('assets/post.js')) ?>"></script>
 <?php endif; ?>
+<?php
+// Plugin JS, route-scoped (computed alongside plugin CSS at top of <head>).
+foreach ($pluginAssets['js'] as $href) {
+    if (preg_match('#^/plugin-assets/([^/]+)/(.+)$#', $href, $m)) {
+        $href = Http::pluginAsset($m[1], $m[2]);
+    }
+    echo '<script defer src="' . Http::e($href) . "\"></script>\n";
+}
+?>
 
 </body>
 </html>

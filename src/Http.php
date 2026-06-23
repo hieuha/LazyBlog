@@ -11,6 +11,44 @@ use RuntimeException;
  */
 final class Http
 {
+    private static ?PluginRegistry $plugins = null;
+
+    /**
+     * Stash the boot-time plugin registry so the layout (and any view) can
+     * reach it via Http::plugins() without threading it through every
+     * render() call. Set once in public/index.php; never reassigned.
+     */
+    public static function setPluginRegistry(?PluginRegistry $registry): void
+    {
+        self::$plugins = $registry;
+    }
+
+    public static function plugins(): ?PluginRegistry
+    {
+        return self::$plugins;
+    }
+
+    /**
+     * Cache-busted URL for a plugin asset.
+     *
+     * Mirrors asset() but resolves the mtime against `plugins/{slug}/assets/{file}`
+     * instead of the public webroot — plugin assets are PHP-served via the
+     * /plugin-assets route, not symlinked into /public.
+     */
+    public static function pluginAsset(string $slug, string $file): string
+    {
+        $file = ltrim($file, '/');
+        $registry = self::$plugins;
+        $version = '0';
+        if ($registry !== null && $registry->isEnabled($slug)) {
+            $fsPath = $registry->pluginRoot($slug) . '/assets/' . $file;
+            if (is_file($fsPath)) {
+                $version = (string) filemtime($fsPath);
+            }
+        }
+        return "/plugin-assets/{$slug}/{$file}?v={$version}";
+    }
+
     /**
      * Render a view inside the base layout.
      *

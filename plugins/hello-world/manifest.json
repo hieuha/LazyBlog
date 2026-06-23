@@ -1,0 +1,10 @@
+{
+    "slug": "hello-world",
+    "name": "Hello World",
+    "version": "1.0.0",
+    "api_version": 1,
+    "namespace": "Plugins\\HelloWorld",
+    "author": "LazyBlog",
+    "description": "Reference plugin demonstrating routes, nav, assets, admin, and storage.",
+    "homepage": "https://github.com/hieuha/LazyBlog/tree/main/plugins/hello-world"
+}

@@ -57,6 +57,13 @@ composer.lock
 /content/*
 !/content/badges.json
 
+# Plugins — drop-in folders for opt-in features (PLUGINS env enables them).
+# The `hello-world` reference plugin IS tracked so new operators get a
+# working example out of the box. Every other plugin is operator-installed
+# (git clone <repo> plugins/<slug>) and stays out of git.
+/plugins/*
+!/plugins/hello-world
+
 # Stray pre-existing release artifact from project init — not part of LazyBlog.
 /release-manifest.json
 

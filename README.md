@@ -52,6 +52,7 @@ Backup with `rsync`. Restore in seconds.
 │  Image full-bleed     ·  theme-tint multiply blend  │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  Image gallery grid   ·  caption via title-attr     │
+│  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
 │  Search + Archive     ·  reading-progress meter     │
 │  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
@@ -130,6 +131,7 @@ playbook.
 | `docs/security.md` | CSP, session hardening, production checklist |
 | `docs/system-architecture.md` | Request lifecycle, render pipeline, file layout |
 | `docs/badges.md` | TX streak + customisable badge catalogue on `/about` |
+| `docs/plugin-development.md` | Writing your own plugin — routes, nav, assets, admin, storage |
 
 ## Project layout (high level)
 

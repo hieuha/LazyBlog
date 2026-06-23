@@ -350,6 +350,30 @@ $LISTEN_ADDR {
     @dotfiles path /.*
     respond @dotfiles 404
 
+    # Defense in depth: block PHP / PHTML / PHAR execution under any
+    # content-derived URL prefix. The default config only maps /uploads/*
+    # to content/uploads/ via handle_path below, but if the operator ever
+    # exposes content/posts, content/plugins, or content/*, this rule
+    # prevents the file from being executed or its source from being
+    # served as static text. PHP-routed prefixes (/posts, /plugin-assets)
+    # never need a .php file either, so blocking at the edge is cheaper.
+    # path_regexp keeps the extension check AND-able with the prefix
+    # check; two bare path lines would OR and match too much.
+    @content_php_exec {
+        path /uploads/* /posts/* /plugins/* /plugin-assets/* /content/*
+        path_regexp content_php_ext \.(php[0-9]*|phtml|phar)\$
+    }
+    respond @content_php_exec 403
+
+    # /uploads/* is the public surface for admin-UI image uploads.
+    # UploadController only ever writes .webp, so the URL prefix should
+    # only ever serve images. Reject anything else.
+    @uploads_non_image {
+        path /uploads/*
+        not path_regexp uploads_image_ext \.(webp|png|jpg|jpeg|gif|svg|avif)\$
+    }
+    respond @uploads_non_image 403
+
     # User-uploaded images live outside the webroot under
     # \$SRC_DIR/content/uploads/ so the backup cron catches them.
     # Serve directly here so Caddy handles caching/range/etag, not PHP.

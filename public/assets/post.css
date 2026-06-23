@@ -139,9 +139,22 @@
    relational pseudo-class. */
 .post-figure-image video {
     display: block;
-    width: 100%;
+    /* Sit centred inside the article column and cap height at a
+       chunk of the viewport so portrait orbs / motion loops stay
+       above-the-fold on a laptop. width:auto + max-width:100%
+       preserves the intrinsic aspect — wide cinema clips fill the
+       column, tall portrait clips shrink to fit the height cap and
+       sit narrower in the middle. */
+    margin: 0 auto;
+    width: auto;
     height: auto;
+    max-width: 100%;
+    max-height: 70vh;
     background: transparent;
+}
+.post-figure-video .post-figure-image {
+    /* Centre the (auto-sized) video element inside the cell. */
+    text-align: center;
 }
 .post-figure-video .post-figure-image {
     /* Drop the phosphor-dim hairlines — transparent videos

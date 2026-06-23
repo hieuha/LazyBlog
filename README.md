@@ -36,6 +36,18 @@ Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
 collapse into a CSS Grid gallery (`count-2` through `count-6`) with
 title-attribute captions. YouTube URLs still auto-embed as iframes.
 
+**Opt-in plugins.** Drop a folder into `plugins/{slug}/`, set
+`PLUGINS=slug` in `.env`, and the site picks up a new page, header
+link, and (optionally) admin section — without touching core. Each
+plugin is self-contained (manifest, PSR-4 source, views, route-scoped
+CSS/JS, private storage under `content/plugins/{slug}/`) and gets a
+type-safe `App\Plugin` interface to register public routes, nav links,
+assets, and `/admin/{slug}/*` pages (auto-wrapped with
+`Auth::requireAuth()`). Reserved core paths can't be claimed; a broken
+plugin logs + skips without taking the site down; strict CSP stays
+intact. Ships with `plugins/hello-world/` as the reference. Empty
+`PLUGINS=` is a no-op. See `docs/plugin-development.md`.
+
 **Hardened, ergonomic.** CSP (incl. `media-src`), CSRF, atomic file
 writes, session hardening, scheme-whitelisted image URLs. Stylesheets
 split by concern and cache-busted via `filemtime` so deploys
@@ -140,17 +152,27 @@ LazyBlog/
 ├── public/              # web root (front controller + assets)
 │   └── assets/          # base/effects/components/post/pages.css + admin.css + admin-editor.js
 ├── src/                 # PHP — Router, Controllers, PostRepository, MarkdownRenderer, Http...
-│   └── Badges/          # gamification: BadgeKinds (compute templates) + BadgeRegistry (loader)
+│   ├── Badges/          # gamification: BadgeKinds (compute templates) + BadgeRegistry (loader)
+│   ├── Plugin.php       # plugin contract — implemented by each enabled plugin
+│   ├── PluginManifest.php
+│   ├── PluginContext.php       # stable API surface plugins receive
+│   ├── PluginRegistry.php      # boot + dynamic PSR-4 + reserved-path collision check
+│   └── Controllers/PluginAssetController.php  # /plugin-assets/{slug}/{file}
 ├── views/               # layout, post, home, tag, admin/*
+├── plugins/             # opt-in plugin folders — PLUGINS=slug in .env enables them
+│   └── hello-world/     # canonical reference plugin (tracked in git, others ignored)
 ├── content/             # markdown posts + about + badges.json (mostly gitignored)
 │   ├── posts/           # YYYY-MM-DD-slug.md
 │   ├── about.md         # /about page source
-│   └── badges.json      # streak + badge catalogue (allowlisted in .gitignore)
+│   ├── badges.json      # streak + badge catalogue (allowlisted in .gitignore)
+│   └── plugins/         # plugin-private storage (gitignored, backed up via rsync)
 ├── scripts/
-│   ├── install-vps.sh        # one-shot bare-metal installer
+│   ├── install-vps.sh   # one-shot bare-metal installer
 │   ├── hash-password.php
-│   ├── backup-content.sh
-│   └── test-gamification.php # streak math fixtures
+│   └── backup-content.sh
+├── tests/               # plain-PHP assertion fixtures (no PHPUnit)
+│   ├── test-gamification.php  # streak math
+│   └── test-plugin-system.php # plugin registry + manifest + asset matcher
 ├── docs/                # detailed docs (see table above)
 ├── Caddyfile.example    # production HTTPS site block
 ├── docker-compose.yml   # dev: Caddy + php-fpm bind-mount

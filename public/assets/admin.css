@@ -46,6 +46,42 @@ body.is-admin main { max-width: 1180px; }
     display: inline-flex;
 }
 
+/* ---------- Admin tabs ----------
+   Section switcher between ALL POSTS and PLUGINS. Each tab carries the H2
+   weight when active so it reads as the page heading; inactive tabs sit at
+   the same size but dimmed, so the user can scan-switch between sections
+   without losing the "where am I" anchor. */
+.admin-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 22px;
+    margin: 28px 0 16px;
+}
+.admin-tab {
+    font-family: 'VT323', 'Share Tech Mono', monospace;
+    font-size: clamp(28px, 5vw, 36px);
+    line-height: 1;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 0 0 4px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.18s ease, border-color 0.18s ease, text-shadow 0.18s ease;
+}
+.admin-tab:hover {
+    color: var(--primary);
+}
+.admin-tab[aria-current="page"] {
+    color: var(--primary);
+    border-bottom-style: dotted;
+    border-bottom-color: var(--primary);
+    text-shadow: 0 0 8px var(--primary-glow);
+}
+@media (max-width: 600px) {
+    .admin-tabs { gap: 14px; }
+}
+
 /* ---------- Edit form ---------- */
 /* Compact, write-focused form. Meta fields cluster on flex rows so the
    body textarea gets most of the vertical space. */

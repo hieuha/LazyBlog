@@ -38,6 +38,10 @@ header(
     . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
     . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; "
     . "img-src 'self' data: https:; "
+    // Same posture as img-src: own origin + any HTTPS host for direct-link
+    // videos (the markdown `![](url.webm)` flow). Without it the default-src
+    // fallback blocks every external video element.
+    . "media-src 'self' https:; "
     . "connect-src 'self'; "
     . "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
     . "frame-ancestors 'self'; "

@@ -5,10 +5,19 @@ declare(strict_types=1);
 // Fast-path liveness probe — answer before composer autoload, dotenv,
 // session start, or repo scan. Monitors hitting this every Ns would
 // otherwise spawn a session file per probe and churn the filesystem.
+// Body carries the release version so uptime tooling and deploy checks
+// can verify which build is actually serving traffic without a second
+// round trip. VERSION file is read inline because composer autoload is
+// not loaded yet at this point.
 if ((parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/') === '/healthz') {
+    $version = @file_get_contents(__DIR__ . '/../VERSION');
+    $version = is_string($version) ? trim($version) : '';
+    if ($version === '') {
+        $version = 'unknown';
+    }
     header('Content-Type: text/plain; charset=utf-8');
     header('Cache-Control: no-store');
-    echo "ok\n";
+    echo "ok {$version}\n";
     exit;
 }
 

@@ -149,7 +149,7 @@ $favicon = 'data:image/svg+xml,'
     <?php if ($siteAuthor !== ''): ?>
         <meta name="author" content="<?= Http::e($isPost && $post->author ? $post->author : $siteAuthor) ?>">
     <?php endif; ?>
-    <meta name="generator" content="LazyBlog (PHP + Markdown)">
+    <meta name="generator" content="LazyBlog <?= Http::e(\App\Version::get()) ?>">
     <meta name="robots" content="<?= str_starts_with($path, '/admin') ? 'noindex, nofollow' : 'index, follow, max-image-preview:large' ?>">
 
     <link rel="canonical" href="<?= Http::e($canonicalUrl) ?>">
@@ -400,6 +400,7 @@ $favicon = 'data:image/svg+xml,'
             </a>
         </div>
     <?php endif; ?>
+    <div class="footer-version">v<?= Http::e(\App\Version::get()) ?></div>
 </footer>
 
 <button id="back-to-top" class="back-to-top" aria-label="Back to top" title="Back to top">↑</button>

@@ -283,6 +283,19 @@ footer {
     text-shadow: 0 0 6px var(--accent-dim);
 }
 
+/* Tiny version stamp directly below the GitHub link. Operators see at a
+   glance which build is serving. Dim by design — informational, not
+   decorative. Source of truth: /VERSION file, surfaced via App\Version. */
+.footer-version {
+    text-align: center;
+    color: var(--text-dim);
+    opacity: 0.6;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: 6px;
+}
+
 .footer-copyright {
     text-align: center;
     color: var(--text-dim);

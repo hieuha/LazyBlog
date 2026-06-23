@@ -167,6 +167,37 @@ upload feature (drag-drop / clipboard paste / `📤 upload-image` toolbar
 button) — it'll insert `![alt](/uploads/YYYY/MM/{rand}.webp)` for you,
 already metadata-stripped and resized.
 
+### Direct-link videos (`.webm` / `.mp4` / `.mov` / `.ogv`)
+
+Same `![alt](url)` syntax — if the URL ends with one of those four
+extensions (with or without a query/fragment), the renderer swaps the
+`<img>` for a `<video controls playsinline preload="metadata">` inside
+the same figure wrapper. The `controls` attribute keeps play/seek
+visible; `playsinline` keeps mobile from going fullscreen on tap;
+`preload="metadata"` means the browser only pulls the seek header
+until the visitor actually presses play (cheap by default).
+
+```markdown
+![Portal orb](https://example.com/clip.webm "Caption shown under it")
+```
+
+Videos sit inside `.post-figure-cell` exactly like images, so they
+compose into multi-column galleries with the same grouping rules:
+
+```markdown
+![Photo A](a.webp)
+![Clip B](b.mp4 "Demo clip")
+![Photo C](c.webp)
+```
+
+→ one `count-3` figure with three cells, the middle one a video.
+
+The `alt` text becomes the `aria-label` on `<video>` (screen-reader
+fallback), and `title="caption"` still drives the visible figcaption.
+
+YouTube URLs are still handled separately via the auto-embed below —
+that's an `<iframe>`, not a `<video>`.
+
 ---
 
 ## YouTube auto-embed

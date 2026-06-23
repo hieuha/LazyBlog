@@ -127,6 +127,22 @@
        without fighting the photo's original saturation. */
     filter: grayscale(0.4) contrast(1.05);
 }
+/* Direct-link videos (`.webm`/`.mp4`/`.mov`/`.ogv` in markdown) share
+   the image cell wrapper but skip the photo-only treatment: no grayscale
+   filter (would mute the colour grading of motion content) and the
+   multiply tint overlay is suppressed via the parent rule below so
+   the controls stay readable. */
+.post-figure-image video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+}
+.post-figure-image:has(video)::after {
+    /* Drop the phosphor tint overlay over video so play/seek controls
+       don't get veiled by a 22%-alpha primary wash. */
+    display: none;
+}
 /* The theme-color tint overlay — multiply blend so dark areas of the photo
    stay dark and the highlights take on the phosphor color. */
 .post-figure-image::after {

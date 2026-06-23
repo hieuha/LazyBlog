@@ -337,7 +337,8 @@ final class MarkdownRenderer
 
                 $cells = [];
                 foreach ($imgs as $img) {
-                    $url = htmlspecialchars($img[1], ENT_QUOTES);
+                    $rawUrl = $img[1];
+                    $url = htmlspecialchars($rawUrl, ENT_QUOTES);
                     $alt = htmlspecialchars($img[2], ENT_QUOTES);
                     // Title attribute (from `![alt](url "caption")`) wins as the
                     // visible caption. Falls back to alt text if no title is set,
@@ -348,14 +349,24 @@ final class MarkdownRenderer
                     $cap = $captionText !== ''
                         ? '<figcaption>' . htmlspecialchars($captionText, ENT_QUOTES) . '</figcaption>'
                         : '';
-                    // Wrap each (image + its caption) in a single cell div so the
-                    // grid lays them out as a column inside the cell — keeps
-                    // captions UNDER their image, never pushed to the side as a
-                    // second column slot.
+                    // Direct-link video files (.webm/.mp4/.mov/.ogv) swap out
+                    // the <img> for a <video> player. Same wrapper structure,
+                    // same gallery grid placement — captions still fall under
+                    // the media. Controls visible by default, no autoplay,
+                    // preload=metadata so the browser only pulls the seek
+                    // header until the user actually plays.
+                    $isVideo = (bool) preg_match('/\.(?:webm|mp4|mov|ogv)(?:[?#]|$)/i', $rawUrl);
+                    $aria = ($alt !== '' && $isVideo) ? ' aria-label="' . $alt . '"' : '';
+                    $media = $isVideo
+                        ? '<video src="' . $url . '" controls playsinline preload="metadata"' . $titleRender . $aria . '></video>'
+                        : '<img src="' . $url . '" alt="' . $alt . '"' . $titleRender . ' loading="lazy" />';
+
+                    // Wrap each (media + its caption) in a single cell div so
+                    // the grid lays them out as a column inside the cell —
+                    // captions UNDER their media, never pushed to the side
+                    // as a second column slot.
                     $cells[] = '<div class="post-figure-cell">'
-                        . '<div class="post-figure-image">'
-                        . '<img src="' . $url . '" alt="' . $alt . '"' . $titleRender . ' loading="lazy" />'
-                        . '</div>' . $cap
+                        . '<div class="post-figure-image">' . $media . '</div>' . $cap
                         . '</div>';
                 }
 

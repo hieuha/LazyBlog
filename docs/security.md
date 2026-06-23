@@ -48,6 +48,17 @@ escaped form.
 - **Caddy serves `/uploads/*` directly** from `content/uploads/` —
   PHP isn't in the hot path, so an attacker can't trick the server into
   executing uploaded content as code (the dir contains only `.webp`)
+- **Edge-layer extension blocks** (in `Caddyfile.example` and the
+  installer's generated Caddyfile):
+  - Any request whose path matches `*.php` / `*.phtml` / `*.phar` (or
+    `*.phpN` variants) AND starts with `/uploads/*`, `/posts/*`,
+    `/plugins/*`, `/plugin-assets/*`, or `/content/*` returns 403 at the
+    edge. Defends against future code paths or operator misconfig that
+    might accidentally expose a content-derived URL prefix
+  - Any request to `/uploads/*` whose extension is NOT one of `.webp`,
+    `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.avif` returns 403. Even
+    if the upload pipeline ever drops a non-image (it shouldn't),
+    Caddy refuses to serve it
 
 ## Auth + session
 

@@ -10,68 +10,99 @@
 # -----------------------------------------------------------------------------
 
 blog.example.com {
-    root * /var/www/lazyblog/public
+	root * /var/www/lazyblog/public
 
-    encode zstd gzip
+	encode zstd gzip
 
-    php_fastcgi unix//run/php/php8.2-fpm.sock
+	php_fastcgi unix//run/php/php8.2-fpm.sock
 
-    file_server
+	file_server
 
-    # ---- Hardening at the HTTP layer ----
+	# ---- Hardening at the HTTP layer ----
 
-    # Block dotfiles + project metadata so curl /.env returns 404.
-    @hidden {
-        path /.* /Dockerfile /docker-compose.yml /composer.* /README.md
-    }
-    respond @hidden 404
+	# Block dotfiles + project metadata so curl /.env returns 404.
+	@hidden {
+		path /.* /Dockerfile /docker-compose.yml /composer.* /README.md
+	}
+	respond @hidden 404
 
-    # Strong cache for static assets (CSS/JS/SVG).
-    @static path /assets/*
-    header @static Cache-Control "public, max-age=2592000, immutable"
+	# Block PHP/PHAR/PHTML execution under any content-derived URL prefix.
+	# Defense in depth: in the default config /uploads/* is the only
+	# content path mapped via handle_path, but if an operator accidentally
+	# exposes content/posts, content/plugins, or content/* this rule
+	# stops the file from being executed (or its source from being served
+	# as static text). The PHP-routed prefixes /posts and /plugin-assets
+	# never need to serve a .php file either — the asset controller's
+	# extension allowlist already 404s them — so blocking at the edge is
+	# cheaper and stricter.
+	#
+	# Note: within a named matcher set, two `path` lines would OR together,
+	# matching too much. We use path_regexp for the extension check so the
+	# two clauses are different matcher types and AND together correctly.
+	@content_php_exec {
+		path /uploads/* /posts/* /plugins/* /plugin-assets/* /content/*
+		path_regexp content_php_ext \.(php[0-9]*|phtml|phar)$
+	}
+	respond @content_php_exec 403
 
-    # robots.txt + llms.txt are small and stable enough for an hour of cache.
-    @meta path /robots.txt /llms.txt /llms-full.txt
-    header @meta Cache-Control "public, max-age=3600"
+	# /uploads/* is the public surface for admin-UI image uploads.
+	# UploadController only ever writes .webp, so the URL prefix should
+	# only ever serve images. Reject anything else (defends against a
+	# future code path or operator misconfiguration that drops a non-image
+	# into content/uploads). path_regexp keeps the extension allowlist
+	# AND-able with the /uploads/* prefix.
+	@uploads_non_image {
+		path /uploads/*
+		not path_regexp uploads_image_ext \.(webp|png|jpg|jpeg|gif|svg|avif)$
+	}
+	respond @uploads_non_image 403
 
-    # Feed: 5-minute cache matches FeedController's own Cache-Control.
-    @feed path /feed.xml
-    header @feed Cache-Control "public, max-age=300"
+	# Strong cache for static assets (CSS/JS/SVG).
+	@static path /assets/*
+	header @static Cache-Control "public, max-age=2592000, immutable"
 
-    # Belt-and-braces security headers (PHP layer sets these too — Caddy
-    # ensures they're present even if PHP errors out before render).
-    header {
-        # HSTS — uncomment after you're 100% sure TLS is stable. Once a browser
-        # caches HSTS you can't go back to plain HTTP for `max-age` seconds.
-        # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+	# robots.txt + llms.txt are small and stable enough for an hour of cache.
+	@meta path /robots.txt /llms.txt /llms-full.txt
+	header @meta Cache-Control "public, max-age=3600"
 
-        X-Content-Type-Options       "nosniff"
-        X-Frame-Options              "SAMEORIGIN"
-        Referrer-Policy              "strict-origin-when-cross-origin"
-        Permissions-Policy           "geolocation=(), camera=(), microphone=(), payment=()"
+	# Feed: 5-minute cache matches FeedController's own Cache-Control.
+	@feed path /feed.xml
+	header @feed Cache-Control "public, max-age=300"
 
-        # Drop the default Server: Caddy banner.
-        -Server
-    }
+	# Belt-and-braces security headers (PHP layer sets these too — Caddy
+	# ensures they're present even if PHP errors out before render).
+	header {
+		# HSTS — uncomment after you're 100% sure TLS is stable. Once a browser
+		# caches HSTS you can't go back to plain HTTP for `max-age` seconds.
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 
-    # ---- Optional: simple rate-limit on /admin/login ----
-    # Requires Caddy with the rate-limit plugin (xcaddy build --with
-    # github.com/mholt/caddy-ratelimit). Without the plugin this block is
-    # ignored.
-    #
-    # @login_post {
-    #     path /admin/login
-    #     method POST
-    # }
-    # rate_limit @login_post {
-    #     zone login_ip 10r/m
-    # }
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
 
-    log {
-        output file /var/log/caddy/lazyblog-access.log {
-            roll_size 10mb
-            roll_keep 10
-        }
-        format console
-    }
+		# Drop the default Server: Caddy banner.
+		-Server
+	}
+
+	# ---- Optional: simple rate-limit on /admin/login ----
+	# Requires Caddy with the rate-limit plugin (xcaddy build --with
+	# github.com/mholt/caddy-ratelimit). Without the plugin this block is
+	# ignored.
+	#
+	# @login_post {
+	#     path /admin/login
+	#     method POST
+	# }
+	# rate_limit @login_post {
+	#     zone login_ip 10r/m
+	# }
+
+	log {
+		output file /var/log/caddy/lazyblog-access.log {
+			roll_size 10mb
+			roll_keep 10
+		}
+		format console
+	}
 }

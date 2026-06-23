@@ -129,19 +129,36 @@
 }
 /* Direct-link videos (`.webm`/`.mp4`/`.mov`/`.ogv` in markdown) share
    the image cell wrapper but skip the photo-only treatment: no grayscale
-   filter (would mute the colour grading of motion content) and the
-   multiply tint overlay is suppressed via the parent rule below so
-   the controls stay readable. */
+   filter (would mute the colour grading of motion content), no opaque
+   black box (would defeat .webm with alpha channels — Hermes-style
+   transparent orbs and similar), and no multiply tint overlay (would
+   veil play/seek controls). */
 .post-figure-image video {
     display: block;
     width: 100%;
     height: auto;
-    background: #000;
+    background: transparent;
 }
 .post-figure-image:has(video)::after {
-    /* Drop the phosphor tint overlay over video so play/seek controls
-       don't get veiled by a 22%-alpha primary wash. */
+    /* Drop the phosphor tint overlay over video. */
     display: none;
+}
+.post-figure-image:has(video) {
+    /* Drop the phosphor-dim hairlines too — for transparent videos
+       (decorative orbs, motion glyphs) the border reads as a stray
+       rectangle floating in the column. Captions still appear under
+       the cell so the structural hierarchy survives. */
+    border-top: none;
+    border-bottom: none;
+}
+/* Pull video figures back into the article column instead of the
+   full-bleed photo treatment. Standalone videos tend to be portrait
+   orbs or decorative loops; viewport-wide they read as oversized. */
+.post-figure:has(video) {
+    width: auto;
+    max-width: 100%;
+    margin-left: 0;
+    transform: none;
 }
 /* The theme-color tint overlay — multiply blend so dark areas of the photo
    stay dark and the highlights take on the phosphor color. */

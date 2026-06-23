@@ -62,18 +62,18 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
      ├─ indexStale()?  rebuildIndex() → writes .index.json + invalidates .llms*.txt + .feed.xml
      └─ file_get_contents on the matched .md
    - MarkdownRenderer::render($body)
-     ├─ preprocessStandaloneImages → insert blank lines around ![alt](url)-only lines
+     ├─ preprocessStandaloneImages → collapse consecutive ![](url) into gallery
      ├─ preprocessAdmonitions  → ::: highlight / ::: story → <!--LAZY-INJ-N-->
      ├─ CommonMark convert     → HTML
      ├─ reinjectStashed        → restore admonition divs
      ├─ postprocessFreqTags    → <code>2.3 kHz</code> → <span class="freq-tag">
-     ├─ postprocessFigures     → <p><img alt></p> → <figure><img><figcaption>
+     ├─ postprocessFigures     → <p><img alt></p> → <figure><img><figcaption>; title → figcaption
      ├─ injectHeadingIds       → <h2 id="slug">
      └─ extractToc             → list of {level,id,text}
    - Http::render('post', […])
      ├─ ob_start, require views/post.php
      ├─ ob_get_clean → $body
-     └─ require views/layout.php  emits HTML with SEO / OG / JSON-LD
+     └─ require views/layout.php  emits HTML with SEO / OG / JSON-LD (includes datePublished ISO datetime)
 4. Caddy applies asset cache + compression and returns the response
 ```
 
@@ -86,9 +86,10 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
    - Csrf::requireValid hash_equals against $_SESSION['_csrf']
    - readFormValues + buildPostFromForm
      ├─ SlugUtil::valid  enforces [a-z0-9-]+ max 80
-     └─ date regex \d{4}-\d{2}-\d{2}
+     ├─ Date field: YYYY-MM-DD (always extracted from filename or form date)
+     └─ Time field (optional): HH:MM:SS → merged into ISO datetime if present
    - PostRepository::save($post, $previousFilename)
-     ├─ symfony/yaml dumps frontmatter
+     ├─ symfony/yaml dumps frontmatter (date may be ISO datetime or YYYY-MM-DD)
      ├─ FileWriter::writeAtomic  tempnam + LOCK_EX + rename
      ├─ if rename (slug or date change) → unlink old file
      └─ invalidateCaches() unlinks .index.json + .llms*.txt + .feed.xml
@@ -107,14 +108,17 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `Csrf` | Per-session random_bytes(32) token | hash_equals comparison; one token per session |
 | `Router` | Pattern → handler dispatch | Most-specific patterns first; 404 fallback renders `not-found.php` |
 | `Http` | render() with layout wrap; redirect() with CRLF strip; e() escape | Output buffering for body capture; layout always rendered last |
-| `Post` | Immutable value object | Body stays as raw markdown; rendering happens lazily |
+| `Post` | Immutable value object; expose `dateTime()` + `hasExplicitTime()` helpers | Body stays as raw markdown; rendering happens lazily; ISO datetime support |
 | `PostRepository` | Read/write `.md` files, maintain index cache | Filename = `YYYY-MM-DD-{slug}.md`; rebuilds on mtime drift |
-| `FrontmatterParser` | YAML frontmatter ⇄ body split | Tolerates missing frontmatter |
+| `FrontmatterParser` | YAML frontmatter ⇄ body split | Tolerates missing frontmatter; accepts both `YYYY-MM-DD` and ISO datetime |
 | `SlugUtil` | Slug validation + Vietnamese-aware diacritic strip | `^[a-z0-9-]+$` max 80 chars |
 | `MarkdownRenderer` | Markdown → HTML with LazyBlog extensions | Admonitions go through placeholder bridge to bypass CommonMark's block parser |
 | `FileWriter` | Atomic write helper | tempnam in target dir + rename — never corrupts on crash |
 | `LlmsBuilder` | Generate llms.txt + llms-full.txt | Reads index, lazily reads bodies; outputs follow llmstxt.org |
 | `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); 20-item limit; full HTML in content:encoded |
+| `GamificationCalculator` | Pure streak + badge evaluation logic | Takes post timestamps + arrays in, emits unlocked-badge list; memoises per-unit longest-streak |
+| `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |
+| `BadgeKinds` | 13 reusable badge executors (post-count, longest-streak, time-window, gap-days, etc.) | Closures parameterised by dict; no filesystem or DB |
 
 ## Cache pyramid
 
@@ -135,6 +139,28 @@ is mtime-based, so manual `.md` drops (without admin UI) are picked up
 automatically on the next HTTP request that touches `PostRepository::all()`.
 
 Public visitors transparently warm the caches. No cron, no service.
+
+### Public read (`GET /about`)
+
+```
+1. Same boot as above
+2. AboutController::show
+   - AboutRepository::read() loads content/about.md or 404
+   - MarkdownRenderer::render($body) (same pipeline as posts)
+   - GamificationCalculator evaluation:
+     ├─ Retrieve all published posts from index
+     ├─ longestStreakForUnit() memoised per STREAK_UNIT env
+     └─ Streak card renders standalone, unaffected by badge `unit` params
+   - BadgeRegistry loads content/badges.json and evaluates each entry
+     ├─ Volume tier: always render, locked → show N/M, unlocked → glow
+     └─ Hidden tier: only render unlocked (HTML doesn't leak codes)
+   - Http::render('about', […])
+     ├─ Renders: Transmission stats → Current Streak card (if any posts)
+     ├─ → Badges grid (volume + unlocked hidden tiers)
+     ├─ → BIO body → Contact/Stack → Transmission log
+     └─ views/layout.php wraps with SEO / JSON-LD
+3. Caddy applies asset cache + compression and returns the response
+```
 
 ## Threat model
 

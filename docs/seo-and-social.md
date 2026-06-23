@@ -39,10 +39,12 @@ Set automatically in `views/layout.php`:
 
 ## `og:image` fallback chain (post pages)
 
-1. **Frontmatter `image:` field** — explicit override per post
-2. **First `![alt](url)` in the body** — auto-detected, requires zero config
+1. **Frontmatter `image:` field** — explicit override per post (via admin UI UPLOAD button or manual entry)
+2. **First `![alt](url)` in the body** — auto-detected via `Post::firstBodyImage()`, requires zero config
 3. **`SITE_OG_IMAGE` env var** — site-wide default for posts with no images
 4. **Omit** — platforms render a compact title-only card
+
+Admin editor auto-populates the `image:` field from the first body image when editing, so you usually get social previews without extra work.
 
 Relative paths (`/uploads/foo.webp`) are auto-prefixed with `SITE_URL` so
 the URL is always absolute. Absolute `http(s)://` URLs pass through.
@@ -58,7 +60,7 @@ so a post title containing `</script>` can't break out.
 
 | Page | Type | Fields |
 |------|------|--------|
-| `/posts/{slug}` | `BlogPosting` | headline, description, datePublished, dateModified, url, mainEntityOfPage, inLanguage, keywords, author, publisher |
+| `/posts/{slug}` | `BlogPosting` | headline, description, datePublished (preserves ISO datetime when set), dateModified, url, mainEntityOfPage, inLanguage, keywords, author, publisher |
 | `/` (home) | `Blog` | name, description, url, inLanguage, author |
 
 ## AI-friendly endpoints

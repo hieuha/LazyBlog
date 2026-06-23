@@ -21,10 +21,11 @@ existing pattern is just a new JSON entry, not a code change.
 ## Catalogue location
 
 The badge catalogue lives at **`content/badges.json`** (allowlisted in
-`.gitignore` so it ships with the repo). LazyBlog comes with 10 volume
-badges and 8 hidden badges out of the box. Edit the file in place to
-customise — there is no separate "default" path, this single file is
-the source of truth.
+`.gitignore` so it ships with the repo). LazyBlog comes with ~30 volume
+badges and ~20 hidden badges out of the box, split across broadcast count,
+essay length, content pattern, series, tags, age, and streak tiers. Edit
+the file in place to customise — there is no separate "default" path, this
+single file is the source of truth.
 
 If the file is missing or unreadable the BADGES panel is silently
 omitted from `/about`; nothing else breaks.
@@ -60,10 +61,12 @@ Per-entry fields:
 - `kind` — one of the kinds below
 - `params` — kind-specific parameters
 
-Hidden time-based kinds (`time-window` with restrictive hours, etc.)
-only count posts whose frontmatter `date:` carries an explicit ISO
-datetime (`2024-03-15T02:30:00+07:00`). Legacy `YYYY-MM-DD` posts have
-no wall-clock and can't trigger NIGHT-OWL etc.
+Hidden time-based kinds (`time-window` and `gap-days` with restrictive
+hour windows, etc.) only count posts whose frontmatter `date:` carries an
+explicit ISO datetime (`2024-03-15T02:30:00+07:00`). Legacy `YYYY-MM-DD`
+posts have no wall-clock and can't trigger NIGHT-OWL, DAWN-PATROL, etc.
+Other kinds (post-count, tag-count, series-count, streak badges, etc.) work
+regardless of time precision.
 
 ## Available kinds
 
@@ -130,9 +133,12 @@ so 5 weekly streak badges only walk the post set once.
 
 Period boundaries use the site `TIMEZONE` env (default UTC).
 
-**Note on the `STREAK_UNIT` env:** it's reserved for any future
-standalone "current streak" indicator (not yet implemented). Badges
-are NOT affected by that env — each one carries its own `unit` param.
+**Note on the `STREAK_UNIT` env:** it now drives the standalone "Current
+Streak" card that appears at the top of the `/about` badges panel. Set it
+to the cadence that feels most rewarding for your workflow. Badges are NOT
+affected by that env — each `longest-streak` badge entry carries its own
+`unit` param, so you can have concurrent DAILY, WEEKLY, and MONTHLY streak
+badges with different thresholds, plus a separate "current" counter.
 
 ## Adding a brand-new pattern
 

@@ -12,6 +12,7 @@
 | `DEFAULT_AUTHOR` | no | Author shown when a post has no `author:` frontmatter |
 | `FOOTER_SIGNOFF` | no | Copyright line at the bottom. Supports `{year}` token. Empty hides the line |
 | `POSTS_PER_PAGE` | no | Page size on home + tag listings. Default `10` |
+| `STREAK_UNIT` | no | Streak card cadence on `/about` — `day` / `week` / `month` / `year`. Default `week`. Badges each declare their own `unit` param so this only affects the standalone "Current Streak" card, not achievement badges. |
 | `ADMIN_PASSWORD_HASH` | yes for admin | bcrypt hash. Empty = login disabled — site is read-only |
 | `SESSION_NAME` | no | Cookie name. Default `lazyblog_sess` |
 | `SESSION_SECURE` | yes for HTTPS | `true` in production (HTTPS-only cookie); `false` for local HTTP dev |

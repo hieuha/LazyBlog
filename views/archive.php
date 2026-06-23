@@ -94,10 +94,6 @@ $intensity = static function (int $count, bool $inRange): string {
                         <?php $entryDate = substr((string) $entry['date'], 0, 10); ?>
                         <li class="archive-item" id="day-<?= Http::e($entryDate) ?>">
                             <span class="archive-date"><?= Http::e($entryDate) ?></span>
-                            <a class="archive-link" href="/posts/<?= Http::e($entry['slug']) ?>">
-                                <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
-                                <?= Http::e($entry['title']) ?>
-                            </a>
                             <?php if (!empty($entry['series'])): ?>
                                 <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>" onclick="event.stopPropagation()">
                                     <?= Http::e((string) $entry['series']) ?><?php
@@ -105,6 +101,10 @@ $intensity = static function (int $count, bool $inRange): string {
                                     ?>
                                 </a>
                             <?php endif; ?>
+                            <a class="archive-link" href="/posts/<?= Http::e($entry['slug']) ?>">
+                                <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
+                                <?= Http::e($entry['title']) ?>
+                            </a>
                         </li>
                     <?php endforeach; ?>
                 </ul>

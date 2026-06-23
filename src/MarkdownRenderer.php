@@ -54,7 +54,8 @@ final class MarkdownRenderer
     {
         $this->injected = [];
 
-        $pre = $this->preprocessStandaloneImages($markdown);
+        $pre = $this->preprocessStandaloneVideos($markdown);
+        $pre = $this->preprocessStandaloneImages($pre);
         $pre = $this->preprocessYouTube($pre);
         $pre = $this->preprocessAdmonitions($pre);
         $html = (string) $this->converter->convert($pre);
@@ -122,6 +123,43 @@ final class MarkdownRenderer
      *
      * Skips lines inside fenced code blocks (```/~~~).
      */
+    /**
+     * Rewrite a line containing ONLY a direct-link video URL
+     * (`.webm` / `.mp4` / `.mov` / `.ogv`, optionally with `?query`
+     * or `#fragment`) into a standalone markdown image — `![](url)`.
+     * That way the downstream `preprocessStandaloneImages` +
+     * `postprocessFigures` pipeline handles it like any other figure
+     * and the renderer's `<img>`→`<video>` swap kicks in.
+     *
+     * Skip lines inside fenced code blocks. URLs in the middle of a
+     * sentence are NOT rewritten — they stay as ordinary text/links so
+     * we don't accidentally hijack inline references.
+     */
+    private function preprocessStandaloneVideos(string $md): string
+    {
+        $lines = preg_split('/\R/u', $md) ?: [];
+        $inFence = false;
+        // Match an entire line that is just a video URL (optionally
+        // wrapped in `< >` autolink delimiters or angle brackets).
+        // Delimiter is `~` because the pattern contains a literal `#`
+        // inside the optional query/fragment char-class — `#` as the
+        // regex delimiter would close prematurely there.
+        $re = '~^\s*<?\s*(https?://[^\s<>]+?\.(?:webm|mp4|mov|ogv)(?:[?#][^\s<>]*)?)\s*>?\s*$~i';
+        foreach ($lines as $i => $line) {
+            if (preg_match('/^\s*(?:```|~~~)/u', $line)) {
+                $inFence = !$inFence;
+                continue;
+            }
+            if ($inFence) {
+                continue;
+            }
+            if (preg_match($re, $line, $m)) {
+                $lines[$i] = '![](' . $m[1] . ')';
+            }
+        }
+        return implode("\n", $lines);
+    }
+
     private function preprocessStandaloneImages(string $md): string
     {
         $lines = preg_split('/\R/u', $md) ?: [];

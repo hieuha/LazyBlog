@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Assertion fixtures for the plugin system core.
- * Run: php scripts/test-plugin-system.php
+ * Run: php tests/test-plugin-system.php
  *
  * Covers PluginManifest validation, PluginAssetRegistry route matching,
  * PluginRegistry slug parsing + reserved-path collision logic, and

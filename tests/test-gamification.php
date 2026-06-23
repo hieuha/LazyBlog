@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Fixture-driven smoke test for GamificationCalculator::longestStreakForUnit().
- * Run: php scripts/test-gamification.php
+ * Run: php tests/test-gamification.php
  *
  * Tests cover day/week/month/year units. The "current streak" + at-risk
  * logic was retired with the on-page streak panel — only longest-run

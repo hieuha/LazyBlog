@@ -390,14 +390,28 @@ final class MarkdownRenderer
                     // Direct-link video files (.webm/.mp4/.mov/.ogv) swap out
                     // the <img> for a <video> player. Same wrapper structure,
                     // same gallery grid placement — captions still fall under
-                    // the media. Controls visible by default, no autoplay,
-                    // preload=metadata so the browser only pulls the seek
-                    // header until the user actually plays.
+                    // the media.
+                    //
+                    // Optional URL fragment opts into ambient/background
+                    // playback (autoplay + loop + muted + no controls):
+                    //   url.webm                                  → controls, click to play
+                    //   url.webm#bg  / url.webm#background        → ambient hero-style
+                    //   url.webm#autoplay,loop,muted              → explicit flag list
+                    // Browsers require `muted` for unmuted autoplay; the
+                    // `bg` alias bundles all four flags so the common case
+                    // is one word.
                     $isVideo = (bool) preg_match('/\.(?:webm|mp4|mov|ogv)(?:[?#]|$)/i', $rawUrl);
                     $aria = ($alt !== '' && $isVideo) ? ' aria-label="' . $alt . '"' : '';
-                    $media = $isVideo
-                        ? '<video src="' . $url . '" controls playsinline preload="metadata"' . $titleRender . $aria . '></video>'
-                        : '<img src="' . $url . '" alt="' . $alt . '"' . $titleRender . ' loading="lazy" />';
+                    if ($isVideo) {
+                        $videoAttrs = self::videoAttrsFromUrl($rawUrl);
+                        // Strip the fragment from the rendered src — the
+                        // flags are renderer-only, not part of the URL the
+                        // browser should request.
+                        $cleanUrl = htmlspecialchars(preg_replace('/#.*$/', '', $rawUrl) ?? $rawUrl, ENT_QUOTES);
+                        $media = '<video src="' . $cleanUrl . '"' . $videoAttrs . $titleRender . $aria . '></video>';
+                    } else {
+                        $media = '<img src="' . $url . '" alt="' . $alt . '"' . $titleRender . ' loading="lazy" />';
+                    }
 
                     // Wrap each (media + its caption) in a single cell div so
                     // the grid lays them out as a column inside the cell —
@@ -417,6 +431,86 @@ final class MarkdownRenderer
             },
             $html,
         );
+    }
+
+    /**
+     * Build the attribute list for a `<video>` element based on the
+     * URL fragment. No fragment → safe defaults (controls, playsinline,
+     * preload=metadata) so the operator manually presses play and the
+     * browser only fetches the seek header.
+     *
+     * Fragment supports two short aliases (`bg`, `background`) that
+     * bundle the ambient hero pattern (autoplay + loop + muted +
+     * playsinline + no controls) plus a comma-separated flag list for
+     * fine-grained opt-ins (`autoplay`, `loop`, `muted`, `nocontrols`,
+     * `controls`). Flags compose: e.g. `#loop,muted` keeps controls
+     * but loops silently.
+     */
+    private static function videoAttrsFromUrl(string $rawUrl): string
+    {
+        // Default: controls visible, no autoplay, no loop.
+        $controls = true;
+        $autoplay = false;
+        $loop = false;
+        $muted = false;
+
+        $fragment = '';
+        if (preg_match('/#(.*)$/', $rawUrl, $m)) {
+            $fragment = strtolower($m[1]);
+        }
+        if ($fragment !== '') {
+            $flags = array_map('trim', explode(',', $fragment));
+            foreach ($flags as $flag) {
+                switch ($flag) {
+                    case 'bg':
+                    case 'background':
+                        $autoplay = true;
+                        $loop = true;
+                        $muted = true;
+                        $controls = false;
+                        break;
+                    case 'autoplay':
+                        $autoplay = true;
+                        // Browsers require muted for unattended autoplay
+                        // — assume that's what the operator wants here.
+                        $muted = true;
+                        break;
+                    case 'loop':
+                        $loop = true;
+                        break;
+                    case 'muted':
+                        $muted = true;
+                        break;
+                    case 'nocontrols':
+                        $controls = false;
+                        break;
+                    case 'controls':
+                        $controls = true;
+                        break;
+                }
+            }
+        }
+
+        $parts = [];
+        if ($controls) {
+            $parts[] = 'controls';
+        }
+        if ($autoplay) {
+            $parts[] = 'autoplay';
+        }
+        if ($loop) {
+            $parts[] = 'loop';
+        }
+        if ($muted) {
+            $parts[] = 'muted';
+        }
+        $parts[] = 'playsinline';
+        // Autoplaying clips need to start without a user gesture, so
+        // skip the metadata-only preload (the browser would otherwise
+        // pull metadata, see no play intent, and wait).
+        $parts[] = $autoplay ? 'preload="auto"' : 'preload="metadata"';
+
+        return ' ' . implode(' ', $parts);
     }
 
     /**

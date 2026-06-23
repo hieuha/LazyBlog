@@ -171,11 +171,41 @@ already metadata-stripped and resized.
 
 Same `![alt](url)` syntax — if the URL ends with one of those four
 extensions (with or without a query/fragment), the renderer swaps the
-`<img>` for a `<video controls playsinline preload="metadata">` inside
-the same figure wrapper. The `controls` attribute keeps play/seek
-visible; `playsinline` keeps mobile from going fullscreen on tap;
-`preload="metadata"` means the browser only pulls the seek header
-until the visitor actually presses play (cheap by default).
+`<img>` for a `<video>` inside the same figure wrapper.
+
+**Default playback (click-to-play):**
+- `<video controls playsinline preload="metadata">` — `controls`
+  keeps play/seek visible, `playsinline` stops mobile fullscreen on
+  tap, `preload="metadata"` only fetches the seek header until the
+  visitor presses play.
+
+**Opt into ambient/hero playback** by adding a URL fragment:
+
+```markdown
+![Hero orb](https://example.com/orb.webm#bg)
+```
+
+| Fragment | Effect |
+|----------|--------|
+| _(none)_ | controls, click-to-play (safe default) |
+| `#bg` or `#background` | `autoplay loop muted playsinline` — Hermes-style ambient hero |
+| `#autoplay,loop,muted` | explicit flag list (same effect, more readable) |
+| `#loop,muted` | controls visible but loops silently |
+| `#nocontrols` | hide the control bar |
+| `#controls` | force controls (override `bg`) |
+
+Browsers require `muted` for unattended autoplay — `#autoplay` alone
+will silently add `muted`. The fragment is stripped from the rendered
+`src` attribute so the browser fetches the clean URL.
+
+A **bare URL on its own line** (no `![]()` wrapper) also works — the
+renderer detects the extension, rewrites it as `![](url)`, then runs
+through the same pipeline. Pair with `#bg` for paste-and-go ambient
+backgrounds:
+
+```markdown
+https://example.com/orb.webm#bg
+```
 
 ```markdown
 ![Portal orb](https://example.com/clip.webm "Caption shown under it")

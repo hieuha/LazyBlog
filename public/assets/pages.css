@@ -187,6 +187,15 @@ a.heatmap-cell:hover {
 }
 .archive-icon { margin-right: 4px; }
 
+/* Archive rows are date + title + series-chip on a single flex row. On
+   narrow viewports the chip on the right squeezes long titles into
+   three+ line wraps that look broken. Hide the chip below 600px — the
+   series info is still visible on the post page itself, on /series,
+   and on the desktop archive. */
+@media (max-width: 600px) {
+    .archive-item .post-series-tag { display: none; }
+}
+
 /* ---------- Search page ----------
    Server-rendered search; no JS. Diacritic-insensitive (handled in PHP);
    matched terms wrapped in <mark> by the view. Input/button styled to

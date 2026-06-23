@@ -87,6 +87,8 @@ changes.
 | `$ctx->storagePath()` | Absolute path to `content/plugins/{slug}/` (created lazily) |
 | `$ctx->csrf()` | Returns `App\Csrf::class` — use static helpers on it |
 | `$ctx->auth()` | Returns `App\Auth::class` |
+| `$ctx->onPostView($listener)` | Subscribe to `post.view` event (fired before response body flushed; listeners may call `setcookie()`/`header()`) |
+| `$ctx->onPostMeta($renderer)` | Contribute HTML fragment to `post.meta` slot (rendered inline in transmission tag line) |
 
 ### Routing rules
 
@@ -106,6 +108,37 @@ changes.
   `Cache-Control: public, max-age=31536000, immutable`.
 - Plugin assets count as same-origin under the site CSP — no policy changes
   needed for `'self'`-served resources.
+
+## Event hooks
+
+Plugins can subscribe to lifecycle events and contribute content fragments.
+
+### `onPostView` — React to post views
+
+Called once per `GET /posts/{slug}` render, **before the response body is flushed**.
+Listeners receive a `PostViewEvent` and may call `setcookie()` or `header()` safely.
+Listener exceptions are caught and logged (never 500s the page).
+
+```php
+$ctx->onPostView(function (App\PostViewEvent $event): void {
+    setcookie('lz_uid', '...', ['httponly' => true]);
+    // $event->slug, $event->userAgent, $event->requestTime available
+});
+```
+
+### `onPostMeta` — Contribute post metadata fragment
+
+Called once per post render; contributes plain HTML to the transmission tag line
+(the `§ TRANSMISSION — DATE` line). Renderer receives `['slug' => $slug]` and
+must return a string or null.  Exceptions are caught and logged.
+
+```php
+$ctx->onPostMeta(function (array $context): ?string {
+    $slug = (string) ($context['slug'] ?? '');
+    $count = getViewCount($slug); // your logic
+    return $count > 0 ? "{$count} views" : null;
+});
+```
 
 ## CSP — what you cannot do
 

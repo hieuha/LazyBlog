@@ -95,6 +95,28 @@ final class PluginContext
         $this->nav->add($this->manifest->slug, $label, $href, $placement);
     }
 
+    /**
+     * Subscribe to the `post.view` event. Fired once per `GET /posts/{slug}`
+     * render BEFORE the response body is flushed — listeners may call
+     * `setcookie()` or `header()` safely. Listener exceptions are caught
+     * and logged so one bad plugin never 500s a post page.
+     */
+    public function onPostView(callable $listener): void
+    {
+        $this->registry->addPostViewListener($listener);
+    }
+
+    /**
+     * Contribute HTML to the `post.meta` slot rendered near the post
+     * date/tags. Renderer receives a context array (currently `['slug' => $slug]`)
+     * and must return a string of HTML or null to skip. Output ordering is
+     * registration order; no priority API.
+     */
+    public function onPostMeta(callable $renderer): void
+    {
+        $this->registry->addPostMetaRenderer($renderer);
+    }
+
     public function css(string $file): void
     {
         $this->assets->css($this->manifest->slug, $file);

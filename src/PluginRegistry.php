@@ -60,6 +60,12 @@ final class PluginRegistry
     /** @var array<string,bool> slug => has at least one admin route */
     private array $adminRoutes = [];
 
+    /** @var list<callable(PostViewEvent):void> */
+    private array $postViewListeners = [];
+
+    /** @var list<callable(array<string,mixed>):?string> */
+    private array $postMetaRenderers = [];
+
     public function __construct(
         private readonly string $pluginsDir,
         private readonly string $enabledCsv,
@@ -112,6 +118,58 @@ final class PluginRegistry
     public function recordAdminRoute(string $slug): void
     {
         $this->adminRoutes[$slug] = true;
+    }
+
+    /** Called from PluginContext::onPostView(). */
+    public function addPostViewListener(callable $listener): void
+    {
+        $this->postViewListeners[] = $listener;
+    }
+
+    /** Called from PluginContext::onPostMeta(). */
+    public function addPostMetaRenderer(callable $renderer): void
+    {
+        $this->postMetaRenderers[] = $renderer;
+    }
+
+    /**
+     * Fire the `post.view` event. Each listener runs in a try/catch so a
+     * single plugin throwing never breaks the page render. Listener errors
+     * surface in php-fpm error log, not the response body.
+     */
+    public function dispatchPostView(PostViewEvent $event): void
+    {
+        foreach ($this->postViewListeners as $listener) {
+            try {
+                $listener($event);
+            } catch (Throwable $e) {
+                error_log("[plugin] post.view listener failed: {$e->getMessage()}");
+            }
+        }
+    }
+
+    /**
+     * Collect HTML fragments contributed to the `post.meta` slot. Renderers
+     * that throw or return null/empty are skipped. Order follows registration.
+     *
+     * @param  array<string,mixed> $context
+     * @return list<string>
+     */
+    public function slotPostMeta(array $context): array
+    {
+        $out = [];
+        foreach ($this->postMetaRenderers as $renderer) {
+            try {
+                $html = $renderer($context);
+            } catch (Throwable $e) {
+                error_log("[plugin] post.meta renderer failed: {$e->getMessage()}");
+                continue;
+            }
+            if (is_string($html) && $html !== '') {
+                $out[] = $html;
+            }
+        }
+        return $out;
     }
 
     public function boot(Router $router): void

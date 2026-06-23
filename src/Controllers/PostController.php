@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Http;
 use App\MarkdownRenderer;
 use App\PostRepository;
+use App\PostViewEvent;
 
 final class PostController
 {
@@ -57,6 +58,14 @@ final class PostController
                 ];
             }
         }
+
+        // Dispatch BEFORE render so listeners can setcookie()/header() safely
+        // (e.g. view-counter plugin minting the lz_uid cookie).
+        Http::plugins()?->dispatchPostView(new PostViewEvent(
+            slug: $post->slug,
+            userAgent: (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+            requestTime: time(),
+        ));
 
         Http::render('post', [
             'title' => $post->title,

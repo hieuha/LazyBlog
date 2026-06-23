@@ -70,8 +70,10 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
      ├─ postprocessFigures     → <p><img alt></p> → <figure><img><figcaption>; title → figcaption
      ├─ injectHeadingIds       → <h2 id="slug">
      └─ extractToc             → list of {level,id,text}
+   - PluginRegistry::dispatchPostView → fire post.view event (plugins may setcookie/header)
    - Http::render('post', […])
      ├─ ob_start, require views/post.php
+     │  └─ slotPostMeta(['slug'=>$slug]) → collect plugin-contributed HTML fragments
      ├─ ob_get_clean → $body
      └─ require views/layout.php  emits HTML with SEO / OG / JSON-LD (includes datePublished ISO datetime)
 4. Caddy applies asset cache + compression and returns the response
@@ -119,6 +121,7 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `GamificationCalculator` | Pure streak + badge evaluation logic | Takes post timestamps + arrays in, emits unlocked-badge list; memoises per-unit longest-streak |
 | `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |
 | `BadgeKinds` | 13 reusable badge executors (post-count, longest-streak, time-window, gap-days, etc.) | Closures parameterised by dict; no filesystem or DB |
+| `PostViewEvent` | Immutable event payload `{slug, userAgent, requestTime}` | Dispatched once per `GET /posts/{slug}` before response flush; plugins subscribe via `onPostView()` |
 
 ## Cache pyramid
 

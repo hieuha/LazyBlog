@@ -63,6 +63,7 @@ composer.lock
 # (git clone <repo> plugins/<slug>) and stays out of git.
 /plugins/*
 !/plugins/hello-world
+!/plugins/view-counter
 
 # Stray pre-existing release artifact from project init — not part of LazyBlog.
 /release-manifest.json

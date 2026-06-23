@@ -24,10 +24,19 @@ $renderTocList = function () use ($toc): void {
 ?>
 
 <article class="post-article">
+    <?php
+    // Plugin-contributed meta fragments (e.g. view-counter "1 lượt xem").
+    // Returned as plain text and appended inline to the transmission tag
+    // line — no separate badge box, no extra styling.
+    $metaSlots = Http::plugins()?->slotPostMeta(['slug' => $post->slug]) ?? [];
+    ?>
     <div class="section-tag">
         § TRANSMISSION — <?= Http::e($post->displayDate()) ?><?php
             if ($post->author !== null && $post->author !== '') {
                 echo ' — ' . Http::e($post->author);
+            }
+            foreach ($metaSlots as $fragment) {
+                echo ' — ' . $fragment; /* trusted: plugin output */
             }
         ?>
     </div>

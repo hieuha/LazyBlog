@@ -1,0 +1,9 @@
+{
+    "slug": "view-counter",
+    "name": "View Counter",
+    "version": "0.1.0",
+    "api_version": 1,
+    "namespace": "Plugins\\ViewCounter",
+    "author": "LazyBlog",
+    "description": "Counts unique-user views per post and renders a public badge."
+}

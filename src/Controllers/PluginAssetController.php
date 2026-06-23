@@ -61,8 +61,13 @@ final class PluginAssetController
             http_response_code(400);
             return;
         }
-        $ext = strtolower((string) pathinfo($file, PATHINFO_EXTENSION));
-        if (!isset(self::MIME[$ext])) {
+        // Require the URL extension to already be lowercase. The MIME
+        // allowlist is keyed lowercase; matching strtolower(ext) would
+        // accidentally serve `style.CSS` on case-insensitive filesystems
+        // (macOS HFS+) while failing on case-sensitive ones (ext4). Force
+        // operators and plugin authors onto one canonical form.
+        $ext = (string) pathinfo($file, PATHINFO_EXTENSION);
+        if ($ext !== strtolower($ext) || !isset(self::MIME[$ext])) {
             http_response_code(404);
             return;
         }

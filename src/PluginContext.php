@@ -31,6 +31,9 @@ final class PluginContext
 
     public function get(string $pattern, callable $handler): void
     {
+        if ($this->rejectUnwrappedAdmin($pattern)) {
+            return;
+        }
         if (!$this->registry->canRegister($this->manifest->slug, $pattern)) {
             return;
         }
@@ -40,6 +43,9 @@ final class PluginContext
 
     public function post(string $pattern, callable $handler): void
     {
+        if ($this->rejectUnwrappedAdmin($pattern)) {
+            return;
+        }
         if (!$this->registry->canRegister($this->manifest->slug, $pattern)) {
             return;
         }
@@ -110,6 +116,15 @@ final class PluginContext
      */
     public function view(string $view, array $data = []): void
     {
+        // Validate up front so a plugin that accidentally passes user input
+        // (`$ctx->view($_GET['v'])`) can't traverse out of the views dir or
+        // include arbitrary PHP. Allowed chars: alnum, dash, underscore.
+        // No slashes, no dots. Plugin authors organise views as flat files.
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $view)) {
+            throw new RuntimeException(
+                "plugin view name must match [a-zA-Z0-9_-]+: {$this->manifest->slug}/{$view}",
+            );
+        }
         $viewPath = $this->pluginRoot() . '/views/' . $view . '.php';
         if (!is_file($viewPath)) {
             throw new RuntimeException(
@@ -174,6 +189,24 @@ final class PluginContext
         error_log(
             "[plugin:{$this->manifest->slug}] admin route must start with {$expected}: {$pattern}"
         );
+        return false;
+    }
+
+    /**
+     * Block public get()/post() registrations from claiming any `/admin/*`
+     * path. Otherwise a plugin author could accidentally expose an admin
+     * page WITHOUT the auto-applied Auth::requireAuth() wrapper that
+     * adminGet/adminPost provides. Logged so authors notice the mistake.
+     */
+    private function rejectUnwrappedAdmin(string $pattern): bool
+    {
+        if ($pattern === '/admin' || str_starts_with($pattern, '/admin/')) {
+            error_log(
+                "[plugin:{$this->manifest->slug}] use adminGet/adminPost for admin routes, "
+                . "not get/post: {$pattern}"
+            );
+            return true;
+        }
         return false;
     }
 }

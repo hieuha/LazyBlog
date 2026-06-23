@@ -250,6 +250,16 @@ final class PluginRegistry
     }
 
     /**
+     * Namespace prefixes a plugin manifest is NOT allowed to claim. A
+     * malicious manifest declaring `namespace: "App\\"` would (after the
+     * composer autoloader fails for a non-existent class) load PHP files
+     * from the plugin's `src/` into the core namespace. Composer's
+     * autoloader runs first and wins for existing core classes, so this
+     * is a defence-in-depth measure inside the trust model.
+     */
+    private const FORBIDDEN_AUTOLOAD_PREFIXES = ['App\\', 'Composer\\', 'Symfony\\', 'League\\', 'Dotenv\\'];
+
+    /**
      * Dynamic PSR-4 autoload for `plugins/{slug}/src/` mapped to the
      * manifest's namespace. Avoids a composer dump-autoload step every
      * time the operator drops in a new plugin.
@@ -257,6 +267,15 @@ final class PluginRegistry
     private function registerAutoload(PluginManifest $manifest, string $root): void
     {
         $prefix = $manifest->namespace;
+        foreach (self::FORBIDDEN_AUTOLOAD_PREFIXES as $forbidden) {
+            if ($prefix === $forbidden || str_starts_with($prefix, $forbidden)) {
+                error_log(
+                    "[plugin:{$manifest->slug}] manifest namespace cannot start with "
+                    . "{$forbidden} (claimed: {$prefix})"
+                );
+                return;
+            }
+        }
         $srcDir = $root . '/src/';
         spl_autoload_register(static function (string $class) use ($prefix, $srcDir): void {
             if (!str_starts_with($class, $prefix)) {

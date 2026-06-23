@@ -297,6 +297,163 @@ $registry5->enabledSlugs() === [] or fail('empty PLUGINS should yield zero enabl
 ok('empty PLUGINS env = zero enabled');
 
 // -----------------------------------------------------------------------------
+section('Forbidden autoload namespace prefixes');
+// -----------------------------------------------------------------------------
+
+// Build a plugin whose manifest claims namespace=App\ — registerAutoload
+// must refuse to wire the autoloader and log a warning. The plugin's own
+// classes will not load, but the site stays up.
+$evilSlug = 'evil-namespace';
+$evilDir = $tempPluginsDir . '/' . $evilSlug;
+mkdir($evilDir . '/src', 0o755, true);
+file_put_contents($evilDir . '/manifest.json', json_encode([
+    'slug' => $evilSlug,
+    'name' => 'Evil',
+    'version' => '1.0.0',
+    'api_version' => 1,
+    'namespace' => 'App\\Auth\\',
+]));
+file_put_contents($evilDir . '/src/Hijack.php', '<?php namespace App\\Auth; class Hijack {}');
+file_put_contents($evilDir . '/plugin.php', <<<PHP
+<?php
+require_once __DIR__ . '/src/Hijack.php';
+return new class implements \\App\\Plugin {
+    public function manifest(): \\App\\PluginManifest {
+        return \\App\\PluginManifest::fromArray([
+            'slug' => 'evil-namespace', 'name' => 'Evil', 'version' => '1',
+            'api_version' => 1, 'namespace' => 'App\\\\Auth\\\\',
+        ]);
+    }
+    public function register(\\App\\PluginContext \$ctx): void {}
+};
+PHP);
+clearLog();
+$registry6 = new PluginRegistry($tempPluginsDir, $evilSlug, $tempContentDir);
+$registry6->boot(new Router());
+logContains('manifest namespace cannot start with App\\') or fail('expected forbidden-prefix warning');
+ok('manifest namespace App\\ refused + logged');
+
+// Also test Composer\, Symfony\
+foreach (['Composer\\Test\\', 'Symfony\\X\\', 'League\\Y\\'] as $bad) {
+    $tmpSlug = 'bad-' . preg_replace('/[^a-z]/', '', strtolower($bad));
+    $tmpDir = $tempPluginsDir . '/' . $tmpSlug;
+    @mkdir($tmpDir . '/src', 0o755, true);
+    file_put_contents($tmpDir . '/manifest.json', json_encode([
+        'slug' => $tmpSlug, 'name' => 'X', 'version' => '1',
+        'api_version' => 1, 'namespace' => $bad,
+    ]));
+    file_put_contents($tmpDir . '/plugin.php', '<?php return null;');
+    clearLog();
+    $r = new PluginRegistry($tempPluginsDir, $tmpSlug, $tempContentDir);
+    $r->boot(new Router());
+    logContains('manifest namespace cannot start with') or fail("expected refusal for {$bad}");
+}
+ok('Composer\\, Symfony\\, League\\ prefixes all refused');
+
+// -----------------------------------------------------------------------------
+section('Public get/post cannot claim /admin/*');
+// -----------------------------------------------------------------------------
+
+// Build a plugin that tries to register a public GET under /admin/.
+$footSlug = 'footgun';
+$footDir = $tempPluginsDir . '/' . $footSlug;
+mkdir($footDir . '/src', 0o755, true);
+file_put_contents($footDir . '/manifest.json', json_encode([
+    'slug' => $footSlug, 'name' => 'Foot', 'version' => '1',
+    'api_version' => 1, 'namespace' => 'Plugins\\Footgun',
+]));
+file_put_contents($footDir . '/src/FootgunPlugin.php', <<<'PHP'
+<?php
+namespace Plugins\Footgun;
+final class FootgunPlugin implements \App\Plugin
+{
+    public function manifest(): \App\PluginManifest {
+        return \App\PluginManifest::fromArray([
+            'slug' => 'footgun', 'name' => 'Foot', 'version' => '1',
+            'api_version' => 1, 'namespace' => 'Plugins\\Footgun',
+        ]);
+    }
+    public function register(\App\PluginContext $ctx): void {
+        // Should be REJECTED — must use adminGet for admin paths.
+        $ctx->get('/admin/footgun/secret', static fn () => null);
+    }
+}
+PHP);
+file_put_contents($footDir . '/plugin.php', <<<PHP
+<?php
+require_once __DIR__ . '/src/FootgunPlugin.php';
+return new Plugins\\Footgun\\FootgunPlugin();
+PHP);
+
+clearLog();
+$footRouter = new Router();
+$footRegistry = new PluginRegistry($tempPluginsDir, $footSlug, $tempContentDir);
+$footRegistry->boot($footRouter);
+logContains('use adminGet/adminPost for admin routes') or fail('expected unwrapped-admin warning');
+ok('public get() rejected when pattern starts with /admin/');
+
+// -----------------------------------------------------------------------------
+section('PluginContext::view name validation');
+// -----------------------------------------------------------------------------
+
+// We need a context to test view(). Reach in via the booted fixture plugin.
+$fixtureRoot = $tempPluginsDir . '/' . $fixtureSlug;
+mkdir($fixtureRoot . '/views', 0o755, true);
+file_put_contents($fixtureRoot . '/views/legit.php', '<?= "ok" ?>');
+
+// Use reflection-free public API: spin a fresh registry, fish out the
+// PluginContext via a custom Plugin that captures it.
+file_put_contents($fixtureRoot . '/src/CaptureCtx.php', <<<'PHP'
+<?php
+namespace Plugins\TestFixture;
+final class CaptureCtx implements \App\Plugin {
+    public static ?\App\PluginContext $captured = null;
+    public function manifest(): \App\PluginManifest {
+        return \App\PluginManifest::fromArray([
+            'slug' => 'test-fixture', 'name' => 'X', 'version' => '1',
+            'api_version' => 1, 'namespace' => 'Plugins\\TestFixture',
+        ]);
+    }
+    public function register(\App\PluginContext $ctx): void {
+        self::$captured = $ctx;
+    }
+}
+PHP);
+file_put_contents($fixtureRoot . '/plugin.php', <<<PHP
+<?php
+require_once __DIR__ . '/src/CaptureCtx.php';
+return new Plugins\\TestFixture\\CaptureCtx();
+PHP);
+
+$captureRegistry = new PluginRegistry($tempPluginsDir, $fixtureSlug, $tempContentDir);
+$captureRegistry->boot(new Router());
+$ctx = \Plugins\TestFixture\CaptureCtx::$captured;
+$ctx !== null or fail('failed to capture plugin context');
+
+$badViews = ['../etc/passwd', '../../foo', 'sub/file', 'with.dot', 'with space', 'unicodé', ''];
+foreach ($badViews as $bad) {
+    $threw = false;
+    try {
+        $ctx->view($bad);
+    } catch (\RuntimeException) {
+        $threw = true;
+    }
+    $threw or fail("bad view name '{$bad}' should throw");
+}
+ok('bad view names rejected (' . count($badViews) . ' cases)');
+
+// Legit view still works (we don't actually render since layout.php needs
+// SITE_TITLE etc.; just confirm we get past the validator). Catch the
+// RuntimeException from missing view ONLY if name validation passed first.
+try {
+    $ctx->view('does-not-exist');
+    fail('expected view-not-found exception');
+} catch (\RuntimeException $e) {
+    str_contains($e->getMessage(), 'plugin view not found') or fail('expected not-found message, got: ' . $e->getMessage());
+}
+ok('legit kebab name passes validator (fails later on missing file)');
+
+// -----------------------------------------------------------------------------
 echo "\n";
 if ($failures === 0) {
     echo "ALL OK\n";

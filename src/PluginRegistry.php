@@ -149,11 +149,16 @@ final class PluginRegistry
     /**
      * True when $pattern conflicts with a reserved prefix. `/admin` gets a
      * carve-out: a plugin can register under its OWN `/admin/{slug}` namespace
-     * but not under `/admin` itself or any other `/admin/...` path.
+     * but not under `/admin` itself or any other `/admin/...` path. The
+     * carve-out only fires when the pattern is actually under `/admin` —
+     * otherwise it's a non-issue and we short-circuit to "no collision".
      */
     private function matchesReserved(string $pattern, string $reserved, string $slug): bool
     {
         if ($reserved === '/admin') {
+            if ($pattern !== '/admin' && !str_starts_with($pattern, '/admin/')) {
+                return false;
+            }
             $allowed = '/admin/' . $slug;
             return !($pattern === $allowed || str_starts_with($pattern, $allowed . '/'));
         }

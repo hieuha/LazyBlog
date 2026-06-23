@@ -109,4 +109,43 @@ use App\Http;
         </table>
         <?php include __DIR__ . '/../_pagination.php'; ?>
     <?php endif; ?>
+
+    <?php
+    // Plugin index — surfaces which plugins booted successfully and links
+    // to any admin pages they registered. Empty PLUGINS env = block hidden.
+    $pluginRegistry = Http::plugins();
+    $enabledPlugins = $pluginRegistry !== null ? $pluginRegistry->enabledSlugs() : [];
+    if ($enabledPlugins !== []):
+    ?>
+        <h2 class="admin-plugins-heading">§ PLUGINS</h2>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>SLUG</th>
+                    <th>NAME</th>
+                    <th>VERSION</th>
+                    <th>ADMIN</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($enabledPlugins as $pluginSlug):
+                    $pluginManifest = $pluginRegistry->manifest($pluginSlug);
+                    if ($pluginManifest === null) continue;
+                ?>
+                    <tr>
+                        <td class="admin-mono"><?= Http::e($pluginManifest->slug) ?></td>
+                        <td><?= Http::e($pluginManifest->name) ?></td>
+                        <td class="admin-mono"><?= Http::e($pluginManifest->version) ?></td>
+                        <td class="admin-row-actions">
+                            <?php if ($pluginRegistry->hasAdminRoute($pluginSlug)): ?>
+                                <a class="admin-btn admin-btn-sm" href="/admin/<?= Http::e($pluginSlug) ?>">OPEN</a>
+                            <?php else: ?>
+                                <span style="color: var(--text-dim);">—</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </section>

@@ -1,0 +1,105 @@
+/* hello-world plugin: scoped to plugin routes only. Class prefix `.hello-*`
+   keeps everything namespaced so core selectors stay untouched. */
+
+.hello-page,
+.hello-admin {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.hello-subhead {
+    margin-top: 2rem;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+}
+
+.hello-form {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid var(--ink-mid, #1f6b1f);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.hello-form label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.hello-form input[type="text"] {
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--ink-mid, #1f6b1f);
+    padding: 0.5rem 0.7rem;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 120ms ease;
+}
+
+.hello-form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent, #39ff14);
+}
+
+.hello-form button {
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--ink-mid, #1f6b1f);
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.05em;
+    justify-self: start;
+}
+
+.hello-form button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent, #39ff14);
+}
+
+.hello-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.hello-list li {
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.hello-list time {
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+.hello-sep {
+    opacity: 0.4;
+    margin: 0 0.4rem;
+}
+
+.hello-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.hello-admin-table th,
+.hello-admin-table td {
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    text-align: left;
+    vertical-align: top;
+}
+
+.hello-admin-table th {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}

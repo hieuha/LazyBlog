@@ -36,11 +36,17 @@ final class Post
      * og:image source when the post has no frontmatter `image:` and no
      * site-wide SITE_OG_IMAGE — so social previews still get a thumbnail
      * the moment the post has any image at all.
+     *
+     * The regex extract bypasses CommonMark's `allow_unsafe_links`
+     * filter (which operates on rendered HTML, not raw markdown), so
+     * run the captured URL through `PostRepository::safeImage()` to
+     * keep `javascript:` / `data:` schemes out of `<meta property="og:image">`
+     * and the admin form's Social-image pre-fill.
      */
     public function firstBodyImage(): ?string
     {
         if (preg_match('/!\[[^\]]*\]\(([^)\s]+)/u', $this->bodyMarkdown, $m)) {
-            return $m[1];
+            return PostRepository::safeImage($m[1]);
         }
         return null;
     }

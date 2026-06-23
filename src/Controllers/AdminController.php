@@ -371,7 +371,9 @@ final class AdminController
             icon: $v['icon'] !== '' ? $v['icon'] : null,
             summary: $v['summary'] !== '' ? $v['summary'] : null,
             author: $v['author'] !== '' ? $v['author'] : null,
-            image: $v['image'] !== '' ? $v['image'] : null,
+            // Scheme-gate so a hostile paste (`javascript:`, `data:`)
+            // can't reach og:image even if it bypasses the JS hint.
+            image: \App\PostRepository::safeImage($v['image']),
             series: $series,
             part: $part,
         );

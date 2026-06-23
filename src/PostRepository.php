@@ -71,11 +71,19 @@ final class PostRepository
     {
         $today = (new \DateTimeImmutable('today'))->format('Y-m-d');
         // Compare on the date part only — ISO datetime entries would
-        // otherwise lexicographically exceed plain `YYYY-MM-DD` today and
-        // get filtered as future posts.
+        // otherwise lexicographically exceed plain `YYYY-MM-DD` today
+        // and get filtered as future posts. Also reject empty date
+        // strings outright so a malformed frontmatter entry can't slip
+        // past the filter via the `'' <= today` truthiness trick.
         return array_values(array_filter(
             $this->all(),
-            static fn (array $e): bool => !$e['draft'] && substr((string) $e['date'], 0, 10) <= $today,
+            static function (array $e) use ($today): bool {
+                if ($e['draft'] ?? false) {
+                    return false;
+                }
+                $dateKey = substr((string) ($e['date'] ?? ''), 0, 10);
+                return $dateKey !== '' && $dateKey <= $today;
+            },
         ));
     }
 
@@ -398,7 +406,7 @@ final class PostRepository
                 'icon' => isset($meta['icon']) ? (string) $meta['icon'] : null,
                 'summary' => isset($meta['summary']) ? (string) $meta['summary'] : null,
                 'author' => self::resolveAuthor($meta['author'] ?? null),
-                'image' => isset($meta['image']) && is_string($meta['image']) ? (string) $meta['image'] : null,
+                'image' => self::safeImage(isset($meta['image']) && is_string($meta['image']) ? (string) $meta['image'] : null),
                 'series' => isset($meta['series']) && is_string($meta['series']) && $meta['series'] !== '' ? strtolower(trim($meta['series'])) : null,
                 'part' => isset($meta['part']) && is_numeric($meta['part']) ? (int) $meta['part'] : null,
                 // Store basename only — keeps the index portable between
@@ -490,6 +498,27 @@ final class PostRepository
         }
         $default = Config::get('DEFAULT_AUTHOR', '');
         return ($default !== null && $default !== '') ? $default : null;
+    }
+
+    /**
+     * Scheme whitelist for `image:` frontmatter / og:image. Mirrors
+     * `AboutRepository::safeAvatar()` — only site-relative paths
+     * (starting with `/` but not `//`) or absolute http(s) URLs
+     * survive. `javascript:`, `data:`, `vbscript:` and friends drop
+     * to null so a compromised admin session can't smuggle an
+     * active-content URL into the `<meta property="og:image">`
+     * rendering path.
+     */
+    public static function safeImage(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+        return preg_match('#^(/(?!/)|https?://)#i', $url) === 1 ? $url : null;
     }
 
     /**

@@ -132,29 +132,33 @@
    filter (would mute the colour grading of motion content), no opaque
    black box (would defeat .webm with alpha channels — Hermes-style
    transparent orbs and similar), and no multiply tint overlay (would
-   veil play/seek controls). */
+   veil play/seek controls).
+   We key off the `.post-figure-video` class emitted server-side by
+   `MarkdownRenderer::postprocessFigures()` instead of `:has(video)`
+   so the override works on older browsers that don't yet ship the
+   relational pseudo-class. */
 .post-figure-image video {
     display: block;
     width: 100%;
     height: auto;
     background: transparent;
 }
-.post-figure-image:has(video)::after {
-    /* Drop the phosphor tint overlay over video. */
-    display: none;
-}
-.post-figure-image:has(video) {
-    /* Drop the phosphor-dim hairlines too — for transparent videos
-       (decorative orbs, motion glyphs) the border reads as a stray
-       rectangle floating in the column. Captions still appear under
-       the cell so the structural hierarchy survives. */
+.post-figure-video .post-figure-image {
+    /* Drop the phosphor-dim hairlines — transparent videos
+       (decorative orbs, motion glyphs) shouldn't sit inside a
+       floating rectangle. Captions stay underneath. */
     border-top: none;
     border-bottom: none;
+}
+.post-figure-video .post-figure-image::after {
+    /* Drop the phosphor tint overlay over video so controls
+       don't get veiled and alpha channels stay clean. */
+    display: none;
 }
 /* Pull video figures back into the article column instead of the
    full-bleed photo treatment. Standalone videos tend to be portrait
    orbs or decorative loops; viewport-wide they read as oversized. */
-.post-figure:has(video) {
+.post-figure-video {
     width: auto;
     max-width: 100%;
     margin-left: 0;

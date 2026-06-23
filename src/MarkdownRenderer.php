@@ -372,6 +372,7 @@ final class MarkdownRenderer
                     PREG_SET_ORDER,
                 );
                 $count = count($imgs);
+                $hasVideo = false;
 
                 $cells = [];
                 foreach ($imgs as $img) {
@@ -401,6 +402,9 @@ final class MarkdownRenderer
                     // `bg` alias bundles all four flags so the common case
                     // is one word.
                     $isVideo = (bool) preg_match('/\.(?:webm|mp4|mov|ogv)(?:[?#]|$)/i', $rawUrl);
+                    if ($isVideo) {
+                        $hasVideo = true;
+                    }
                     $aria = ($alt !== '' && $isVideo) ? ' aria-label="' . $alt . '"' : '';
                     if ($isVideo) {
                         $videoAttrs = self::videoAttrsFromUrl($rawUrl);
@@ -425,6 +429,12 @@ final class MarkdownRenderer
                 $class = $count > 1
                     ? 'post-figure post-figure-gallery count-' . $count
                     : 'post-figure';
+                if ($hasVideo) {
+                    // PHP-side marker so CSS doesn't depend on `:has(video)`
+                    // (relatively recent selector). Lets us pull the figure
+                    // back from full-bleed without browser support roulette.
+                    $class .= ' post-figure-video';
+                }
                 return '<figure class="' . $class . '">'
                     . implode("\n", $cells)
                     . '</figure>';

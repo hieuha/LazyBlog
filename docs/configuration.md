@@ -21,6 +21,7 @@
 | `SITE_GITHUB_URL` | no | Project source link in footer "§ SOURCE" block. Defaults to the upstream LazyBlog repo. Empty hides the line |
 | `SITE_DEFAULT_THEME` | no | Initial CRT theme — `amber` (default) or `green`. Rendered server-side on `<html data-theme>` so no-JS visitors see it. Visitor's header toggle still overrides via `localStorage` |
 | `SITE_NOISE` | no | Film-grain / dust overlay on every page. `true` (default) / `false`. Off leaves scanlines + vignette intact |
+| `PLUGINS` | no | Comma-separated plugin slugs to enable. Each must be a folder under `plugins/{slug}/` with a valid `manifest.json`. Empty = no plugins loaded, zero boot cost. See [`plugin-development.md`](plugin-development.md) for the author guide |
 
 Generate the password hash with the interactive helper:
 
@@ -50,6 +51,7 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/llms-full.txt` | Every published post concatenated for LLM consumption |
 | `/robots.txt` | `Disallow: /admin/` + `Disallow: /llms-full.txt` |
 | `/healthz` | Liveness probe — `text/plain` `ok`, no-store. Short-circuited before autoload/session/repo so monitor traffic costs ~nothing |
+| `/plugin-assets/{slug}/{file}` | Plugin asset (CSS/JS/image/font). Served only when the plugin is enabled. Cache-busted via `?v=<mtime>`. See [`plugin-development.md`](plugin-development.md) |
 
 Each rendered post page also includes `<link rel="alternate" type="text/markdown">`
 in `<head>` so AI agents auto-discover the raw source, and

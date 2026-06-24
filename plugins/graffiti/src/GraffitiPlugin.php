@@ -447,7 +447,16 @@ final class GraffitiPlugin implements Plugin
         // on the sender, but that's rare and converges. Fire-and-forget; if
         // the friend's blog drops between pre-flight and debit, the spray
         // stands locally (acceptable, the receiver is authoritative).
-        self::sendDebitNotice($friend, $price, "graffiti:xs:{$id}");
+        // Pass enough context that the sender's ledger row is human-readable
+        // ("@us : <sticker> on <post>") instead of just "graffiti:xs:g_xxx".
+        self::sendDebitNotice($friend, $price, "graffiti:xs:{$id}", [
+            'target_blog' => rtrim((string) Config::get('SITE_URL'), '/'),
+            'post_slug'   => $slug,
+            'type'        => $type,
+            'sticker_id'  => $type === 'text' ? '' : (string) ($payloadInner['sticker_id'] ?? $payloadInner['spray_id'] ?? ''),
+            'text'        => $type === 'text' ? mb_substr((string) ($payloadInner['text'] ?? ''), 0, 60) : '',
+            'graffiti_id' => $id,
+        ]);
 
         echo json_encode(['status' => 'accepted', 'id' => $id, 'price' => $price]);
     }
@@ -484,8 +493,20 @@ final class GraffitiPlugin implements Plugin
         }
         // Receiver-authoritative: append the debit regardless of current
         // balance. Owner can clean up the ledger by hand if a buggy friend
-        // over-charges; revoke ends future debits immediately.
-        $ledger->debit($amount, $reason);
+        // over-charges; revoke ends future debits immediately. Snapshot the
+        // sender's identity + the action context so the ledger row is
+        // self-describing (which blog billed us, for what sticker, on which
+        // post) without needing to keep the friend row around.
+        $details = [
+            'friend_handle' => (string) ($friend['handle']   ?? ''),
+            'friend_blog'   => (string) ($friend['blog_url'] ?? ''),
+            'target_blog'   => (string) ($body['target_blog'] ?? $friend['blog_url'] ?? ''),
+            'post_slug'     => (string) ($body['post_slug']   ?? ''),
+            'type'          => (string) ($body['type']        ?? ''),
+            'sticker_id'    => (string) ($body['sticker_id']  ?? ''),
+            'text'          => (string) ($body['text']        ?? ''),
+        ];
+        $ledger->debit($amount, $reason, $details);
         echo json_encode(['status' => 'accepted']);
     }
 
@@ -494,14 +515,15 @@ final class GraffitiPlugin implements Plugin
      * debit `$amount` energy. Best-effort: failure is logged but does not
      * roll back the local graffiti we already stored.
      */
-    private static function sendDebitNotice(array $friend, int $amount, string $reason): void
+    /** @param array<string,mixed> $context */
+    private static function sendDebitNotice(array $friend, int $amount, string $reason, array $context = []): void
     {
         $endpoint = rtrim((string) ($friend['blog_url'] ?? ''), '/') . '/graffiti/notify-debit';
-        $body = [
+        $body = array_merge([
             'token'  => (string) ($friend['outgoing_token'] ?? ''),
             'amount' => $amount,
             'reason' => $reason,
-        ];
+        ], $context);
         HttpSender::postJson($endpoint, $body);
     }
 
@@ -1088,8 +1110,14 @@ HTML;
                 Http::redirect($redirect);
                 return;
             }
-            $ledger->spend($price, "graffiti:self");
             $selfStub = self::selfFriendStub();
+            $ledger->spend($price, "graffiti:self", [
+                'target_blog' => (string) $selfStub['blog_url'],
+                'post_slug'   => $postSlug,
+                'type'        => $type,
+                'sticker_id'  => $type === 'text' ? '' : (string) ($payloadInner['sticker_id'] ?? $payloadInner['spray_id'] ?? ''),
+                'text'        => $type === 'text' ? mb_substr((string) ($payloadInner['text'] ?? ''), 0, 60) : '',
+            ]);
             $id = $store->append([
                 'from_friend_id' => 'self',
                 'from_handle'    => (string) $selfStub['handle'],
@@ -1123,7 +1151,15 @@ HTML;
         // Spend first so a failed enqueue doesn't leave an orphan debit.
         // Energy NOT refunded on permanent fail (lesson: don't graffiti dead
         // blogs); already checked friend.state above, so no refund path here.
-        $ledger->spend($price, "graffiti:pending");
+        $ledger->spend($price, "graffiti:pending", [
+            'friend_handle' => (string) ($friend['handle']   ?? ''),
+            'friend_blog'   => (string) ($friend['blog_url'] ?? ''),
+            'target_blog'   => (string) ($friend['blog_url'] ?? ''),
+            'post_slug'     => $postSlug,
+            'type'          => $type,
+            'sticker_id'    => $type === 'text' ? '' : (string) ($payloadInner['sticker_id'] ?? $payloadInner['spray_id'] ?? ''),
+            'text'          => $type === 'text' ? mb_substr((string) ($payloadInner['text'] ?? ''), 0, 60) : '',
+        ]);
         $id = $outbox->enqueue($friendId, $body);
 
         $row = $outbox->find($id);

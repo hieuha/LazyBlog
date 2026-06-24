@@ -63,7 +63,8 @@ final class EnergyLedger
      * resaving the same post is a no-op. Other reasons (admin grant, debug)
      * always append.
      */
-    public function mint(int $amount, string $reason): void
+    /** @param array<string,mixed>|null $details */
+    public function mint(int $amount, string $reason, ?array $details = null): void
     {
         if ($amount <= 0 || $reason === '') {
             return;
@@ -81,7 +82,7 @@ final class EnergyLedger
         }
 
         $data['balance'] = (int) ($data['balance'] ?? 0) + $amount;
-        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), $amount, $reason);
+        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), $amount, $reason, $details);
 
         $this->save($data);
     }
@@ -90,7 +91,8 @@ final class EnergyLedger
      * Attempt to spend. Returns false (and writes nothing) when balance
      * is insufficient — caller surfaces the rejection.
      */
-    public function spend(int $amount, string $reason): bool
+    /** @param array<string,mixed>|null $details */
+    public function spend(int $amount, string $reason, ?array $details = null): bool
     {
         if ($amount <= 0 || $reason === '') {
             return false;
@@ -101,7 +103,7 @@ final class EnergyLedger
             return false;
         }
         $data['balance'] = $current - $amount;
-        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), -$amount, $reason);
+        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), -$amount, $reason, $details);
         $this->save($data);
         return true;
     }
@@ -112,14 +114,15 @@ final class EnergyLedger
      * is authoritative for the cost; we cannot refuse just because owner
      * has gone broke (the graffiti is already painted on the other end).
      */
-    public function debit(int $amount, string $reason): void
+    /** @param array<string,mixed>|null $details */
+    public function debit(int $amount, string $reason, ?array $details = null): void
     {
         if ($amount <= 0 || $reason === '') {
             return;
         }
         $data = $this->load();
         $data['balance'] = (int) ($data['balance'] ?? 0) - $amount;
-        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), -$amount, $reason);
+        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), -$amount, $reason, $details);
         $this->save($data);
     }
 
@@ -153,9 +156,11 @@ final class EnergyLedger
     }
 
     /**
-     * Most-recent first, capped at LEDGER_DISPLAY_CAP entries.
+     * Most-recent first, capped at LEDGER_DISPLAY_CAP entries. Rows may
+     * carry an optional `details` map with sender / post / sticker context
+     * — present for newer entries, absent for legacy ones.
      *
-     * @return list<array{ts:int,delta:int,reason:string}>
+     * @return list<array{ts:int,delta:int,reason:string,details?:array<string,mixed>}>
      */
     public function ledger(): array
     {
@@ -188,10 +193,28 @@ final class EnergyLedger
         );
     }
 
-    /** @param list<array<string,mixed>> $ledger @return list<array<string,mixed>> */
-    private function appendEntry(array $ledger, int $delta, string $reason): array
+    /**
+     * @param list<array<string,mixed>> $ledger
+     * @param array<string,mixed>|null $details
+     * @return list<array<string,mixed>>
+     */
+    private function appendEntry(array $ledger, int $delta, string $reason, ?array $details = null): array
     {
-        $ledger[] = ['ts' => time(), 'delta' => $delta, 'reason' => $reason];
+        $entry = ['ts' => time(), 'delta' => $delta, 'reason' => $reason];
+        if ($details !== null && $details !== []) {
+            // Drop empty/null leaves so storage stays compact.
+            $clean = [];
+            foreach ($details as $k => $v) {
+                if ($v === null || $v === '') {
+                    continue;
+                }
+                $clean[$k] = $v;
+            }
+            if ($clean !== []) {
+                $entry['details'] = $clean;
+            }
+        }
+        $ledger[] = $entry;
         return array_values($ledger);
     }
 }

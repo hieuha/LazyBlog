@@ -5,6 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "chillerlan/php-qrcode": "^6.0",
         "league/commonmark": "^2.5",
         "symfony/yaml": "^7.0",
         "vlucas/phpdotenv": "^5.6"

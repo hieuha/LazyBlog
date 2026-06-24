@@ -2,7 +2,12 @@
 /** @var string $title */
 /** @var list<array{slug:string,title:string,count:int,firstDate:string,lastDate:string}> $series */
 
+use App\Config;
 use App\Http;
+use App\QrCache;
+
+$siteUrl = rtrim((string) Config::get('SITE_URL'), '/');
+$qr = new QrCache();
 ?>
 
 <section class="series-page">
@@ -19,10 +24,17 @@ use App\Http;
                 $firstDate = substr((string) $s['firstDate'], 0, 10);
                 $lastDate = substr((string) $s['lastDate'], 0, 10);
                 ?>
+                <?php
+                $seriesPath = '/series/' . $s['slug'];
+                $seriesUrl = $siteUrl !== '' ? $siteUrl . $seriesPath : $seriesPath;
+                $qrSvg = $qr->svg($seriesUrl);
+                $qrMark = QrCache::mark($s['slug']);
+                ?>
                 <li class="series-card">
-                    <a class="series-card-link" href="/series/<?= Http::e($s['slug']) ?>">
+                    <a class="series-card-link" href="<?= Http::e($seriesPath) ?>">
                         <div class="series-card-cover">
-                            <span class="series-card-cover-text"><?= Http::e($s['title']) ?></span>
+                            <span class="series-card-cover-qr" aria-hidden="true"><?= $qrSvg ?></span>
+                            <span class="series-card-cover-mark" aria-hidden="true"><?= Http::e($qrMark) ?></span>
                             <span class="series-card-tag"><?= (int) $s['count'] ?> PART<?= $s['count'] === 1 ? '' : 'S' ?></span>
                         </div>
                         <div class="series-card-body">

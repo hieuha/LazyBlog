@@ -401,17 +401,44 @@ a.heatmap-cell:hover {
     align-items: center;
     justify-content: center;
 }
-.series-card-cover-text {
-    font-family: 'VT323', monospace;
-    font-size: clamp(20px, 2.6vw, 30px);
+.series-card-cover-qr {
+    /* SVG inherits color via fill="currentColor" — `color: var(--primary)`
+       tints the QR to the active theme. width:100% lets the QR fill the
+       square cover area minus the padding. */
+    display: block;
+    width: 78%;
     color: var(--primary);
-    text-align: center;
-    padding: 16px;
-    letter-spacing: 1.5px;
-    line-height: 1.05;
+    line-height: 0;
+}
+.series-card-cover-qr svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+/* Centre overlay — deterministic mark per series (greek, leet, glyph).
+   Sits on top of the QR, masks ~20% of the modules. ECC H lets the QR
+   still decode despite the overlay. */
+.series-card-cover-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 20%;
+    min-height: 20%;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 1.6vw, 22px);
+    letter-spacing: 1px;
+    line-height: 1;
     text-shadow:
-        0 0 6px var(--primary),
-        0 0 18px var(--primary-glow-strong);
+        0 0 4px var(--primary),
+        0 0 12px var(--primary-glow-strong);
 }
 .series-card-tag {
     position: absolute;

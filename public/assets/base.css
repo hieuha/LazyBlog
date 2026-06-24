@@ -304,6 +304,14 @@ footer {
     margin-top: 8px;
     letter-spacing: 3px;
 }
+/* No separator needed when copyright is the very first footer line
+   (i.e. no § EXTENSIONS plugin block above) — the <footer> border-top
+   already provides the visual break. */
+footer > .footer-copyright:first-child {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 0;
+}
 
 /* Smooth scroll for anchor jumps */
 html { scroll-behavior: smooth; }

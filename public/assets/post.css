@@ -138,9 +138,11 @@ body.is-post main {
     display: block;
     width: 100%;
     height: auto;
-    /* Desaturate slightly so the multiply overlay can carry the theme color
-       without fighting the photo's original saturation. */
-    filter: grayscale(0.4) contrast(1.05);
+    /* Heavy desaturation lets the multiply overlay carry a full theme-color
+       wash (duotone vibe like open-weather.community). Hover restores
+       full colour — see the `@media (hover: hover)` block below. */
+    filter: grayscale(0.9) contrast(1.05);
+    transition: filter 0.35s ease;
 }
 /* Direct-link videos (`.webm`/`.mp4`/`.mov`/`.ogv` in markdown) share
    the image cell wrapper but skip the photo-only treatment: no grayscale
@@ -193,15 +195,30 @@ body.is-post main {
     transform: none;
 }
 /* The theme-color tint overlay — multiply blend so dark areas of the photo
-   stay dark and the highlights take on the phosphor color. */
+   stay dark and the highlights take on the phosphor color. Opacity is high
+   enough to carry a duotone wash when combined with the grayscale filter
+   above; hover lifts both back to zero. */
 .post-figure-image::after {
     content: '';
     position: absolute;
     inset: 0;
     background: var(--primary);
     mix-blend-mode: multiply;
-    opacity: 0.22;
+    opacity: 0.55;
     pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+/* Hover-to-reveal: on pointer-fine devices the wash lifts and the photo
+   returns to its original colour. Gated behind `hover: hover` so touch
+   devices (where :hover has no reliable "off" state) keep the duotone. */
+@media (hover: hover) {
+    .post-figure-image:hover img {
+        filter: grayscale(0) contrast(1);
+    }
+    .post-figure-image:hover::after {
+        opacity: 0;
+    }
 }
 .post-figure figcaption {
     max-width: 720px;

@@ -63,8 +63,11 @@
 .post-page-title {
     margin-bottom: 12px;
 }
+.post-tags-label {
+    margin-top: 40px;
+    margin-bottom: 10px;
+}
 .post-meta-tags {
-    margin-bottom: 28px;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
@@ -87,6 +90,9 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+}
+.post-meta-tags + .post-footer {
+    margin-top: 28px;
 }
 
 /* ---------- Tag page (extends post list) ---------- */

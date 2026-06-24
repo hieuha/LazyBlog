@@ -47,14 +47,6 @@ $renderTocList = function () use ($toc): void {
         <?= Http::e($post->title) ?>
     </h1>
 
-    <?php if ($post->tags !== []): ?>
-        <div class="post-meta-tags">
-            <?php foreach ($post->tags as $t): ?>
-                <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-
     <?php if ($seriesNav !== null): ?>
         <a class="series-banner" href="/series/<?= Http::e($seriesNav['slug']) ?>" aria-label="View full series">
             <span class="series-banner-label">§ PART <?= $seriesNav['position'] ?> OF <?= $seriesNav['total'] ?></span>
@@ -92,6 +84,15 @@ $renderTocList = function () use ($toc): void {
                 <span class="series-nav-link series-nav-empty" aria-hidden="true"></span>
             <?php endif; ?>
         </nav>
+    <?php endif; ?>
+
+    <?php if ($post->tags !== []): ?>
+        <div class="section-tag post-tags-label">§ TAGS</div>
+        <div class="post-meta-tags">
+            <?php foreach ($post->tags as $t): ?>
+                <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 
     <div class="post-footer">

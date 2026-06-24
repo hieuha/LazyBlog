@@ -124,3 +124,7 @@ external/
 
 # Git worktrees (local development only)
 worktrees/
+
+# Local 2-blog federation test instance
+.env.blog-b
+/content-b

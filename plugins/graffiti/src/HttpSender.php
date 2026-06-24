@@ -34,6 +34,7 @@ final class HttpSender
         if (!self::isHttpsOrDev($url)) {
             return self::result(0, '', 'url_not_https', true);
         }
+        $url = self::rewriteForDocker($url);
 
         $payload = json_encode($jsonBody, JSON_UNESCAPED_SLASHES);
         if ($payload === false) {
@@ -77,6 +78,7 @@ final class HttpSender
         if (!self::isHttpsOrDev($url)) {
             return self::result(0, '', 'url_not_https', true);
         }
+        $url = self::rewriteForDocker($url);
 
         $ch = curl_init($url);
         if ($ch === false) {
@@ -104,6 +106,33 @@ final class HttpSender
             return self::result($status, '', $error ?? 'curl_failed', true);
         }
         return self::result($status, (string) $body, null, false);
+    }
+
+    /**
+     * In dev mode (GRAFFITI_DEV=1), rewrite outbound URLs pointing at
+     * `localhost` / `127.0.0.1` to `host.docker.internal` so a container
+     * actually reaches the host instead of looping back into itself. No-op
+     * outside dev, and no-op for any non-loopback host.
+     */
+    private static function rewriteForDocker(string $url): string
+    {
+        if (($_ENV['GRAFFITI_DEV'] ?? '') !== '1') {
+            return $url;
+        }
+        $parsed = parse_url($url);
+        if ($parsed === false) {
+            return $url;
+        }
+        $host = strtolower((string) ($parsed['host'] ?? ''));
+        if ($host !== 'localhost' && $host !== '127.0.0.1') {
+            return $url;
+        }
+        return (string) preg_replace(
+            '#://(localhost|127\.0\.0\.1)#i',
+            '://host.docker.internal',
+            $url,
+            1
+        );
     }
 
     private static function isHttpsOrDev(string $url): bool

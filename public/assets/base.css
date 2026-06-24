@@ -78,7 +78,7 @@
     --border: #1a1a1a;
     /* Faint horizontal pixel-grid hatching — keeps the "this is a
        display, not pure paper" cue without competing with the text. */
-    --scan: rgba(0, 0, 0, 0.07);
+    --scan: rgba(0, 0, 0, 0.03);
 }
 
 [data-theme="c64"] {

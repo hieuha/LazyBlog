@@ -95,6 +95,15 @@
     margin-top: 28px;
 }
 
+/* Balance the empty space below post-footer buttons with the 24px
+   padding-top inside post-footer — so the buttons sit between two
+   equal gaps instead of floating against a big bottom void.
+   Scope to .is-post so home/archive/tag listings keep their breathing
+   room after pagination / heatmap / back-link. */
+body.is-post main {
+    padding-bottom: 24px;
+}
+
 /* ---------- Tag page (extends post list) ---------- */
 .tag-page-title { color: var(--primary); }
 

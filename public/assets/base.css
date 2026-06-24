@@ -11,8 +11,10 @@
     --primary-dim: #7a5800;
     --primary-glow: rgba(255, 183, 0, 0.15);
     --primary-glow-strong: rgba(255, 183, 0, 0.30);
-    --accent: #39ff14;
-    --accent-dim: #1a7a08;
+    /* Accent stays in the amber family — lifted/lighter sibling so it
+       reads as warm phosphor wash, not a contrasting acid-green flash. */
+    --accent: #ffd065;
+    --accent-dim: #7a5c20;
     --text: #efe0c0;
     --text-dim: #7a6a55;
     --border: #3a2a1e;
@@ -26,8 +28,10 @@
     --primary-dim: #1a7a08;
     --primary-glow: rgba(57, 255, 20, 0.15);
     --primary-glow-strong: rgba(57, 255, 20, 0.30);
-    --accent: #ffb700;
-    --accent-dim: #7a5800;
+    /* Accent stays in the green family — mint-tinted lifted sibling
+       instead of an amber contrast. */
+    --accent: #8aff70;
+    --accent-dim: #3a7a28;
     --text: #d8efd0;
     --text-dim: #5a7a55;
     --border: #1e3a1e;

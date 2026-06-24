@@ -67,6 +67,18 @@ final class GraffitiPlugin implements Plugin
         $navLabel = $unread > 0 ? "Graffiti ({$unread})" : 'Graffiti';
         $ctx->nav($navLabel, '/admin/graffiti', 'header', 'admin');
 
+        // Friend "WAS HERE" badge — only renders when the current visitor
+        // has a valid magic-link cookie. Visible only in that visitor's
+        // own browser (cookie scope). Click clears the session.
+        $sessionFid = GraffitiSession::current();
+        if ($sessionFid !== null) {
+            $sessFriend = (new FriendStore($ctx->storagePath()))->find($sessionFid);
+            if ($sessFriend !== null) {
+                $sessHandle = (string) ($sessFriend['handle'] ?? 'friend');
+                $ctx->nav("{$sessHandle} WAS HERE", '/graffiti/leave', 'header', 'public');
+            }
+        }
+
         $friends    = new FriendStore($ctx->storagePath());
         $ledger     = new EnergyLedger($ctx->storagePath());
         $store      = new GraffitiStore($ctx->storagePath());
@@ -104,6 +116,13 @@ final class GraffitiPlugin implements Plugin
         // pageviews so the spray button stays available without the URL token.
         $ctx->get('/graffiti/visit', fn () => $this->magicLinkVisit($friends));
 
+        // Leave the magic-link session: clear cookie + redirect home.
+        // Bound to a GET so the navbar badge link works without JS/forms.
+        $ctx->get('/graffiti/leave', function (): void {
+            GraffitiSession::clear();
+            Http::redirect('/');
+        });
+
         // Friend-side cross-blog spray: cookie-authed POST that stores the
         // graffiti directly + fires a webhook back to the sender's blog so
         // their energy ledger debits the cost. No admin auth required;
@@ -115,6 +134,23 @@ final class GraffitiPlugin implements Plugin
         // /graffiti/receive (incoming_token we issued).
         $ctx->post('/graffiti/notify-debit', fn () => $this->notifyDebit($friends, $ledger));
 
+        // Auto-handshake completion: when the OTHER side accepts our invite,
+        // they POST here with the token we already issued them (auth) plus
+        // the new reciprocal token they generated for us. Updates our pending
+        // row to active in one round-trip — operator only pastes one block.
+        $ctx->post('/graffiti/handshake-complete', fn () => $this->handshakeComplete($friends));
+
+        // Symmetric revoke: when the OTHER side removes us as a friend, they
+        // POST here with the token we issued them (= their outgoing_token).
+        // We hard-delete our matching row so both sides forget at once.
+        $ctx->post('/graffiti/revoke-notify', fn () => $this->notifyRevoke($friends));
+
+        // Balance probe: friend's blog asks "how much energy does the visitor
+        // sitting in front of you have?" before letting them cross-spray.
+        // Token-auth same as the other webhooks. Allows the receiver to
+        // enforce a pre-flight check so cross-spray never drives us negative.
+        $ctx->post('/graffiti/balance', fn () => $this->reportBalance($friends, $ledger));
+
         // Post-page overlay: subscribe new core slot rendered inside </article>.
         // When admin is logged in, also emits the spray-can button + modal +
         // data island so the operator can decorate from the post page itself.
@@ -124,7 +160,7 @@ final class GraffitiPlugin implements Plugin
         // emit a direct `<link>` here so the overlay layer + spray button get
         // their absolute-positioning rules on every post that needs them.
         $renderer = new OverlayRenderer($store, $friends, $catalogue);
-        $ctx->onPostArticleEnd(static function (array $context) use ($renderer, $catalogue, $store): ?string {
+        $ctx->onPostArticleEnd(static function (array $context) use ($renderer, $catalogue, $store, $friends): ?string {
             $slug = (string) ($context['slug'] ?? '');
             if ($slug === '') {
                 return null;
@@ -140,12 +176,29 @@ final class GraffitiPlugin implements Plugin
                 return null;
             }
 
+            // Resolve who's about to spray so the modal header can say it out
+            // loud. Without this it's easy to forget you're carrying a friend
+            // cookie from a magic link visit and accidentally spray as them.
+            $identityHandle = '';
+            $identityRole   = '';
+            if ($admin) {
+                $identityRole = 'OWNER';
+                $identityHandle = (string) (Config::get('DEFAULT_AUTHOR')
+                    ?? Config::get('SITE_TITLE') ?? 'admin');
+            } elseif ($friendId !== null) {
+                $identityRole = 'VISITOR';
+                $sessFriend = $friends->find($friendId);
+                $identityHandle = (string) ($sessFriend['handle'] ?? 'friend');
+            }
+
             $cssUrl = Http::pluginAsset('graffiti', 'graffiti.css');
             $jsUrl  = Http::pluginAsset('graffiti', 'graffiti.js');
             $html = '<link rel="stylesheet" href="' . Http::e($cssUrl) . '">';
             $html .= $overlay;
             if ($hasSpray) {
-                $html .= self::sprayControlsHtml($slug, $catalogue, $admin, $friendId);
+                $html .= self::sprayControlsHtml(
+                    $slug, $catalogue, $admin, $friendId, $identityRole, $identityHandle,
+                );
             }
             $html .= '<script src="' . Http::e($jsUrl) . '" defer></script>';
             return $html;
@@ -213,6 +266,58 @@ final class GraffitiPlugin implements Plugin
         $catalogue->setOverride($id, ['enabled' => $next]);
         self::flash($next ? "enabled {$id}" : "disabled {$id}");
         Http::redirect('/admin/graffiti/stickers');
+    }
+
+    /**
+     * Receive an auto-handshake completion call from a friend who just
+     * accepted OUR invite. They authenticate with the incoming_token we
+     * issued (which they pasted from our block) and supply the reciprocal
+     * token we should use as outgoing_token. Flips our pending row to
+     * active in one round-trip — no second paste required from us.
+     */
+    private function handshakeComplete(FriendStore $friends): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $raw = (string) (file_get_contents('php://input', false, null, 0, 4096) ?: '');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_json']);
+            return;
+        }
+        $token    = (string) ($body['token']             ?? '');
+        $reciprocal = (string) ($body['reciprocal_token'] ?? '');
+        $handle   = (string) ($body['handle']            ?? '');
+        $endpoint = (string) ($body['endpoint']          ?? '');
+
+        if (!preg_match('/^[A-Za-z0-9_-]{20,}$/', $reciprocal)) {
+            http_response_code(422);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_reciprocal']);
+            return;
+        }
+
+        $friend = $friends->findByIncomingToken($token);
+        if ($friend === null) {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_token']);
+            return;
+        }
+        if (($friend['state'] ?? '') === 'active' && !empty($friend['outgoing_token'])) {
+            // Idempotent: already complete from a previous attempt.
+            echo json_encode(['status' => 'accepted', 'note' => 'already_active']);
+            return;
+        }
+
+        $patch = [
+            'outgoing_token' => $reciprocal,
+            'state'          => 'active',
+            'completed_at'   => time(),
+        ];
+        if ($handle !== '')   $patch['handle'] = $handle;
+        if ($endpoint !== '') $patch['graffiti_endpoint'] = $endpoint;
+        $friends->update((string) $friend['id'], $patch);
+
+        echo json_encode(['status' => 'accepted']);
     }
 
     /**
@@ -304,6 +409,28 @@ final class GraffitiPlugin implements Plugin
             $price = max(1, (int) ($row['default_price'] ?? 1));
         }
 
+        // Pre-flight: ask the visitor's home blog for current balance BEFORE
+        // we store anything. If their blog is offline or balance is below
+        // price, refuse the spray — keeping a "graffiti was painted but
+        // sender can't pay" state asymmetric across blogs is exactly the
+        // negative-balance trap we're avoiding.
+        $balance = self::fetchFriendBalance($friend);
+        if ($balance === null) {
+            http_response_code(502);
+            echo json_encode(['status' => 'rejected', 'reason' => 'balance_unreachable']);
+            return;
+        }
+        if ($balance < $price) {
+            http_response_code(402);
+            echo json_encode([
+                'status'  => 'rejected',
+                'reason'  => 'insufficient_energy',
+                'balance' => $balance,
+                'price'   => $price,
+            ]);
+            return;
+        }
+
         $id = $store->append([
             'from_friend_id' => $friendId,
             'post_slug'      => $slug,
@@ -312,9 +439,10 @@ final class GraffitiPlugin implements Plugin
             'nonce'          => 'xs-' . bin2hex(random_bytes(4)),
         ]);
 
-        // Fire-and-forget debit webhook to the friend's blog. If they're
-        // offline or revoked us, the spray still stands here; we just don't
-        // get to debit them. Symmetric to the inbox trust model.
+        // Pre-flight passed → debit can still race with concurrent self-spends
+        // on the sender, but that's rare and converges. Fire-and-forget; if
+        // the friend's blog drops between pre-flight and debit, the spray
+        // stands locally (acceptable, the receiver is authoritative).
         self::sendDebitNotice($friend, $price, "graffiti:xs:{$id}");
 
         echo json_encode(['status' => 'accepted', 'id' => $id, 'price' => $price]);
@@ -371,6 +499,57 @@ final class GraffitiPlugin implements Plugin
             'reason' => $reason,
         ];
         HttpSender::postJson($endpoint, $body);
+    }
+
+    /**
+     * Synchronous balance probe used by the cross-spray pre-flight. Returns
+     * the friend's current balance, or null if the remote is unreachable /
+     * returns an unparseable / non-success response. Caller treats null as
+     * "abort the spray" — we explicitly refuse to authorize a spray we
+     * cannot price-check against a live ledger.
+     *
+     * @param array<string,mixed> $friend
+     */
+    private static function fetchFriendBalance(array $friend): ?int
+    {
+        $token = (string) ($friend['outgoing_token'] ?? '');
+        $blog  = rtrim((string) ($friend['blog_url'] ?? ''), '/');
+        if ($token === '' || $blog === '') {
+            return null;
+        }
+        $res = HttpSender::postJson($blog . '/graffiti/balance', ['token' => $token]);
+        if ($res['transport_failed'] || $res['status'] !== 200) {
+            return null;
+        }
+        $data = json_decode($res['body'], true);
+        if (!is_array($data) || ($data['status'] ?? '') !== 'accepted') {
+            return null;
+        }
+        return isset($data['balance']) ? (int) $data['balance'] : null;
+    }
+
+    /**
+     * Receive a balance probe from a friend's blog. Token-auth same as the
+     * other webhooks. Returns local ledger balance — used by the friend to
+     * decide whether to accept a pending cross-spray from a visitor of ours.
+     */
+    private function reportBalance(FriendStore $friends, EnergyLedger $ledger): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $raw = (string) (file_get_contents('php://input', false, null, 0, 4096) ?: '');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_json']);
+            return;
+        }
+        $token = (string) ($body['token'] ?? '');
+        if ($friends->findByIncomingToken($token) === null) {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_token']);
+            return;
+        }
+        echo json_encode(['status' => 'accepted', 'balance' => $ledger->balance()]);
     }
 
     /**
@@ -606,8 +785,14 @@ final class GraffitiPlugin implements Plugin
      * the caller (`onPostArticleEnd` closure), so non-admin visitors never
      * see any trace of this surface.
      */
-    private static function sprayControlsHtml(string $slug, StickerCatalogue $catalogue, bool $admin, ?string $friendId): string
-    {
+    private static function sprayControlsHtml(
+        string $slug,
+        StickerCatalogue $catalogue,
+        bool $admin,
+        ?string $friendId,
+        string $identityRole = '',
+        string $identityHandle = '',
+    ): string {
         // Project the catalogue into a small JSON shape the JS can render
         // the sticker picker from. Only enabled stickers offered.
         $items = [];
@@ -641,6 +826,22 @@ final class GraffitiPlugin implements Plugin
         // Here we only emit the admin-specific UI + the JSON context island
         // the script will pick up if present.
 
+        // Identity badge pinned to the modal's bottom-right corner — OWNER
+        // (admin) vs VISITOR (magic-link friend session). Helps avoid the
+        // "I forgot I had a friend cookie" trap where the operator sprays
+        // as the wrong identity. Empty string when neither role applies.
+        $identityBadge = '';
+        if ($identityRole !== '' && $identityHandle !== '') {
+            $roleColor = $identityRole === 'OWNER' ? '#39ff14' : '#ffd700';
+            $identityBadge = '<div class="graffiti-modal-identity" '
+                . 'style="position:absolute;right:14px;bottom:10px;'
+                . 'font-size:11px;letter-spacing:0.08em;opacity:0.85;'
+                . 'color:' . $roleColor . ';pointer-events:none;'
+                . 'text-shadow:none;">'
+                . Http::e($identityRole) . ' &middot; @' . Http::e($identityHandle)
+                . '</div>';
+        }
+
         // Inline spray-can icon (currentColor) instead of a coloured emoji so
         // the button matches the .back-to-top accent chrome instead of
         // breaking the CRT monochrome scheme.
@@ -662,7 +863,7 @@ final class GraffitiPlugin implements Plugin
 
 <div id="graffiti-modal" class="graffiti-modal" hidden role="dialog"
      aria-modal="true" aria-labelledby="graffiti-modal-title">
-    <div class="graffiti-modal-card">
+    <div class="graffiti-modal-card" style="position:relative;">
         <header>
             <h2 id="graffiti-modal-title">// GRAFFITI</h2>
             <button type="button" class="graffiti-modal-close" aria-label="Close">×</button>
@@ -704,6 +905,7 @@ final class GraffitiPlugin implements Plugin
             </div>
             <button type="button" data-text-go>DRAW TEXT</button>
         </div>
+        {$identityBadge}
     </div>
 </div>
 
@@ -1075,27 +1277,146 @@ HTML;
             'completed_at'      => time(),
         ]);
 
-        $ourBlock = InviteCodec::encode([
-            'blog_url' => rtrim((string) Config::get('SITE_URL'), '/'),
-            'handle'   => (string) (Config::get('DEFAULT_AUTHOR') ?? Config::get('SITE_TITLE') ?? 'anon'),
-            'endpoint' => rtrim((string) Config::get('SITE_URL'), '/') . '/graffiti/receive',
-            'token'    => $incomingToken,
-        ]);
-        self::flash('accepted invite from ' . $invite['handle'] . ' — send the block below back to them');
-        self::stashInviteBlock($ourBlock);
+        // Auto-complete the OTHER side: tell their blog the reciprocal token
+        // they need to use as outgoing_token. Authenticated with the token
+        // they just gave us in the invite (i.e. the one they'll verify as
+        // valid friend token). Fire-and-forget — if the call fails, the
+        // operator can still fall back to manual reciprocal block paste.
+        $remoteOk = self::sendHandshakeComplete(
+            endpoint: $invite['endpoint'],
+            authToken: $invite['token'],
+            reciprocalToken: $incomingToken,
+        );
+
+        if ($remoteOk) {
+            self::flash('friend added — both sides now active');
+        } else {
+            // Fallback: show reciprocal block for manual paste if auto-call
+            // didn't reach the friend's blog (offline, blocked, old version).
+            $ourBlock = InviteCodec::encode([
+                'blog_url' => rtrim((string) Config::get('SITE_URL'), '/'),
+                'handle'   => (string) (Config::get('DEFAULT_AUTHOR') ?? Config::get('SITE_TITLE') ?? 'anon'),
+                'endpoint' => rtrim((string) Config::get('SITE_URL'), '/') . '/graffiti/receive',
+                'token'    => $incomingToken,
+            ]);
+            self::flash('accepted invite — friend\'s blog unreachable, copy block below and ask them to paste it');
+            self::stashInviteBlock($ourBlock);
+        }
         Http::redirect('/admin/graffiti/friends#friend-' . $id);
+    }
+
+    /**
+     * Server-to-server call telling the inviter's blog the reciprocal token
+     * we just generated. Returns true on 2xx, false on any failure (caller
+     * falls back to manual block exchange).
+     */
+    private static function sendHandshakeComplete(string $endpoint, string $authToken, string $reciprocalToken): bool
+    {
+        // The endpoint stored in the invite is the friend's /graffiti/receive.
+        // Their /graffiti/handshake-complete lives on the same blog root.
+        $root = (string) preg_replace('#/graffiti/receive$#', '', rtrim($endpoint, '/'));
+        if ($root === '') {
+            return false;
+        }
+        $url = $root . '/graffiti/handshake-complete';
+        $body = [
+            'token'             => $authToken,
+            'reciprocal_token'  => $reciprocalToken,
+            'handle'            => (string) (Config::get('DEFAULT_AUTHOR') ?? Config::get('SITE_TITLE') ?? 'anon'),
+            'endpoint'          => rtrim((string) Config::get('SITE_URL'), '/') . '/graffiti/receive',
+        ];
+        $res = HttpSender::postJson($url, $body);
+        return !$res['transport_failed'] && $res['status'] === 200;
     }
 
     private function revokeFriend(FriendStore $friends, string $id): void
     {
         Csrf::requireValid();
-        if ($id === '' || $friends->find($id) === null) {
+        $friend = $id === '' ? null : $friends->find($id);
+        if ($friend === null) {
             self::flash('friend not found');
-        } else {
-            $friends->revoke($id);
-            self::flash('friend removed');
+            Http::redirect('/admin/graffiti/friends');
+            return;
         }
+        // Capture remote auth + endpoint BEFORE local delete so we can still
+        // tell the other side to forget us after our row is gone. Fire-and-
+        // forget: if the friend's blog is offline, local delete still stands.
+        self::sendRevokeNotice($friend);
+        $friends->revoke($id);
+        self::flash('friend removed');
         Http::redirect('/admin/graffiti/friends');
+    }
+
+    /**
+     * Tell the friend's blog to drop their row referencing us. Symmetric to
+     * sendDebitNotice: token = our outgoing_token = secret THEY issued, so
+     * their findByIncomingToken lookup matches the right row.
+     *
+     * We also pass `from_blog` so the receiver can sanity-check the claimed
+     * sender against the blog_url stored in their friend row — guards against
+     * a leaked token being replayed by an attacker who doesn't know which
+     * blog originally held it (URLs are public, so this is defense-in-depth,
+     * not a primary auth boundary — the token itself is).
+     *
+     * @param array<string,mixed> $friend
+     */
+    private static function sendRevokeNotice(array $friend): void
+    {
+        $token = (string) ($friend['outgoing_token'] ?? '');
+        $blog  = rtrim((string) ($friend['blog_url'] ?? ''), '/');
+        if ($token === '' || $blog === '') {
+            // No reciprocal token yet (pending invite we created but they
+            // never accepted) — nothing for the other side to clean up.
+            return;
+        }
+        HttpSender::postJson($blog . '/graffiti/revoke-notify', [
+            'token'     => $token,
+            'from_blog' => rtrim((string) Config::get('SITE_URL'), '/'),
+        ]);
+    }
+
+    /**
+     * Receive a "I'm unfriending you" webhook from a friend. Two-step auth:
+     *   1. Token must match a row in our friends.json (= secret WE issued).
+     *   2. Body's `from_blog` must equal that row's stored `blog_url` — i.e.
+     *      the caller's claimed identity matches the friend we issued the
+     *      token to. Catches a replay where someone holds the token but
+     *      forgot (or doesn't know) which blog it was minted for.
+     *
+     * Hard-delete on success. Idempotent: missing row counts as already-
+     * cleaned so retries don't 4xx. Origin mismatch is a real 403 though —
+     * we want to surface that as an explicit reject, not silently absorb it.
+     */
+    private function notifyRevoke(FriendStore $friends): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $raw = (string) (file_get_contents('php://input', false, null, 0, 4096) ?: '');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_json']);
+            return;
+        }
+        $token = (string) ($body['token'] ?? '');
+        $claimedBlog = rtrim((string) ($body['from_blog'] ?? ''), '/');
+
+        $friend = $friends->findByIncomingToken($token);
+        if ($friend === null) {
+            // No row matches → already gone, or token never existed here.
+            // Treat as idempotent success (same as legacy behavior).
+            echo json_encode(['status' => 'accepted', 'note' => 'no_match']);
+            return;
+        }
+
+        $storedBlog = rtrim((string) ($friend['blog_url'] ?? ''), '/');
+        if ($claimedBlog === '' || strcasecmp($claimedBlog, $storedBlog) !== 0) {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'origin_mismatch']);
+            return;
+        }
+
+        $friends->revoke((string) $friend['id']);
+        echo json_encode(['status' => 'accepted']);
     }
 
     private static function flash(string $msg): void

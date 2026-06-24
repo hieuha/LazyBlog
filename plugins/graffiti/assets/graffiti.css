@@ -371,7 +371,7 @@
     border: 1px solid var(--accent-dim, rgba(120, 120, 120, 0.4));
     border-left: 3px solid var(--accent, #39ff14);
     color: var(--text, #c8ffd0);
-    padding: 14px 16px 16px;
+    padding: 10px 16px 16px;
     max-width: 540px;
     width: 100%;
     max-height: 82vh;
@@ -391,8 +391,8 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin: 0 0 14px;
-    padding-bottom: 10px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
     border-bottom: 1px dashed var(--accent-dim, rgba(57, 255, 20, 0.3));
 }
 .graffiti-modal-card h2 {
@@ -458,6 +458,7 @@
 .graffiti-modal-textrow {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
 }
 .graffiti-modal-textrow input {
@@ -525,6 +526,11 @@
 .graffiti-dd {
     position: relative;
     flex: 0 0 auto;
+    /* Match the inner trigger so the wrapper's bounding box doesn't shift
+       baseline against the sibling [ DRAW TEXT ] button on the same flex row. */
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
 }
 .graffiti-dd-trigger {
     /* Explicit height + box-sizing so the trigger aligns 1:1 with the

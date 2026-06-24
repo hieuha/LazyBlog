@@ -5,9 +5,13 @@ declare(strict_types=1);
 use App\Http;
 
 /**
- * @var int  $balance
+ * @var int     $balance
  * @var list<array{ts:int,delta:int,reason:string}> $ledger
- * @var int  $mintPerPost
+ * @var int     $mintPerPost
+ * @var int     $page
+ * @var int     $totalPages
+ * @var int     $total
+ * @var string  $pageBaseUrl
  */
 
 $activeTab = 'energy';
@@ -35,5 +39,6 @@ require __DIR__ . '/admin-shell.php';
             <?php endforeach; ?>
             </tbody>
         </table>
+        <?php include __DIR__ . '/../../../views/_pagination.php'; ?>
     <?php endif; ?>
 </article>

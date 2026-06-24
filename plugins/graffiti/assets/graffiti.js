@@ -56,7 +56,9 @@
     } catch (e) {
         return;
     }
-    if (!ctx.csrf || !ctx.slug) return;
+    // admin mode requires csrf; friend mode authenticates by signed cookie.
+    if (!ctx.slug) return;
+    if (ctx.mode === 'self' && !ctx.csrf) return;
 
     var grid    = modal.querySelector('[data-grid]');
     var textIn  = modal.querySelector('[data-text]');
@@ -241,7 +243,22 @@
             if (!r.ok && r.status >= 400) {
                 document.body.classList.remove('graffiti-submitting');
                 cancelPlacing();
-                alert('Graffiti submit failed (HTTP ' + r.status + ').');
+                // Parse the JSON reason so the visitor knows whether to
+                // retry (transport flake) or top up energy (cross-spray
+                // pre-flight failed). Falls back to status code if the
+                // body isn't JSON (e.g. server crash, redirect HTML).
+                r.json().catch(function () { return {}; }).then(function (body) {
+                    var reason = (body && body.reason) || ('HTTP ' + r.status);
+                    var msg = 'Graffiti rejected: ' + reason;
+                    if (reason === 'insufficient_energy') {
+                        msg = 'Not enough energy on your home blog '
+                            + '(need ' + body.price + ', have ' + body.balance + ').';
+                    } else if (reason === 'balance_unreachable') {
+                        msg = "Couldn't reach your home blog to check energy. "
+                            + 'Try again when it\'s back online.';
+                    }
+                    alert(msg);
+                });
                 return;
             }
             location.reload();

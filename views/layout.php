@@ -61,7 +61,6 @@ $twitterCard = $ogImage !== '' ? 'summary_large_image' : 'summary';
 
 // Footer metadata. Index cache makes this cheap.
 $footerRepo = new PostRepository();
-$footerTags = $footerRepo->allTags();
 // Hide the [ SERIES ] header link when no published post belongs to any
 // series — keeps the nav focused for blogs that don't use the feature.
 $hasSeries = $footerRepo->allSeries() !== [];
@@ -363,17 +362,6 @@ $favicon = 'data:image/svg+xml,'
             </div>
         </div>
     <?php endif; ?>
-    <?php if ($footerTags !== []): ?>
-        <div class="footer-block">
-            <div class="footer-label">§ TAGS — FREQUENCIES</div>
-            <div class="footer-tags">
-                <?php foreach ($footerTags as $t): ?>
-                    <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-
     <?php
         // Footer sign-off — configurable via FOOTER_SIGNOFF env. Supports {year}
         // token for auto-update. Empty value hides the line entirely.

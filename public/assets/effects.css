@@ -91,6 +91,17 @@ html::before {
 body.editor-fullscreen-active::after { display: none; }
 html:has(body.editor-fullscreen-active)::before { display: none; }
 
+/* C64 theme: kill every CRT layer — vignette, bezel, noise, scanlines
+   already off via transparent --scan. The C64 boot screen identity is
+   crisp lavender pixels on solid blue, not curved glass + dust. */
+html[data-theme="c64"]::after,
+html[data-theme="c64"]::before {
+    display: none;
+}
+[data-theme="c64"] body::after {
+    display: none;
+}
+
 /* Mobile: drop the corner vignette + bezel. They eat valuable screen space
    on small viewports and the curve illusion doesn't read on a phone. */
 @media (max-width: 600px) {

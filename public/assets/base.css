@@ -205,17 +205,16 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
         0 0 56px var(--primary-glow);
 }
 
-/* C64 theme: kill ALL text-shadow on headings. The boot screen aesthetic
-   is pixel-precise blocks of lavender on blue — any glow / chromatic
-   smear reads as VHS rot, not Commodore. Body text inherits the same
-   crisp render via base typography rules. */
-[data-theme="c64"] h1,
-[data-theme="c64"] h2,
-[data-theme="c64"] h3,
-[data-theme="c64"] .story-title,
-[data-theme="c64"] .post-title,
-[data-theme="c64"] .site-brand {
-    text-shadow: none;
+/* C64 theme: catch-all flatten. The boot screen aesthetic is pixel-
+   precise blocks of lavender on blue — any glow / chromatic smear /
+   drop shadow reads as VHS rot, not Commodore. Scoped to data-theme=c64
+   so the other phosphor themes keep their identity. */
+[data-theme="c64"] *,
+[data-theme="c64"] *::before,
+[data-theme="c64"] *::after {
+    text-shadow: none !important;
+    box-shadow: none !important;
+    filter: none !important;
 }
 
 h1, .site-brand { font-size: clamp(38px, 9vw, 68px); }

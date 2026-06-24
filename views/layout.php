@@ -111,7 +111,7 @@ if ($isPost) {
 // no-JS users honour the configured choice. Inline bootstrap below only
 // overrides when localStorage holds a valid user pick.
 $defaultTheme = strtolower((string) Config::get('SITE_DEFAULT_THEME', 'amber'));
-if (!in_array($defaultTheme, ['amber', 'green', 'crypt', 'brutalist'], true)) {
+if (!in_array($defaultTheme, ['amber', 'green', 'crypt', 'brutalist', 'c64'], true)) {
     $defaultTheme = 'amber';
 }
 
@@ -213,7 +213,7 @@ $favicon = 'data:image/svg+xml,'
     (function () {
         try {
             var t = localStorage.getItem('theme');
-            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist') {
+            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist' || t === 'c64') {
                 document.documentElement.setAttribute('data-theme', t);
             }
         } catch (e) {}
@@ -352,6 +352,7 @@ $favicon = 'data:image/svg+xml,'
                 <button type="button" role="menuitem" data-theme-set="green">GREEN</button>
                 <button type="button" role="menuitem" data-theme-set="crypt">CRYPT</button>
                 <button type="button" role="menuitem" data-theme-set="brutalist">BRUTALIST</button>
+                <button type="button" role="menuitem" data-theme-set="c64">C64</button>
             </div>
         </div>
     </div>

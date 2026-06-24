@@ -58,6 +58,31 @@
     --scan: rgba(255, 36, 24, 0.03);
 }
 
+[data-theme="c64"] {
+    /* Commodore 64 boot screen palette — saturated periwinkle blue background,
+       lighter lavender text, all flat (no CRT glow / no scanline overlay).
+       Numbers ripped from the iconic VICE default + the user's reference
+       screenshot, biased slightly bluer than the original 0x4040C0 so the
+       primary text contrast clears WCAG AA at 16px. */
+    --bg: #4040C0;
+    --panel: #3636AB;
+    --primary: #A8A8FC;
+    --primary-dim: #6868D8;
+    --primary-glow: rgba(168, 168, 252, 0.10);
+    --primary-glow-strong: rgba(168, 168, 252, 0.20);
+    /* White accent for chips / CTAs reads as the "READY." prompt cursor
+       against the lavender body text. */
+    --accent: #FFFFFF;
+    --accent-dim: #C8C8FC;
+    --text: #C8C8FC;
+    --text-dim: #7878D8;
+    --border: #6868D8;
+    /* Flat — C64's identity is pixel blocks on solid blue, not CRT phosphor
+       wash. Transparent scan token kills the repeating-gradient overlay
+       without needing to disable body::before. */
+    --scan: transparent;
+}
+
 [data-theme="brutalist"] {
     /* Cool-tinted near-black + bluish whites — not pure #000/#fff, which
        would read as flat OLED test pattern. The slight blue undertone
@@ -178,6 +203,19 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
         0 0 6px var(--primary),
         0 0 22px var(--primary-glow-strong),
         0 0 56px var(--primary-glow);
+}
+
+/* C64 theme: kill ALL text-shadow on headings. The boot screen aesthetic
+   is pixel-precise blocks of lavender on blue — any glow / chromatic
+   smear reads as VHS rot, not Commodore. Body text inherits the same
+   crisp render via base typography rules. */
+[data-theme="c64"] h1,
+[data-theme="c64"] h2,
+[data-theme="c64"] h3,
+[data-theme="c64"] .story-title,
+[data-theme="c64"] .post-title,
+[data-theme="c64"] .site-brand {
+    text-shadow: none;
 }
 
 h1, .site-brand { font-size: clamp(38px, 9vw, 68px); }

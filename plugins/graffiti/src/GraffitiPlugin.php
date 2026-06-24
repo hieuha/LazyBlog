@@ -29,6 +29,7 @@ require_once __DIR__ . '/HttpSender.php';
 require_once __DIR__ . '/CatalogueFetcher.php';
 require_once __DIR__ . '/Outbox.php';
 require_once __DIR__ . '/OverlayRenderer.php';
+require_once __DIR__ . '/GraffitiSession.php';
 
 /**
  * Graffiti — cross-blog sticker exchange between friends.
@@ -97,6 +98,23 @@ final class GraffitiPlugin implements Plugin
         // blog actually has graffiti enabled before storing tokens.
         $ctx->get('/graffiti/health', fn () => $this->publishHealth());
 
+        // Magic-link entry: friend's blog presents A's outgoing_token in URL,
+        // we verify it matches a friend row, set a signed cookie, then redirect
+        // to the target post. Cookie keeps the friend session alive across
+        // pageviews so the spray button stays available without the URL token.
+        $ctx->get('/graffiti/visit', fn () => $this->magicLinkVisit($friends));
+
+        // Friend-side cross-blog spray: cookie-authed POST that stores the
+        // graffiti directly + fires a webhook back to the sender's blog so
+        // their energy ledger debits the cost. No admin auth required;
+        // signed cookie IS the auth.
+        $ctx->post('/graffiti/cross-spray', fn () => $this->crossSpray($friends, $store, $catalogue));
+
+        // Sender-side webhook: receives "we stored your spray, please debit
+        // X energy" callbacks from blogs we have sprayed. Token auth same as
+        // /graffiti/receive (incoming_token we issued).
+        $ctx->post('/graffiti/notify-debit', fn () => $this->notifyDebit($friends, $ledger));
+
         // Post-page overlay: subscribe new core slot rendered inside </article>.
         // When admin is logged in, also emits the spray-can button + modal +
         // data island so the operator can decorate from the post page itself.
@@ -113,10 +131,12 @@ final class GraffitiPlugin implements Plugin
             }
             $overlay = $renderer->render($slug);
             $admin = Auth::check();
+            $friendId = GraffitiSession::current();
+            $hasSpray = $admin || $friendId !== null;
 
-            // Skip the whole slot when no overlay items AND not admin — keeps
-            // public visitors' post pages exactly as before in the common case.
-            if ($overlay === '' && !$admin) {
+            // Skip the whole slot when no overlay items AND no one can spray —
+            // anonymous visitors get zero added markup in the common case.
+            if ($overlay === '' && !$hasSpray) {
                 return null;
             }
 
@@ -124,12 +144,9 @@ final class GraffitiPlugin implements Plugin
             $jsUrl  = Http::pluginAsset('graffiti', 'graffiti.js');
             $html = '<link rel="stylesheet" href="' . Http::e($cssUrl) . '">';
             $html .= $overlay;
-            if ($admin) {
-                $html .= self::sprayControlsHtml($slug, $catalogue);
+            if ($hasSpray) {
+                $html .= self::sprayControlsHtml($slug, $catalogue, $admin, $friendId);
             }
-            // graffiti.js handles BOTH the admin spray modal AND the per-item
-            // dismiss button (any visitor). Load it whenever the overlay
-            // renders OR admin is around — same script, conditional setup.
             $html .= '<script src="' . Http::e($jsUrl) . '" defer></script>';
             return $html;
         });
@@ -196,6 +213,164 @@ final class GraffitiPlugin implements Plugin
         $catalogue->setOverride($id, ['enabled' => $next]);
         self::flash($next ? "enabled {$id}" : "disabled {$id}");
         Http::redirect('/admin/graffiti/stickers');
+    }
+
+    /**
+     * Magic-link visit handler. Friend A clicks "Visit & Spray" on their
+     * blog → browser hits us with `?token=<A's outgoing_token to us>&to=/post`.
+     * We verify the token matches a friend row, set a signed session cookie,
+     * then redirect to a sanitized destination (relative paths only — no
+     * open redirect).
+     */
+    private function magicLinkVisit(FriendStore $friends): void
+    {
+        $token = (string) ($_GET['token'] ?? '');
+        $to    = (string) ($_GET['to'] ?? '/');
+        // Sanitize redirect: only allow same-origin relative paths.
+        if (!str_starts_with($to, '/') || str_starts_with($to, '//')) {
+            $to = '/';
+        }
+        if ($token !== '') {
+            $friend = $friends->findByIncomingToken($token);
+            if ($friend !== null && ($friend['state'] ?? '') === 'active') {
+                GraffitiSession::set((string) $friend['id']);
+            }
+        }
+        Http::redirect($to);
+    }
+
+    /**
+     * Cookie-authed cross-blog spray. Friend A spray on our blog while
+     * carrying the friend session cookie. We validate cookie → friend row,
+     * validate payload, store directly to graffiti.json, then fire a
+     * one-shot webhook back to A's blog telling them how much energy to
+     * debit (price comes from OUR catalogue — receiver sets price).
+     */
+    private function crossSpray(FriendStore $friends, GraffitiStore $store, StickerCatalogue $catalogue): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $friendId = GraffitiSession::current();
+        if ($friendId === null) {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'no_session']);
+            return;
+        }
+        $friend = $friends->find($friendId);
+        if ($friend === null || ($friend['state'] ?? '') !== 'active') {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'friend_inactive']);
+            return;
+        }
+
+        $slug = trim((string) ($_POST['post_slug'] ?? ''));
+        $type = (string) ($_POST['type'] ?? 'sticker');
+
+        if ($slug === '' || (new PostRepository())->bySlug($slug) === null) {
+            http_response_code(404);
+            echo json_encode(['status' => 'rejected', 'reason' => 'post_not_found']);
+            return;
+        }
+
+        $payloadInner = ['position' => [
+            'x' => max(0, min(1, (float) ($_POST['x'] ?? 0.5))),
+            'y' => max(0, min(1, (float) ($_POST['y'] ?? 0.5))),
+            'rotation' => max(-180, min(180, (float) ($_POST['rotation'] ?? 0))),
+        ]];
+        $price = 1;
+
+        if ($type === 'text') {
+            $text = trim((string) ($_POST['text'] ?? ''));
+            if ($text === '' || mb_strlen($text) > PayloadValidator::TEXT_MAX_CHARS) {
+                http_response_code(422);
+                echo json_encode(['status' => 'rejected', 'reason' => 'invalid_payload']);
+                return;
+            }
+            $payloadInner['text'] = $text;
+            $font  = (string) ($_POST['font']  ?? '');
+            $color = (string) ($_POST['color'] ?? '');
+            if (in_array($font,  PayloadValidator::TEXT_FONTS,  true)) $payloadInner['font']  = $font;
+            if (in_array($color, PayloadValidator::TEXT_COLORS, true)) $payloadInner['color'] = $color;
+        } else {
+            $stickerId = trim((string) ($_POST['sticker_id'] ?? ''));
+            $row = $catalogue->find($stickerId);
+            if ($row === null || !(bool) ($row['enabled'] ?? false)) {
+                http_response_code(422);
+                echo json_encode(['status' => 'rejected', 'reason' => 'sticker_unavailable']);
+                return;
+            }
+            $key = $type === 'spray' ? 'spray_id' : 'sticker_id';
+            $payloadInner[$key] = $stickerId;
+            $price = max(1, (int) ($row['default_price'] ?? 1));
+        }
+
+        $id = $store->append([
+            'from_friend_id' => $friendId,
+            'post_slug'      => $slug,
+            'type'           => $type,
+            'payload'        => $payloadInner,
+            'nonce'          => 'xs-' . bin2hex(random_bytes(4)),
+        ]);
+
+        // Fire-and-forget debit webhook to the friend's blog. If they're
+        // offline or revoked us, the spray still stands here; we just don't
+        // get to debit them. Symmetric to the inbox trust model.
+        self::sendDebitNotice($friend, $price, "graffiti:xs:{$id}");
+
+        echo json_encode(['status' => 'accepted', 'id' => $id, 'price' => $price]);
+    }
+
+    /**
+     * Receive a "debit my energy" callback from a blog we just sprayed.
+     * Token must match a friend's incoming_token (the secret we issued).
+     * Amount + reason are recorded in the local ledger.
+     */
+    private function notifyDebit(FriendStore $friends, EnergyLedger $ledger): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $raw = (string) (file_get_contents('php://input', false, null, 0, 8192) ?: '');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_json']);
+            return;
+        }
+        $token  = (string) ($body['token']  ?? '');
+        $amount = (int)    ($body['amount'] ?? 0);
+        $reason = (string) ($body['reason'] ?? 'cross-spray');
+        $friend = $friends->findByIncomingToken($token);
+        if ($friend === null) {
+            http_response_code(403);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_token']);
+            return;
+        }
+        if ($amount < 1 || $amount > 999) {
+            http_response_code(422);
+            echo json_encode(['status' => 'rejected', 'reason' => 'amount_out_of_range']);
+            return;
+        }
+        // Receiver-authoritative: append the debit regardless of current
+        // balance. Owner can clean up the ledger by hand if a buggy friend
+        // over-charges; revoke ends future debits immediately.
+        $ledger->debit($amount, $reason);
+        echo json_encode(['status' => 'accepted']);
+    }
+
+    /**
+     * Server-to-server webhook back to the sender's blog asking them to
+     * debit `$amount` energy. Best-effort: failure is logged but does not
+     * roll back the local graffiti we already stored.
+     */
+    private static function sendDebitNotice(array $friend, int $amount, string $reason): void
+    {
+        $endpoint = rtrim((string) ($friend['blog_url'] ?? ''), '/') . '/graffiti/notify-debit';
+        $body = [
+            'token'  => (string) ($friend['outgoing_token'] ?? ''),
+            'amount' => $amount,
+            'reason' => $reason,
+        ];
+        HttpSender::postJson($endpoint, $body);
     }
 
     /**
@@ -305,6 +480,15 @@ final class GraffitiPlugin implements Plugin
             ((int) ($b['received_at'] ?? 0)) <=> ((int) ($a['received_at'] ?? 0))
         );
 
+        // Pagination — reuses POSTS_PER_PAGE so the whole site shares one
+        // density dial. Slice happens BEFORE the friend/sticker resolve
+        // pass so we only do lookups for visible rows.
+        $perPage = max(1, (int) Config::get('POSTS_PER_PAGE', '10'));
+        $total = count($items);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
+        $items = array_slice($items, ($page - 1) * $perPage, $perPage);
+
         // Pre-resolve friend handles + sticker names so the view stays dumb.
         // 'self' is a sentinel id — synthesize the owner attribution from env.
         $friendCache = ['self' => self::selfFriendStub()];
@@ -329,11 +513,15 @@ final class GraffitiPlugin implements Plugin
         unset($row);
 
         $ctx->view('admin-received', [
-            'items'     => $items,
-            'unseenIds' => $unseenIds,
-            'csrf'      => Csrf::token(),
-            'flash'     => self::popFlash(),
-            'tabCounts' => $tabCounts,
+            'items'       => $items,
+            'unseenIds'   => $unseenIds,
+            'csrf'        => Csrf::token(),
+            'flash'       => self::popFlash(),
+            'tabCounts'   => $tabCounts,
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'total'       => $total,
+            'pageBaseUrl' => '/admin/graffiti',
         ]);
     }
 
@@ -418,7 +606,7 @@ final class GraffitiPlugin implements Plugin
      * the caller (`onPostArticleEnd` closure), so non-admin visitors never
      * see any trace of this surface.
      */
-    private static function sprayControlsHtml(string $slug, StickerCatalogue $catalogue): string
+    private static function sprayControlsHtml(string $slug, StickerCatalogue $catalogue, bool $admin, ?string $friendId): string
     {
         // Project the catalogue into a small JSON shape the JS can render
         // the sticker picker from. Only enabled stickers offered.
@@ -431,8 +619,19 @@ final class GraffitiPlugin implements Plugin
                 'price' => (int)    ($row['default_price'] ?? 0),
             ];
         }
+        // Two modes:
+        //   admin (`mode=self`): the operator decorating own post. Submit
+        //     goes to the local admin handler that debits own energy.
+        //   friend (`mode=friend`): cookie-authed visitor from a magic
+        //     link. Submit goes to /graffiti/cross-spray which stores
+        //     directly + fires a debit webhook to their blog.
+        $mode = $admin ? 'self' : 'friend';
+        $endpoint = $admin ? '/admin/graffiti/send/submit' : '/graffiti/cross-spray';
         $ctxJson = (string) json_encode([
-            'csrf'      => Csrf::token(),
+            'mode'      => $mode,
+            'endpoint'  => $endpoint,
+            'csrf'      => $admin ? Csrf::token() : '',
+            'friend_id' => $mode === 'self' ? 'self' : ($friendId ?? ''),
             'slug'      => $slug,
             'catalogue' => $items,
         ], JSON_UNESCAPED_SLASHES);
@@ -472,23 +671,38 @@ final class GraffitiPlugin implements Plugin
         <div class="graffiti-modal-textrow">
             <input type="text" maxlength="140" data-text
                    placeholder="or type up to 140 chars…">
-            <select data-font title="Font">
-                <option value="marker" style="font-family:'Caveat',cursive">Marker</option>
-                <option value="spray"  style="font-family:'Bangers',cursive">Spray</option>
-                <option value="tag"    style="font-family:'Russo One',sans-serif">Tag</option>
-                <option value="block"  style="font-family:'Bungee Spice',cursive">Block</option>
-            </select>
-            <select data-color title="Color">
-                <option value="green"  style="color:#39ff14">Green</option>
-                <option value="white"  style="color:#f5f5f5">White</option>
-                <option value="pink"   style="color:#ff3399">Pink</option>
-                <option value="yellow" style="color:#ffd700">Yellow</option>
-                <option value="orange" style="color:#ff7700">Orange</option>
-                <option value="red"    style="color:#ff3344">Red</option>
-                <option value="blue"   style="color:#00b3ff">Blue</option>
-                <option value="purple" style="color:#a855f7">Purple</option>
-            </select>
-            <button type="button" data-text-go>[ TEXT ]</button>
+            <!-- Custom dropdowns instead of native <select> so Safari's
+                 white popup doesn't leak through. data-value on the root
+                 holds the chosen token; graffiti.js reads it directly. -->
+            <div class="graffiti-dd" data-font data-value="marker">
+                <button type="button" class="graffiti-dd-trigger">
+                    <span class="graffiti-dd-label" style="font-family:'Caveat',cursive">Marker</span>
+                    <span class="graffiti-dd-caret" aria-hidden="true">▾</span>
+                </button>
+                <ul class="graffiti-dd-menu" role="listbox" hidden>
+                    <li role="option" data-value="marker" style="font-family:'Caveat',cursive">Marker</li>
+                    <li role="option" data-value="spray"  style="font-family:'Bangers',cursive">Spray</li>
+                    <li role="option" data-value="tag"    style="font-family:'Russo One',sans-serif">Tag</li>
+                    <li role="option" data-value="block"  style="font-family:'Bungee Spice',cursive">Block</li>
+                </ul>
+            </div>
+            <div class="graffiti-dd" data-color data-value="green">
+                <button type="button" class="graffiti-dd-trigger">
+                    <span class="graffiti-dd-label" style="color:#39ff14">Green</span>
+                    <span class="graffiti-dd-caret" aria-hidden="true">▾</span>
+                </button>
+                <ul class="graffiti-dd-menu" role="listbox" hidden>
+                    <li role="option" data-value="green"  style="color:#39ff14">Green</li>
+                    <li role="option" data-value="white"  style="color:#f5f5f5">White</li>
+                    <li role="option" data-value="pink"   style="color:#ff3399">Pink</li>
+                    <li role="option" data-value="yellow" style="color:#ffd700">Yellow</li>
+                    <li role="option" data-value="orange" style="color:#ff7700">Orange</li>
+                    <li role="option" data-value="red"    style="color:#ff3344">Red</li>
+                    <li role="option" data-value="blue"   style="color:#00b3ff">Blue</li>
+                    <li role="option" data-value="purple" style="color:#a855f7">Purple</li>
+                </ul>
+            </div>
+            <button type="button" data-text-go>DRAW TEXT</button>
         </div>
     </div>
 </div>
@@ -714,11 +928,23 @@ HTML;
         $store = new GraffitiStore($ctx->storagePath());
         $friends = new FriendStore($ctx->storagePath());
         $catalogue = new StickerCatalogue($ctx->storagePath(), $ctx->pluginRoot());
+
+        $rows = $ledger->ledger(); // already newest-first, capped 200
+        $perPage = max(1, (int) Config::get('POSTS_PER_PAGE', '10'));
+        $total = count($rows);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
+        $rows = array_slice($rows, ($page - 1) * $perPage, $perPage);
+
         $ctx->view('admin-energy', [
-            'balance' => $ledger->balance(),
-            'ledger'  => $ledger->ledger(),
+            'balance'     => $ledger->balance(),
+            'ledger'      => $rows,
             'mintPerPost' => EnergyLedger::MINT_PER_POST,
-            'tabCounts' => self::tabCounts($store, $friends, $catalogue, $ledger),
+            'tabCounts'   => self::tabCounts($store, $friends, $catalogue, $ledger),
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'total'       => $total,
+            'pageBaseUrl' => '/admin/graffiti/energy',
         ]);
     }
 

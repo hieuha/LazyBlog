@@ -478,8 +478,12 @@
     border-color: var(--accent, #39ff14);
     box-shadow: 0 0 8px var(--primary-glow, rgba(57, 255, 20, 0.4));
 }
+/* Native <select> kept around for backward compat if anything else uses it
+   inside the modal; the picker now uses custom .graffiti-dd dropdowns
+   (Safari ignores color-scheme on native select popup, so we drew our own). */
 .graffiti-modal-textrow select {
     flex: 0 0 auto;
+    color-scheme: dark;
     background-color: var(--panel, rgba(0, 0, 0, 0.4));
     color: var(--accent, #39ff14);
     border: 1px solid var(--accent, #39ff14);
@@ -515,16 +519,91 @@
     color: var(--accent, #39ff14);
 }
 
+/* --- Custom dropdown (.graffiti-dd) — full-control replacement for native
+   <select>, used in the spray modal so the popup matches the CRT theme on
+   every browser (Safari ignores color-scheme on native select popups). */
+.graffiti-dd {
+    position: relative;
+    flex: 0 0 auto;
+}
+.graffiti-dd-trigger {
+    /* Explicit height + box-sizing so the trigger aligns 1:1 with the
+       sibling [ DRAW TEXT ] button on the same row. */
+    height: 30px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel, rgba(0, 0, 0, 0.4));
+    color: var(--accent, #39ff14);
+    border: 1px solid var(--accent-dim, rgba(120, 120, 120, 0.4));
+    padding: 0 10px;
+    font-family: 'Share Tech Mono', 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.graffiti-dd-trigger:hover,
+.graffiti-dd.is-open .graffiti-dd-trigger {
+    border-color: var(--accent, #39ff14);
+    background: var(--primary-glow, rgba(57, 255, 20, 0.1));
+    box-shadow: 0 0 8px var(--primary-glow-strong, rgba(57, 255, 20, 0.3));
+}
+.graffiti-dd-label {
+    /* Inline font/color preview adopted from the chosen <li>. */
+    text-shadow: 0 0 4px currentColor;
+}
+.graffiti-dd-caret {
+    opacity: 0.65;
+    font-size: 10px;
+}
+.graffiti-dd-menu {
+    position: absolute;
+    /* Open UPWARD — both dropdowns live at the bottom of the modal, so
+       opening up keeps the menu inside the card boundary instead of
+       spilling past the bottom edge. */
+    bottom: calc(100% + 4px);
+    top: auto;
+    left: 0;
+    min-width: 140px;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--bg, #0a0e0a);
+    border: 1px solid var(--accent, #39ff14);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.6);
+    z-index: 1100;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.graffiti-dd-menu li {
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+.graffiti-dd-menu li:hover {
+    background: var(--primary-glow, rgba(57, 255, 20, 0.15));
+}
+
 /* Action buttons inside the modal — match the site's .back-to-top accent
-   idiom so [ TEXT ] / close don't read as default OS chrome. */
+   idiom so [ DRAW TEXT ] / close don't read as default OS chrome. Explicit
+   height matches `.graffiti-dd-trigger` so they line up on the same row. */
 .graffiti-modal-card button:not(.graffiti-modal-sticker-btn):not(.graffiti-modal-close) {
+    height: 30px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
     background: var(--panel, rgba(0, 0, 0, 0.4));
     border: 1px solid var(--accent, #39ff14);
     color: var(--accent, #39ff14);
     font-family: 'Share Tech Mono', 'VT323', monospace;
     font-size: 13px;
     letter-spacing: 0.04em;
-    padding: 6px 12px;
+    line-height: 1;
+    padding: 0 12px;
     cursor: pointer;
     text-shadow: 0 0 6px var(--accent-dim, rgba(57, 255, 20, 0.5));
     transition: background 0.2s ease, box-shadow 0.2s ease;

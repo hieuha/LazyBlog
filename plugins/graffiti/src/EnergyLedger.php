@@ -107,6 +107,23 @@ final class EnergyLedger
     }
 
     /**
+     * Direct debit — appends a negative entry regardless of current balance.
+     * Used by the cross-blog notify-debit webhook where the friend's blog
+     * is authoritative for the cost; we cannot refuse just because owner
+     * has gone broke (the graffiti is already painted on the other end).
+     */
+    public function debit(int $amount, string $reason): void
+    {
+        if ($amount <= 0 || $reason === '') {
+            return;
+        }
+        $data = $this->load();
+        $data['balance'] = (int) ($data['balance'] ?? 0) - $amount;
+        $data['ledger'] = $this->appendEntry((array) ($data['ledger'] ?? []), -$amount, $reason);
+        $this->save($data);
+    }
+
+    /**
      * Catch any published post not yet minted — covers `.md` drops that
      * bypass the admin save flow (e.g. operator scp's a markdown file in).
      * Cheap to call; the index is already cached.

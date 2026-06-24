@@ -78,16 +78,60 @@
         green:  '#39ff14', white: '#f5f5f5', pink:  '#ff3399', yellow: '#ffd700',
         orange: '#ff7700', red:   '#ff3344', blue:  '#00b3ff', purple: '#a855f7',
     };
+
+    // --- Custom dropdown driver ----------------------------------------
+    // Each .graffiti-dd root holds the selected token in data-value.
+    // Reading: getDD(root) → token. Wiring is shared across all dropdowns
+    // in the modal so we don't repeat listener boilerplate.
+    function getDD(root) {
+        return root ? (root.getAttribute('data-value') || '') : '';
+    }
+    function closeAllDD() {
+        modal.querySelectorAll('.graffiti-dd-menu').forEach(function (m) { m.hidden = true; });
+        modal.querySelectorAll('.graffiti-dd.is-open').forEach(function (d) { d.classList.remove('is-open'); });
+    }
+    modal.querySelectorAll('.graffiti-dd').forEach(function (dd) {
+        var trigger = dd.querySelector('.graffiti-dd-trigger');
+        var menu    = dd.querySelector('.graffiti-dd-menu');
+        var label   = dd.querySelector('.graffiti-dd-label');
+        if (!trigger || !menu || !label) return;
+
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var wasOpen = !menu.hidden;
+            closeAllDD();
+            if (!wasOpen) {
+                menu.hidden = false;
+                dd.classList.add('is-open');
+            }
+        });
+
+        menu.querySelectorAll('[role="option"]').forEach(function (li) {
+            li.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var val = li.getAttribute('data-value') || '';
+                dd.setAttribute('data-value', val);
+                // Adopt the option's inline styling for the trigger label
+                // so the chosen font/color preview shows on the closed
+                // button too (not just inside the menu).
+                label.textContent = li.textContent.trim();
+                label.style.cssText = li.getAttribute('style') || '';
+                closeAllDD();
+                syncTextPreview();
+            });
+        });
+    });
+    // Click outside any dropdown → close all
+    document.addEventListener('click', function () { closeAllDD(); });
+
     function syncTextPreview() {
         if (!textIn) return;
-        var f = fontSel ? fontSel.value : 'marker';
-        var c = colorSel ? colorSel.value : 'green';
+        var f = getDD(fontSel) || 'marker';
+        var c = getDD(colorSel) || 'green';
         textIn.style.fontFamily = FONT_MAP[f] || '';
         textIn.style.color = COLOR_MAP[c] || '';
         textIn.style.fontSize = '20px';
     }
-    if (fontSel) fontSel.addEventListener('change', syncTextPreview);
-    if (colorSel) colorSel.addEventListener('change', syncTextPreview);
     syncTextPreview();
 
     var placing = null; // {type: 'sticker'|'text', sticker_id?, text?}
@@ -119,8 +163,8 @@
         startPlacing({
             type: 'text',
             text: t,
-            font: fontSel ? fontSel.value : 'marker',
-            color: colorSel ? colorSel.value : 'green',
+            font: getDD(fontSel) || 'marker',
+            color: getDD(colorSel) || 'green',
         });
     });
     textIn.addEventListener('keydown', function (e) {
@@ -132,8 +176,10 @@
 
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            if (placing) cancelPlacing();
-            else if (!modal.hidden) closeModal();
+            // Priority: cancel placing > close open dropdown > close modal.
+            if (placing) { cancelPlacing(); return; }
+            if (modal.querySelector('.graffiti-dd.is-open')) { closeAllDD(); return; }
+            if (!modal.hidden) closeModal();
         }
     });
 
@@ -169,8 +215,10 @@
 
     function submit(state, x, y, rotation) {
         var fd = new FormData();
-        fd.append('_csrf', ctx.csrf);
-        fd.append('friend_id', 'self');
+        // mode=self uses CSRF (admin session); mode=friend uses the signed
+        // visit cookie (no extra CSRF in v1 — relies on SameSite=Lax).
+        if (ctx.csrf) fd.append('_csrf', ctx.csrf);
+        fd.append('friend_id', ctx.friend_id || (ctx.mode === 'self' ? 'self' : ''));
         fd.append('post_slug', ctx.slug);
         fd.append('type', state.type);
         if (state.sticker_id) fd.append('sticker_id', state.sticker_id);
@@ -182,14 +230,20 @@
         fd.append('rotation', String(rotation));
 
         document.body.classList.add('graffiti-submitting');
-        fetch('/admin/graffiti/send/submit', {
+        fetch(ctx.endpoint || '/admin/graffiti/send/submit', {
             method: 'POST',
             body: fd,
             credentials: 'same-origin',
             redirect: 'follow',
-        }).then(function () {
-            // Server flashes via session + redirects; reload to pick up
-            // both the new graffiti AND the flash on /admin/graffiti/send.
+        }).then(function (r) {
+            // Either flow ends with the server redirecting (admin) or
+            // returning JSON (cross-spray); reload to show the new graffiti.
+            if (!r.ok && r.status >= 400) {
+                document.body.classList.remove('graffiti-submitting');
+                cancelPlacing();
+                alert('Graffiti submit failed (HTTP ' + r.status + ').');
+                return;
+            }
             location.reload();
         }).catch(function () {
             document.body.classList.remove('graffiti-submitting');

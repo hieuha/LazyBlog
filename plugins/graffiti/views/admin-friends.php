@@ -37,24 +37,39 @@ require __DIR__ . '/admin-shell.php';
                 <thead><tr><th>Handle</th><th>Blog</th><th>State</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($friends as $f):
-                    $id    = (string) ($f['id']    ?? '');
-                    $hdl   = (string) ($f['handle'] ?? '');
-                    $url   = (string) ($f['blog_url'] ?? '');
-                    $state = (string) ($f['state']  ?? 'pending');
+                    $id     = (string) ($f['id']    ?? '');
+                    $hdl    = (string) ($f['handle'] ?? '');
+                    $url    = rtrim((string) ($f['blog_url'] ?? ''), '/');
+                    $state  = (string) ($f['state']  ?? 'pending');
+                    // Magic link: presents the secret OUR friend issued to US
+                    // (their `incoming_token` for us = our `outgoing_token`)
+                    // so their /graffiti/visit recognises us as a friend and
+                    // sets a session cookie before redirecting to their home.
+                    $outgoing = (string) ($f['outgoing_token'] ?? '');
+                    $visitUrl = $url . '/graffiti/visit?token=' . rawurlencode($outgoing) . '&to=/';
                 ?>
                     <tr id="friend-<?= Http::e($id) ?>">
                         <td><?= Http::e($hdl) ?></td>
-                        <td><a href="<?= Http::e($url) ?>" rel="noopener"><?= Http::e($url) ?></a></td>
+                        <td><a href="<?= Http::e($url) ?>" rel="noopener" target="_blank"><?= Http::e($url) ?></a></td>
                         <td><code><?= Http::e($state) ?></code></td>
                         <td>
-                            <?php if ($state !== 'revoked'): ?>
-                                <form method="post"
-                                      action="/admin/graffiti/friends/revoke/<?= Http::e($id) ?>"
-                                      onsubmit="return confirm('Revoke <?= Http::e($hdl) ?>?');">
-                                    <input type="hidden" name="_csrf" value="<?= Http::e($csrf) ?>">
-                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">REVOKE</button>
-                                </form>
-                            <?php endif; ?>
+                            <div class="graffiti-row-actions">
+                                <?php if ($state === 'active' && $outgoing !== ''): ?>
+                                    <a class="admin-btn admin-btn-sm admin-btn-primary"
+                                       href="<?= Http::e($visitUrl) ?>"
+                                       target="_blank" rel="noopener"
+                                       title="Open friend blog with spray mode active">VISIT &amp; SPRAY</a>
+                                <?php endif; ?>
+                                <?php if ($state !== 'revoked'): ?>
+                                    <form method="post"
+                                          action="/admin/graffiti/friends/revoke/<?= Http::e($id) ?>"
+                                          class="graffiti-form graffiti-form-inline"
+                                          onsubmit="return confirm('Remove <?= Http::e($hdl) ?>?');">
+                                        <input type="hidden" name="_csrf" value="<?= Http::e($csrf) ?>">
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">REMOVE</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

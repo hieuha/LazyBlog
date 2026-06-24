@@ -10,6 +10,10 @@ use App\Http;
  * @var list<string> $unseenIds            ids that were unseen at page load
  * @var string  $csrf
  * @var ?string $flash
+ * @var int     $page
+ * @var int     $totalPages
+ * @var int     $total
+ * @var string  $pageBaseUrl
  */
 
 $activeTab = 'received';
@@ -85,5 +89,6 @@ $unseenSet = array_flip($unseenIds);
                 <?php endforeach; ?>
             </tbody>
         </table>
+        <?php include __DIR__ . '/../../../views/_pagination.php'; ?>
     <?php endif; ?>
 </article>

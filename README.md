@@ -45,8 +45,12 @@ type-safe `App\Plugin` interface to register public routes, nav links,
 assets, and `/admin/{slug}/*` pages (auto-wrapped with
 `Auth::requireAuth()`). Reserved core paths can't be claimed; a broken
 plugin logs + skips without taking the site down; strict CSP stays
-intact. Ships with `plugins/hello-world/` as the reference. Empty
-`PLUGINS=` is a no-op. See `docs/plugin-development.md`.
+intact. Ships with `plugins/hello-world/` as the reference and
+`plugins/graffiti/` for cross-blog sticker / spray-paint exchange
+between LazyBlog friends (energy ledger, federated handshake,
+magic-link cross-blog spray, symmetric revoke — see
+`plugins/graffiti/README.md`). Empty `PLUGINS=` is a no-op. See
+`docs/plugin-development.md`.
 
 **Hardened, ergonomic.** CSP (incl. `media-src`), CSRF, atomic file
 writes, session hardening, scheme-whitelisted image URLs. Stylesheets
@@ -56,7 +60,7 @@ Backup with `rsync`. Restore in seconds.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  CRT terminal layout  ·  amber·green·crypt·brutal   │
+│  CRT terminal layout  ·  6 themes incl. C64 + LCD   │
 │  Phosphor vignette    ·  chromatic-aberration heads │
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
 │  TOC + scrollspy      ·  code-block copy buttons    │
@@ -160,7 +164,8 @@ LazyBlog/
 │   └── Controllers/PluginAssetController.php  # /plugin-assets/{slug}/{file}
 ├── views/               # layout, post, home, tag, admin/*
 ├── plugins/             # opt-in plugin folders — PLUGINS=slug in .env enables them
-│   └── hello-world/     # canonical reference plugin (tracked in git, others ignored)
+│   ├── hello-world/     # canonical reference plugin
+│   └── graffiti/        # cross-blog sticker exchange (federated, energy economy)
 ├── content/             # markdown posts + about + badges.json (mostly gitignored)
 │   ├── posts/           # YYYY-MM-DD-slug.md
 │   ├── about.md         # /about page source
@@ -171,8 +176,11 @@ LazyBlog/
 │   ├── hash-password.php
 │   └── backup-content.sh
 ├── tests/               # plain-PHP assertion fixtures (no PHPUnit)
-│   ├── test-gamification.php  # streak math
-│   └── test-plugin-system.php # plugin registry + manifest + asset matcher
+│   ├── test-gamification.php   # streak math
+│   ├── test-plugin-system.php  # plugin registry + manifest + asset matcher
+│   ├── test-plugin-events.php  # post.save event broadcast to plugins
+│   └── test-graffiti-*.php     # graffiti plugin: boot, friends, inbox,
+│                               # energy, outbox, rate-limit, moderation, render
 ├── docs/                # detailed docs (see table above)
 ├── Caddyfile.example    # production HTTPS site block
 ├── docker-compose.yml   # dev: Caddy + php-fpm bind-mount

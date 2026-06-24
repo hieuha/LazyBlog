@@ -19,7 +19,7 @@
 | `SITE_OG_IMAGE` | no | Default social-card image (path or absolute URL). Used when a post doesn't define `image:` in frontmatter. Recommended 1200×630 px |
 | `SITE_TWITTER_HANDLE` | no | Site's Twitter handle with `@`. Emitted as `twitter:site` so the rich card credits your account |
 | `SITE_GITHUB_URL` | no | Project source link in footer "§ SOURCE" block. Defaults to the upstream LazyBlog repo. Empty hides the line |
-| `SITE_DEFAULT_THEME` | no | Initial theme — `amber` (default), `green`, `crypt` (blood-red), or `brutalist` (flat monochrome, no CRT effects). Rendered server-side on `<html data-theme>` so no-JS visitors see it. Visitor's header picker still overrides via `localStorage` |
+| `SITE_DEFAULT_THEME` | no | Initial theme — `amber` (default), `green`, `crypt` (blood-red), `brutalist` (flat monochrome, no CRT effects), `c64` (Commodore 64 lavender on saturated blue, all CRT layers killed), or `lcd` (Game Boy DMG sage-on-pea LCD panel with pixel-grid scanlines, no glow). Rendered server-side on `<html data-theme>` so no-JS visitors see it. Visitor's header picker still overrides via `localStorage` |
 | `SITE_NOISE` | no | Film-grain / dust overlay on every page. `true` (default) / `false`. Off leaves scanlines + vignette intact |
 | `PLUGINS` | no | Comma-separated plugin slugs to enable. Each must be a folder under `plugins/{slug}/` with a valid `manifest.json`. Empty = no plugins loaded, zero boot cost. See [`plugin-development.md`](plugin-development.md) for the author guide |
 

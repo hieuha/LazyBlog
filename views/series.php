@@ -8,7 +8,7 @@ use App\Http;
 ?>
 
 <section class="series-page">
-    <h2 class="series-page-title">> <?= Http::e($seriesTitle) ?></h2>
+    <h2 class="series-page-title">> SERIE: <?= Http::e($seriesTitle) ?></h2>
     <p class="series-meta"><?= count($posts) ?> PART<?= count($posts) === 1 ? '' : 'S' ?></p>
 
     <ul class="series-list">

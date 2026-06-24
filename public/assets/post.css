@@ -5,59 +5,130 @@
    ========================================================================= */
 
 /* ---------- Home / Tag page: post list ---------- */
-.post-list { list-style: none; padding: 0; }
+.post-list { list-style: none; padding: 0; margin: 0; }
 .post-item {
     border-bottom: 1px solid var(--border);
-    padding: 22px 0;
+    padding: 28px 0;
 }
 .post-item:last-child { border-bottom: none; }
 
+/* Home variant: posts grouped by day. Date is a section header with a
+   dashed horizontal rule extending right; the day's entries hang from
+   a dashed vertical rail under it — blueprint/schematic vibe, not a
+   container box. Scoped via .post-date-group so /tag and /search keep
+   the flat layout. */
+.post-date-group { margin-bottom: 0; }
+.post-date-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 36px 0 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: var(--primary-dim);
+    text-transform: uppercase;
+    font-weight: normal;
+}
+.post-date-header::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed var(--border);
+}
+.post-date-group:first-child .post-date-header { margin-top: 8px; }
+.post-date-group .post-item {
+    border-bottom: none;
+    border-left: 1px dashed var(--border);
+    padding: 18px 0 18px 28px;
+    margin-left: 14px;
+    transition: border-left-color 0.22s ease;
+}
+.post-date-group .post-item:last-child { padding-bottom: 14px; }
+.post-date-group .post-item:hover {
+    border-left-color: var(--primary-dim);
+}
+
+/* Top meta line — date (anchor) + optional series tag. Bigger letter
+   spacing + Share Tech Mono caps reads as a "log timestamp" line and
+   pulls the eye before the title. */
 .post-meta {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-dim);
-    letter-spacing: 1.5px;
-    margin-bottom: 10px;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 14px;
     align-items: center;
 }
-.post-date { color: var(--primary-dim); text-transform: uppercase; }
+.post-date {
+    color: var(--primary-dim);
+    transition: color 0.22s ease, text-shadow 0.22s ease;
+}
 
 .post-title-link { text-decoration: none; display: block; }
 .post-title {
     font-family: 'VT323', monospace;
-    font-size: clamp(26px, 5vw, 32px);
+    font-size: clamp(28px, 5.2vw, 34px);
     color: var(--primary);
     text-shadow: 0 0 8px var(--primary-glow-strong);
     letter-spacing: 1px;
     display: inline-block;
     line-height: 1.15;
+    transition: text-shadow 0.22s ease, transform 0.22s ease;
 }
-.post-title-link:hover .post-title { text-shadow: 0 0 14px var(--primary), 0 0 24px var(--primary-glow-strong); }
 .post-icon { opacity: 0.85; }
 
+/* Summary reads as an editorial preview, no `//` prefix — the dim text
+   tone alone signals secondary information. */
 .post-summary {
-    color: var(--text);
-    margin-top: 8px;
-    font-size: 1em;
+    color: var(--text-dim);
+    margin-top: 10px;
+    font-size: 0.98em;
     line-height: 1.65;
+    transition: color 0.22s ease;
 }
 
-/* Date moved below summary, right-aligned */
-.post-date-row {
-    text-align: right;
-    margin-top: 12px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 1.5px;
+/* Bottom row holds the series tag (when present) followed by tag chips.
+   Scope strips the chip's border + padding so each entry reads as a
+   typographic line of `SERIES · PART N   #tag1   #tag2` — the bordered
+   pill style still applies in /post, /search, and plugin nav. */
+.post-tags-row {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: baseline;
 }
-.post-date-row .post-date {
-    color: var(--primary-dim);
-    text-transform: uppercase;
+.post-tags-row .tag-chip,
+.post-tags-row .post-series-tag {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    transition: color 0.18s ease, text-shadow 0.18s ease;
 }
+.post-tags-row .tag-chip { color: var(--primary-dim); }
+.post-tags-row .post-series-tag { color: var(--accent); }
+.post-tags-row .tag-chip:hover,
+.post-tags-row .post-series-tag:hover {
+    background: transparent;
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+}
+
+/* Hover state — entire item reacts as a unit. Title glow intensifies,
+   date lifts from dim to primary, summary text lifts from dim to full.
+   No layout shift so list stays calm during scroll-hover. */
+.post-item:hover .post-title {
+    text-shadow: 0 0 14px var(--primary), 0 0 24px var(--primary-glow-strong);
+}
+.post-item:hover .post-date {
+    color: var(--primary);
+    text-shadow: 0 0 8px var(--primary-glow-strong);
+}
+.post-item:hover .post-summary { color: var(--text); }
 
 /* ---------- Post page ---------- */
 .post-page-title {

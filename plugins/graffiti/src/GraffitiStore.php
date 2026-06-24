@@ -71,7 +71,12 @@ final class GraffitiStore
      * Append a new row. Caller passes the validated payload; we generate
      * id, received_at, and the moderation flags. Returns the new id.
      *
-     * @param array{from_friend_id:string,post_slug:string,type:string,payload:array<string,mixed>,nonce:string} $row
+     * Callers should also snapshot `from_handle` + `from_blog_url` so the
+     * row survives later revoke + hard-delete of the friend row — the
+     * `from_friend_id` lookup goes orphan otherwise and the row renders as
+     * "unknown". Snapshot keeps history readable forever.
+     *
+     * @param array{from_friend_id:string,post_slug:string,type:string,payload:array<string,mixed>,nonce:string,from_handle?:string,from_blog_url?:string} $row
      */
     public function append(array $row): string
     {

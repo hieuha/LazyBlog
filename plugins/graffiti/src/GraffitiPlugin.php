@@ -433,6 +433,10 @@ final class GraffitiPlugin implements Plugin
 
         $id = $store->append([
             'from_friend_id' => $friendId,
+            // Snapshot identity at write time so a future revoke doesn't
+            // turn this row into "unknown" attribution.
+            'from_handle'    => (string) ($friend['handle'] ?? ''),
+            'from_blog_url'  => (string) ($friend['blog_url'] ?? ''),
             'post_slug'      => $slug,
             'type'           => $type,
             'payload'        => $payloadInner,
@@ -670,11 +674,21 @@ final class GraffitiPlugin implements Plugin
 
         // Pre-resolve friend handles + sticker names so the view stays dumb.
         // 'self' is a sentinel id — synthesize the owner attribution from env.
+        // Attribution priority: row-level snapshot (from_handle/from_blog_url
+        // stamped at append time) > live friend lookup > generic fallback.
+        // The snapshot keeps history readable even after the friend is
+        // revoked + hard-deleted from friends.json.
         $friendCache = ['self' => self::selfFriendStub()];
         foreach ($items as &$row) {
             $fid = (string) ($row['from_friend_id'] ?? '');
             $friendCache[$fid] ??= $friends->find($fid);
-            $row['_friend'] = $friendCache[$fid];
+            $live = (array) ($friendCache[$fid] ?? []);
+            $snapHandle = (string) ($row['from_handle']   ?? '');
+            $snapBlog   = (string) ($row['from_blog_url'] ?? '');
+            $row['_friend'] = [
+                'handle'   => $snapHandle !== '' ? $snapHandle : (string) ($live['handle']   ?? 'unknown'),
+                'blog_url' => $snapBlog   !== '' ? $snapBlog   : (string) ($live['blog_url'] ?? ''),
+            ];
 
             $type = (string) ($row['type'] ?? '');
             $payload = (array) ($row['payload'] ?? []);
@@ -1075,8 +1089,11 @@ HTML;
                 return;
             }
             $ledger->spend($price, "graffiti:self");
+            $selfStub = self::selfFriendStub();
             $id = $store->append([
                 'from_friend_id' => 'self',
+                'from_handle'    => (string) $selfStub['handle'],
+                'from_blog_url'  => (string) $selfStub['blog_url'],
                 'post_slug' => $postSlug,
                 'type' => $type,
                 'payload' => $payloadInner,

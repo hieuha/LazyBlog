@@ -147,6 +147,10 @@ final class Inbox
 
             $id = $this->store->append([
                 'from_friend_id' => (string) $friend['id'],
+                // Snapshot the sender's identity so attribution survives
+                // a future revoke (revoke hard-deletes the friend row).
+                'from_handle'    => (string) ($friend['handle'] ?? ''),
+                'from_blog_url'  => (string) ($friend['blog_url'] ?? ''),
                 'post_slug'      => $slug,
                 'type'           => $type,
                 'payload'        => $payload,

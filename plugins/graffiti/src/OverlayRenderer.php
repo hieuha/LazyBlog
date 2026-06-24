@@ -88,9 +88,14 @@ final class OverlayRenderer
                     ? self::selfAttribution()
                     : $this->friends->find($friendId);
             }
-            $friend = $friendCache[$friendId];
-            $blogUrl = (string) ($friend['blog_url'] ?? '');
-            $handle  = (string) ($friend['handle'] ?? 'anon');
+            $friend = (array) ($friendCache[$friendId] ?? []);
+            // Snapshot in the row wins over live friend lookup so attribution
+            // survives revoke + hard-delete of the friend row. Falls back to
+            // live row (legacy items written before snapshots), then 'anon'.
+            $snapHandle = (string) ($item['from_handle']   ?? '');
+            $snapBlog   = (string) ($item['from_blog_url'] ?? '');
+            $blogUrl = $snapBlog   !== '' ? $snapBlog   : (string) ($friend['blog_url'] ?? '');
+            $handle  = $snapHandle !== '' ? $snapHandle : (string) ($friend['handle']   ?? 'anon');
 
             $rows[] = $this->renderOne($item, $blogUrl, $handle);
         }

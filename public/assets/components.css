@@ -101,6 +101,15 @@
     font-size: 11px;
     margin-bottom: 8px;
 }
+/* Mobile: tighten letter-spacing and shrink font so the post meta line
+   (`§ TRANSMISSION — YYYY-MM-DD — CALLSIGN — N VIEW`) fits one line on
+   narrow viewports instead of wrapping mid-segment. */
+@media (max-width: 600px) {
+    .section-tag, [class*="section"] > .callsign {
+        letter-spacing: 1.5px;
+        font-size: 10px;
+    }
+}
 
 /* ---------- Tables (GFM) ----------
    CRT terminal grid: mono font, accent borders, alternating row tint.

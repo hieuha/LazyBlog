@@ -129,6 +129,17 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
             0 0 56px var(--primary-glow);
     }
 }
+/* Mobile: drop the chromatic RGB split. The 1px shift reads as
+   oversized colored fringes once the title font shrinks below ~32px,
+   making the brand and post titles look glitchy-bad instead of CRT. */
+@media (max-width: 600px) {
+    h1, h2, h3, .story-title, .post-title, .site-brand {
+        text-shadow:
+            0 0 6px var(--primary),
+            0 0 22px var(--primary-glow-strong),
+            0 0 56px var(--primary-glow);
+    }
+}
 
 /* Crypt theme: primary is already red, so the chromatic-aberration red
    shift stacks on top of itself and reads as a jagged outline instead of

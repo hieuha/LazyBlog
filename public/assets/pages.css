@@ -353,3 +353,97 @@ a.heatmap-cell:hover {
 }
 .series-summary { color: var(--text-dim); }
 .series-icon { margin-right: 4px; }
+
+/* ---------- /series index — Jukebox-style card grid ----------
+   Each card: typographic cover (VT323 title fills the cover area) +
+   part-count chip at top-right + repeated title + date-range meta.
+   No images — the site doesn't store per-series covers, so the
+   cover IS the typography. */
+.series-card-grid {
+    list-style: none !important;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    padding: 0;
+    margin: 24px 0 0;
+}
+@media (max-width: 1024px) {
+    .series-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+    .series-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+    .series-card-grid { grid-template-columns: 1fr; }
+}
+.series-card {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--bg);
+    transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.series-card:hover {
+    border-color: var(--primary-dim);
+    box-shadow: 0 0 18px var(--primary-glow);
+}
+.series-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+.series-card-cover {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.series-card-cover-text {
+    font-family: 'VT323', monospace;
+    font-size: clamp(20px, 2.6vw, 30px);
+    color: var(--primary);
+    text-align: center;
+    padding: 16px;
+    letter-spacing: 1.5px;
+    line-height: 1.05;
+    text-shadow:
+        0 0 6px var(--primary),
+        0 0 18px var(--primary-glow-strong);
+}
+.series-card-tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+}
+.series-card-body {
+    padding: 10px 12px 14px;
+}
+.series-card-title {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--primary);
+    line-height: 1.2;
+    margin: 0 0 2px;
+    letter-spacing: 1px;
+}
+.series-card-link:hover .series-card-title {
+    text-shadow: 0 0 8px var(--primary-glow-strong);
+}
+.series-card-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}

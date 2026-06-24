@@ -11,29 +11,30 @@ use App\Http;
     <?php if ($series === []): ?>
         <p style="color: var(--text-dim);">// NO SERIES YET. Add `series: my-slug` frontmatter to any post to start one.</p>
     <?php else: ?>
-        <ul class="series-list">
+        <ul class="series-card-grid">
             <?php foreach ($series as $s): ?>
-                <li class="series-item series-item-card">
-                    <div class="series-item-body">
-                        <a class="series-item-title" href="/series/<?= Http::e($s['slug']) ?>">
-                            <?= Http::e($s['title']) ?>
-                        </a>
-                        <?php
-                        // Display dates collapse to YYYY-MM-DD — frontmatter
-                        // can carry full ISO datetime for the wall-clock
-                        // gamification kinds, but the listing only needs
-                        // the calendar day.
-                        $firstDate = substr((string) $s['firstDate'], 0, 10);
-                        $lastDate = substr((string) $s['lastDate'], 0, 10);
-                        ?>
-                        <div class="series-item-meta">
-                            <?= $s['count'] ?> part<?= $s['count'] === 1 ? '' : 's' ?>
-                            · <?= Http::e($firstDate) ?>
-                            <?php if ($firstDate !== $lastDate): ?>
-                                → <?= Http::e($lastDate) ?>
-                            <?php endif; ?>
+                <?php
+                // Calendar-day collapse — frontmatter may carry ISO datetime
+                // but the card only needs the day.
+                $firstDate = substr((string) $s['firstDate'], 0, 10);
+                $lastDate = substr((string) $s['lastDate'], 0, 10);
+                ?>
+                <li class="series-card">
+                    <a class="series-card-link" href="/series/<?= Http::e($s['slug']) ?>">
+                        <div class="series-card-cover">
+                            <span class="series-card-cover-text"><?= Http::e($s['title']) ?></span>
+                            <span class="series-card-tag"><?= (int) $s['count'] ?> PART<?= $s['count'] === 1 ? '' : 'S' ?></span>
                         </div>
-                    </div>
+                        <div class="series-card-body">
+                            <h3 class="series-card-title"><?= Http::e($s['title']) ?></h3>
+                            <div class="series-card-meta">
+                                <?= Http::e($firstDate) ?>
+                                <?php if ($firstDate !== $lastDate): ?>
+                                    → <?= Http::e($lastDate) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </a>
                 </li>
             <?php endforeach; ?>
         </ul>

@@ -61,7 +61,7 @@ Backup with `rsync`. Restore in seconds.
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
 │  TOC + scrollspy      ·  code-block copy buttons    │
 │  Browser admin UI     ·  EasyMDE + server-side prev │
-│  Image full-bleed     ·  theme-tint multiply blend  │
+│  Image full-bleed     ·  duotone tint + hover-orig │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
@@ -78,7 +78,7 @@ Backup with `rsync`. Restore in seconds.
 | | |
 |---|---|
 | ![Home — amber (default)](docs/screenshot/home-amber.webp) | ![Home — green theme](docs/screenshot/home.webp) |
-| _Home — amber (default theme)_ | _Home — green theme toggle_ |
+| _Home — amber (default theme)_ | _Home — green via theme picker_ |
 | ![Single post with TOC + reading progress + figure](docs/screenshot/post.webp) | ![About page with streak flame + badge grid](docs/screenshot/about.webp) |
 | _Single post — TOC, reading progress, full-bleed figure_ | _`/about` — operator profile, streak flame, JSON-driven badge grid_ |
 

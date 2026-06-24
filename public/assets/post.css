@@ -420,6 +420,16 @@ body.is-post main {
     [data-theme="amber"] .post-toc-wrap {
         background: rgba(26, 18, 8, 0.92);
     }
+    /* Light-bg themes — TOC needs a panel-tinted background that sits
+       DARKER than bg, not the dark-green default that was tuned for
+       phosphor themes. Without this override the floating TOC reads as
+       a hole punched in the page. */
+    [data-theme="lcd"] .post-toc-wrap {
+        background: rgba(180, 192, 130, 0.92);
+    }
+    [data-theme="c64"] .post-toc-wrap {
+        background: rgba(54, 54, 171, 0.92);
+    }
 
     .post-toc-wrap.floating-visible {
         opacity: 0.96;

@@ -30,6 +30,14 @@
     text-transform: uppercase;
     font-weight: normal;
 }
+/* Highlight the date like a text-selection block — solid primary fill,
+   bg-coloured text, no border. Mirrors the ::selection treatment in
+   base.css so the header reads as "this segment of time is selected". */
+.post-date-header-text {
+    padding: 2px 8px;
+    background: var(--primary);
+    color: var(--bg);
+}
 .post-date-header::after {
     content: '';
     flex: 1;
@@ -147,8 +155,24 @@
 }
 .post-meta-tags {
     display: flex;
-    gap: 8px;
+    gap: 16px;
     flex-wrap: wrap;
+    align-items: baseline;
+}
+/* Strip the bordered pill in the post-page tags strip — same plain
+   `#tag` treatment used on the home / tag feed bottom rows. The chip
+   styling still applies in /search and plugin nav. */
+.post-meta-tags .tag-chip {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--primary-dim);
+    transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+.post-meta-tags .tag-chip:hover {
+    background: transparent;
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
 }
 
 .post-body { font-size: 1em; line-height: 1.85; }

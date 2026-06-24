@@ -351,13 +351,16 @@ main {
     width: 100%;
     max-width: 960px;
     margin: 0 auto;
-    padding: 16px 20px 32px;
+    /* Tighter bottom padding — footer's own top padding (and the rule)
+       already provides separation, so we don't need to double-stack
+       breathing room here. */
+    padding: 16px 20px 18px;
 }
 @media (min-width: 768px) {
-    main { padding: 20px 40px 40px; }
+    main { padding: 20px 40px 22px; }
 }
 @media (min-width: 1200px) {
-    main { max-width: 1020px; padding: 24px 48px 48px; }
+    main { max-width: 1020px; padding: 24px 48px 24px; }
 }
 
 /* Admin canvas widths + admin styles live in /assets/admin.css and are
@@ -374,7 +377,7 @@ main > article:first-child > .section-tag:first-child {
 /* ---------- Footer (site-wide metadata) ---------- */
 footer {
     border-top: 1px solid var(--border);
-    padding: 28px 20px 28px;
+    padding: 20px 20px 24px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
     color: var(--text-dim);
@@ -382,7 +385,7 @@ footer {
     text-align: left;
 }
 @media (min-width: 768px) {
-    footer { padding: 36px 40px; }
+    footer { padding: 24px 40px 28px; }
 }
 
 .footer-block {

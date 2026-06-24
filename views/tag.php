@@ -22,7 +22,7 @@ foreach ($posts as $entry) {
     <?php else: ?>
         <?php foreach ($postsByDay as $day => $entries): ?>
             <section class="post-date-group">
-                <h3 class="post-date-header"><?= Http::e(str_replace('-', '·', $day)) ?></h3>
+                <h3 class="post-date-header"><span class="post-date-header-text"><?= Http::e(str_replace('-', '·', $day)) ?></span></h3>
                 <ul class="post-list">
                     <?php foreach ($entries as $entry): ?>
                         <li class="post-item">
@@ -35,12 +35,7 @@ foreach ($posts as $entry) {
                             <?php if (!empty($entry['summary'])): ?>
                                 <p class="post-summary"><?= Http::e($entry['summary']) ?></p>
                             <?php endif; ?>
-                            <?php
-                                // Hide the current tag chip — the page IS this tag, so
-                                // listing it on every entry would just be noise.
-                                $otherTags = array_values(array_filter($entry['tags'], fn($t) => $t !== $tag));
-                            ?>
-                            <?php if (!empty($entry['series']) || $otherTags !== []): ?>
+                            <?php if (!empty($entry['series']) || $entry['tags'] !== []): ?>
                                 <div class="post-tags-row">
                                     <?php if (!empty($entry['series'])): ?>
                                         <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
@@ -49,7 +44,7 @@ foreach ($posts as $entry) {
                                             ?>
                                         </a>
                                     <?php endif; ?>
-                                    <?php foreach ($otherTags as $t): ?>
+                                    <?php foreach ($entry['tags'] as $t): ?>
                                         <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
                                     <?php endforeach; ?>
                                 </div>

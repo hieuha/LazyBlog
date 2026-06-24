@@ -22,7 +22,7 @@ foreach ($posts as $entry) {
     <?php else: ?>
         <?php foreach ($postsByDay as $day => $entries): ?>
             <section class="post-date-group">
-                <h3 class="post-date-header"><?= Http::e(str_replace('-', '·', $day)) ?></h3>
+                <h3 class="post-date-header"><span class="post-date-header-text"><?= Http::e(str_replace('-', '·', $day)) ?></span></h3>
                 <ul class="post-list">
                     <?php foreach ($entries as $entry): ?>
                         <li class="post-item">

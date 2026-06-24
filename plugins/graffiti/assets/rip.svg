@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- R -->
+  <path d="M8 14 L8 50 M8 14 Q22 14 22 22 Q22 30 8 30 M14 30 L24 50"/>
+  <!-- I -->
+  <path d="M30 14 L30 50 M27 14 L33 14 M27 50 L33 50"/>
+  <!-- P -->
+  <path d="M40 14 L40 50 M40 14 Q56 14 56 24 Q56 34 40 34"/>
+  <!-- drip -->
+  <circle cx="44" cy="56" r="2" fill="currentColor"/>
+</svg>

@@ -66,6 +66,7 @@ pnpm-lock.yaml
 /plugins/*
 !/plugins/hello-world
 !/plugins/view-counter
+!/plugins/graffiti
 
 # Stray pre-existing release artifact from project init — not part of LazyBlog.
 /release-manifest.json

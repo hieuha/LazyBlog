@@ -318,10 +318,16 @@ $favicon = 'data:image/svg+xml,'
             <a class="header-btn" href="/about" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
         <?php endif; ?>
         <?php
-        // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href)
-        // during register(); registry exposes the merged list here.
+        // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href, $placement, $auth)
+        // during register(); registry exposes the merged list here. Admin-only
+        // items are filtered when there is no admin session so anonymous
+        // visitors never see admin-quick-access links.
         if ($plugins !== null):
+            $isAdmin = App\Auth::check();
             foreach ($plugins->nav()->header() as $navItem):
+                if (($navItem['auth'] ?? 'public') === 'admin' && !$isAdmin) {
+                    continue;
+                }
                 $navCurrent = $path === $navItem['href']
                     || str_starts_with($path, rtrim($navItem['href'], '/') . '/');
                 ?>
@@ -358,7 +364,15 @@ $favicon = 'data:image/svg+xml,'
 <footer>
     <?php
     // Plugin-contributed footer nav, only when at least one plugin opts in.
+    // Admin-only items filtered same as header to keep the surface consistent.
     $pluginFooter = $plugins !== null ? $plugins->nav()->footer() : [];
+    if ($pluginFooter !== []):
+        $isAdminFooter = App\Auth::check();
+        $pluginFooter = array_values(array_filter(
+            $pluginFooter,
+            static fn (array $i): bool => ($i['auth'] ?? 'public') !== 'admin' || $isAdminFooter,
+        ));
+    endif;
     if ($pluginFooter !== []):
     ?>
         <div class="footer-block">

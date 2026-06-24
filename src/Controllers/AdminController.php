@@ -264,6 +264,16 @@ final class AdminController
             return;
         }
 
+        // Fire post.save so plugins (gamification, webhooks, …) can react.
+        // isNew = no previous filename supplied by the form (i.e. fresh create
+        // path, not an edit). Listener exceptions are isolated in registry.
+        Http::plugins()?->dispatchPostSave(new \App\PostSaveEvent(
+            slug: $post->slug,
+            isNew: $originalFilename === '',
+            published: !$post->draft,
+            savedAt: time(),
+        ));
+
         self::setFlash("Saved: {$post->slug}");
         Http::redirect('/admin');
     }

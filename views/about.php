@@ -79,34 +79,6 @@ $streakUnitLabel = match ($stats['streak']['unit']) {
             </div>
         </section>
 
-        <!-- Stats panel — auto-computed from PostRepository -->
-        <section class="about-panel hud-frame about-stats">
-            <div class="about-panel-label">&gt; TRANSMISSION STATS</div>
-            <ul class="about-stat-grid">
-                <li class="about-stat">
-                    <span class="about-stat-num"><?= (int) $stats['posts'] ?></span>
-                    <span class="about-stat-label">TRANSMISSIONS</span>
-                </li>
-                <li class="about-stat">
-                    <span class="about-stat-num"><?= (int) $stats['tags'] ?></span>
-                    <span class="about-stat-label">TAGS</span>
-                </li>
-                <li class="about-stat">
-                    <span class="about-stat-num"><?= (int) $stats['series'] ?></span>
-                    <span class="about-stat-label">SERIES</span>
-                </li>
-                <li class="about-stat">
-                    <span class="about-stat-num"><?= Http::e($daysLabel) ?></span>
-                    <span class="about-stat-label">SINCE FIRST DATE</span>
-                </li>
-            </ul>
-            <?php if ($stats['lastDate'] !== null && $stats['lastDate'] !== $stats['firstDate']): ?>
-                <div class="about-stat-footer">
-                    LAST TX <?= Http::e($stats['lastDate']) ?>
-                </div>
-            <?php endif; ?>
-        </section>
-
         <!-- Current streak card — Duolingo-style flame + big numeral.
              Driven by STREAK_UNIT env (day/week/month/year) and is
              independent of any badge's per-entry unit. -->
@@ -158,6 +130,36 @@ $streakUnitLabel = match ($stats['streak']['unit']) {
                 </div>
             </section>
         <?php endif; ?>
+
+        <!-- Stats panel — auto-computed from PostRepository. Sits below
+             BIO so the narrative lands first; numbers read as a sign-off
+             tally rather than a leading dashboard. -->
+        <section class="about-panel hud-frame about-stats">
+            <div class="about-panel-label">&gt; TRANSMISSION STATS</div>
+            <ul class="about-stat-grid">
+                <li class="about-stat">
+                    <span class="about-stat-num"><?= (int) $stats['posts'] ?></span>
+                    <span class="about-stat-label">TRANSMISSIONS</span>
+                </li>
+                <li class="about-stat">
+                    <span class="about-stat-num"><?= (int) $stats['tags'] ?></span>
+                    <span class="about-stat-label">TAGS</span>
+                </li>
+                <li class="about-stat">
+                    <span class="about-stat-num"><?= (int) $stats['series'] ?></span>
+                    <span class="about-stat-label">SERIES</span>
+                </li>
+                <li class="about-stat">
+                    <span class="about-stat-num"><?= Http::e($daysLabel) ?></span>
+                    <span class="about-stat-label">SINCE FIRST DATE</span>
+                </li>
+            </ul>
+            <?php if ($stats['lastDate'] !== null && $stats['lastDate'] !== $stats['firstDate']): ?>
+                <div class="about-stat-footer">
+                    LAST TX <?= Http::e($stats['lastDate']) ?>
+                </div>
+            <?php endif; ?>
+        </section>
 
         <?php if ($stats['badges'] !== []): ?>
             <section class="about-panel hud-frame about-badges">

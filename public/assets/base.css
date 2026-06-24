@@ -41,8 +41,11 @@
     --primary-dim: #7a1008;
     --primary-glow: rgba(255, 36, 24, 0.15);
     --primary-glow-strong: rgba(255, 36, 24, 0.30);
-    --accent: #ffb700;
-    --accent-dim: #7a5800;
+    /* Accent stays in the red family — soft coral so it reads as a
+       lifted/desaturated sibling of the blood-red primary instead of
+       an orange/amber contrast. */
+    --accent: #ff8a7a;
+    --accent-dim: #7a3028;
     /* Pink-tinted text avoids the halation that pure white triggers against
        a blood-red primary; stays in the warm family so hierarchy reads. */
     --text: #efc8c0;

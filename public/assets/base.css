@@ -211,13 +211,13 @@ main {
     width: 100%;
     max-width: 960px;
     margin: 0 auto;
-    padding: 16px 20px 48px;
+    padding: 16px 20px 32px;
 }
 @media (min-width: 768px) {
-    main { padding: 20px 40px 64px; }
+    main { padding: 20px 40px 40px; }
 }
 @media (min-width: 1200px) {
-    main { max-width: 1020px; padding: 24px 48px 80px; }
+    main { max-width: 1020px; padding: 24px 48px 48px; }
 }
 
 /* Admin canvas widths + admin styles live in /assets/admin.css and are

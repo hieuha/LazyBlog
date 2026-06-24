@@ -4,6 +4,14 @@
 /** @var list<array{slug:string,title:string,date:string,tags:list<string>,draft:bool,icon:?string,summary:?string,file:string,mtime:int}> $posts */
 
 use App\Http;
+
+// Group by calendar day — same timeline pattern as home.php so /tags/*
+// reads as the same kind of feed, just scoped to one tag.
+$postsByDay = [];
+foreach ($posts as $entry) {
+    $day = substr((string) $entry['date'], 0, 10);
+    $postsByDay[$day][] = $entry;
+}
 ?>
 
 <section>
@@ -12,31 +20,45 @@ use App\Http;
     <?php if ($posts === []): ?>
         <p style="color: var(--text-dim);">// NO TRANSMISSIONS ON THIS FREQUENCY.</p>
     <?php else: ?>
-        <ul class="post-list">
-            <?php foreach ($posts as $entry): ?>
-                <li class="post-item">
-                    <div class="post-meta">
-                        <span class="post-date"><?= Http::e(str_replace('-', '·', substr((string) $entry['date'], 0, 10))) ?></span>
-                        <?php if (!empty($entry['series'])): ?>
-                            <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
-                                <?= Http::e((string) $entry['series']) ?><?php
-                                    if (isset($entry['part']) && $entry['part'] !== null) echo ' · PART ' . (int) $entry['part'];
-                                ?>
+        <?php foreach ($postsByDay as $day => $entries): ?>
+            <section class="post-date-group">
+                <h3 class="post-date-header"><?= Http::e(str_replace('-', '·', $day)) ?></h3>
+                <ul class="post-list">
+                    <?php foreach ($entries as $entry): ?>
+                        <li class="post-item">
+                            <a class="post-title-link" href="/posts/<?= Http::e($entry['slug']) ?>">
+                                <span class="post-title">
+                                    <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
+                                    <?= Http::e($entry['title']) ?>
+                                </span>
                             </a>
-                        <?php endif; ?>
-                    </div>
-                    <a class="post-title-link" href="/posts/<?= Http::e($entry['slug']) ?>">
-                        <span class="post-title">
-                            <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
-                            <?= Http::e($entry['title']) ?>
-                        </span>
-                    </a>
-                    <?php if (!empty($entry['summary'])): ?>
-                        <p class="post-summary"><?= Http::e($entry['summary']) ?></p>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+                            <?php if (!empty($entry['summary'])): ?>
+                                <p class="post-summary"><?= Http::e($entry['summary']) ?></p>
+                            <?php endif; ?>
+                            <?php
+                                // Hide the current tag chip — the page IS this tag, so
+                                // listing it on every entry would just be noise.
+                                $otherTags = array_values(array_filter($entry['tags'], fn($t) => $t !== $tag));
+                            ?>
+                            <?php if (!empty($entry['series']) || $otherTags !== []): ?>
+                                <div class="post-tags-row">
+                                    <?php if (!empty($entry['series'])): ?>
+                                        <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
+                                            <?= Http::e((string) $entry['series']) ?><?php
+                                                if (isset($entry['part']) && $entry['part'] !== null) echo ' · PART ' . (int) $entry['part'];
+                                            ?>
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php foreach ($otherTags as $t): ?>
+                                        <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endforeach; ?>
 
         <?php include __DIR__ . '/_pagination.php'; ?>
     <?php endif; ?>

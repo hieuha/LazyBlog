@@ -99,7 +99,9 @@
     margin-top: 16px;
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    /* row gap = 6px (tight break between series → tags lines);
+       column gap = 16px (breathing between sibling chips). */
+    gap: 6px 16px;
     align-items: baseline;
 }
 .post-tags-row .tag-chip,
@@ -110,7 +112,12 @@
     transition: color 0.18s ease, text-shadow 0.18s ease;
 }
 .post-tags-row .tag-chip { color: var(--primary-dim); }
-.post-tags-row .post-series-tag { color: var(--accent); }
+.post-tags-row .post-series-tag {
+    color: var(--accent);
+    /* Force series onto its own row above the tag chips. flex-wrap on
+       the parent picks up the remaining width = 0 and breaks. */
+    flex-basis: 100%;
+}
 .post-tags-row .tag-chip:hover,
 .post-tags-row .post-series-tag:hover {
     background: transparent;

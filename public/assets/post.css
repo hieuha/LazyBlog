@@ -425,7 +425,7 @@ body.is-post main {
        phosphor themes. Without this override the floating TOC reads as
        a hole punched in the page. */
     [data-theme="lcd"] .post-toc-wrap {
-        background: rgba(139, 172, 15, 0.92); /* #8bac0f (DMG sub-panel) @ 92% */
+        background: rgba(230, 226, 212, 0.94); /* #e6e2d4 (e-ink card) @ 94% */
     }
     [data-theme="c64"] .post-toc-wrap {
         background: rgba(54, 54, 171, 0.92);

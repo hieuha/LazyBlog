@@ -34,6 +34,44 @@
     --scan: rgba(57, 255, 20, 0.03);
 }
 
+[data-theme="crypt"] {
+    --bg: #0a0303;
+    --panel: #1a0808;
+    --primary: #ff2418;
+    --primary-dim: #7a1008;
+    --primary-glow: rgba(255, 36, 24, 0.15);
+    --primary-glow-strong: rgba(255, 36, 24, 0.30);
+    --accent: #ffb700;
+    --accent-dim: #7a5800;
+    /* Pink-tinted text avoids the halation that pure white triggers against
+       a blood-red primary; stays in the warm family so hierarchy reads. */
+    --text: #efc8c0;
+    --text-dim: #7a5a55;
+    --border: #3a1e1e;
+    --scan: rgba(255, 36, 24, 0.03);
+}
+
+[data-theme="brutalist"] {
+    /* Cool-tinted near-black + bluish whites — not pure #000/#fff, which
+       would read as flat OLED test pattern. The slight blue undertone
+       matches the "intentional brutalist site" look (GitHub dark, Linear,
+       Are.na). */
+    --bg: #08090c;
+    --panel: #0e1117;
+    --primary: #e6edf3;
+    --primary-dim: #6e7681;
+    --primary-glow: rgba(230, 237, 243, 0.05);
+    --primary-glow-strong: rgba(230, 237, 243, 0.10);
+    --accent: #e6edf3;
+    --accent-dim: #484f58;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --border: #21262d;
+    /* Transparent --scan kills the repeating-gradient scanlines without
+       needing to disable body::before — keeps the cascade simple. */
+    --scan: transparent;
+}
+
 /* ---------- Reset ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -90,6 +128,38 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
             0 0 22px var(--primary-glow-strong),
             0 0 56px var(--primary-glow);
     }
+}
+
+/* Crypt theme: primary is already red, so the chromatic-aberration red
+   shift stacks on top of itself and reads as a jagged outline instead of
+   a subtle CRT misalignment. Drop the split, keep the phosphor glow. */
+[data-theme="crypt"] h1,
+[data-theme="crypt"] h2,
+[data-theme="crypt"] h3,
+[data-theme="crypt"] .story-title,
+[data-theme="crypt"] .post-title,
+[data-theme="crypt"] .site-brand {
+    text-shadow:
+        0 0 6px var(--primary),
+        0 0 22px var(--primary-glow-strong),
+        0 0 56px var(--primary-glow);
+}
+
+/* Brutalist theme: drop only the chromatic RGB split on headings — the
+   colored fringes clash with a flat palette. Keep the phosphor glow so
+   VT323's pixel edges still soften, and keep vignette + bezel + flicker
+   so the CRT identity holds. Scanlines already vanish via the transparent
+   --scan token in the palette. */
+[data-theme="brutalist"] h1,
+[data-theme="brutalist"] h2,
+[data-theme="brutalist"] h3,
+[data-theme="brutalist"] .story-title,
+[data-theme="brutalist"] .post-title,
+[data-theme="brutalist"] .site-brand {
+    text-shadow:
+        0 0 6px var(--primary),
+        0 0 22px var(--primary-glow-strong),
+        0 0 56px var(--primary-glow);
 }
 
 h1, .site-brand { font-size: clamp(38px, 9vw, 68px); }
@@ -179,12 +249,24 @@ header {
     display: inline-flex;
     gap: 10px;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
 }
 .header-btn {
-    display: inline-block;
+    /* inline-flex + center alignment normalises content positioning so
+       <a>.header-btn (text node child) and <button>.header-btn (span
+       child) render at identical metrics. Pure inline-block left a 1-2px
+       baseline drift on the picker toggle. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* Reset UA button widget metrics (Chrome adds implicit padding to
+       native <button> via `appearance: auto`). */
+    appearance: none;
+    -webkit-appearance: none;
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
+    line-height: 1.4;
     background: transparent;
     border: 1px solid var(--accent-dim);
     color: var(--accent);
@@ -201,10 +283,50 @@ header {
     color: var(--primary);
 }
 
-/* Theme toggle variant: only need data-when swap mechanics here */
-.theme-toggle [data-when] { display: none; }
-[data-theme="green"] .theme-toggle [data-when="green"] { display: inline; }
-[data-theme="amber"] .theme-toggle [data-when="amber"] { display: inline; }
+/* Theme picker dropdown: triggers like a .header-btn, opens a panel of
+   theme options anchored below it. Menu is absolute-positioned and uses
+   themed tokens so it re-skins with whatever theme is active. */
+.theme-picker {
+    position: relative;
+    /* inline-flex with stretch makes the button child take wrapper height
+       1-to-1 — eliminates baseline drift introduced by an inline-block
+       wrapper around an inline-block toggle. */
+    display: inline-flex;
+    align-items: stretch;
+}
+.theme-picker-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 140px;
+    background: var(--panel);
+    border: 1px solid var(--accent-dim);
+    border-radius: 2px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 50;
+    box-shadow: 0 0 12px var(--primary-glow);
+}
+.theme-picker-menu[hidden] { display: none; }
+.theme-picker-menu button {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    background: transparent;
+    border: 0;
+    color: var(--accent);
+    padding: 6px 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 2px;
+}
+.theme-picker-menu button:hover { background: var(--primary-glow); }
+.theme-picker-menu button[aria-current="true"] {
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+}
 
 /* ---------- Main layout ---------- */
 main {

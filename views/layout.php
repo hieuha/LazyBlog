@@ -111,7 +111,7 @@ if ($isPost) {
 // no-JS users honour the configured choice. Inline bootstrap below only
 // overrides when localStorage holds a valid user pick.
 $defaultTheme = strtolower((string) Config::get('SITE_DEFAULT_THEME', 'amber'));
-if ($defaultTheme !== 'green' && $defaultTheme !== 'amber') {
+if (!in_array($defaultTheme, ['amber', 'green', 'crypt', 'brutalist'], true)) {
     $defaultTheme = 'amber';
 }
 
@@ -213,7 +213,7 @@ $favicon = 'data:image/svg+xml,'
     (function () {
         try {
             var t = localStorage.getItem('theme');
-            if (t === 'green' || t === 'amber') {
+            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist') {
                 document.documentElement.setAttribute('data-theme', t);
             }
         } catch (e) {}
@@ -336,10 +336,18 @@ $favicon = 'data:image/svg+xml,'
         <?php if (App\Auth::check()): ?>
             <a class="header-btn" href="/admin" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
         <?php endif; ?>
-        <button class="header-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch theme">
-            <span data-when="green">[ AMBER MODE ]</span>
-            <span data-when="amber">[ GREEN MODE ]</span>
-        </button>
+        <div class="theme-picker" id="theme-picker">
+            <button class="header-btn theme-picker-toggle" type="button"
+                    aria-haspopup="menu" aria-expanded="false" aria-label="Switch theme">
+                <span data-theme-label>[ THEME ]</span>
+            </button>
+            <div class="theme-picker-menu" role="menu" hidden>
+                <button type="button" role="menuitem" data-theme-set="amber">AMBER</button>
+                <button type="button" role="menuitem" data-theme-set="green">GREEN</button>
+                <button type="button" role="menuitem" data-theme-set="crypt">CRYPT</button>
+                <button type="button" role="menuitem" data-theme-set="brutalist">BRUTALIST</button>
+            </div>
+        </div>
     </div>
 </header>
 

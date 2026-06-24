@@ -56,7 +56,7 @@ Backup with `rsync`. Restore in seconds.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  CRT terminal layout  ·  amber ↔ green theme        │
+│  CRT terminal layout  ·  amber·green·crypt·brutal   │
 │  Phosphor vignette    ·  chromatic-aberration heads │
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
 │  TOC + scrollspy      ·  code-block copy buttons    │

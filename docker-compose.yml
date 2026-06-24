@@ -7,6 +7,8 @@ services:
     working_dir: /var/www/html
     environment:
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   web:
@@ -23,6 +25,52 @@ services:
       - app
     restart: unless-stopped
 
+  # --- Blog B (federation test peer) ------------------------------------
+  # Opt-in via profile:
+  #   docker compose --profile blog-b up -d
+  # Shares the project code (single bind mount) but overlays its own .env
+  # and content directory so the two blogs have independent identity +
+  # storage. Default port 8081 on host. The graffiti plugin auto-rewrites
+  # `localhost` → `host.docker.internal` for cross-blog server calls when
+  # GRAFFITI_DEV=1, so the in-container outbox actually reaches the host
+  # port mapping.
+  app-b:
+    build: .
+    container_name: lazyblog-app-b
+    profiles: ["blog-b"]
+    volumes:
+      - .:/var/www/html
+      - ./.env.blog-b:/var/www/html/.env:ro
+      - ./content-b:/var/www/html/content
+    working_dir: /var/www/html
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  web-b:
+    image: caddy:2-alpine
+    container_name: lazyblog-web-b
+    profiles: ["blog-b"]
+    ports:
+      - "${WEB_PORT_B:-8081}:8080"
+    volumes:
+      - .:/var/www/html
+      - ./.env.blog-b:/var/www/html/.env:ro
+      - ./content-b:/var/www/html/content
+      # Blog B uses its own Caddyfile so the FastCGI upstream points at
+      # `app-b:9000` instead of `app:9000` — without this both webs proxy
+      # to blog A's PHP-FPM and you see Blog A data on both ports.
+      - ./docker/Caddyfile.blog-b.dev:/etc/caddy/Caddyfile:ro
+      - caddy_data_b:/data
+      - caddy_config_b:/config
+    depends_on:
+      - app-b
+    restart: unless-stopped
+
 volumes:
   caddy_data:
   caddy_config:
+  caddy_data_b:
+  caddy_config_b:

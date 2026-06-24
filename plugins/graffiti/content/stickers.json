@@ -1,0 +1,8 @@
+[
+    { "id": "ufo-1",      "name": "UFO",        "svg_filename": "ufo-1.svg",      "default_price": 5,  "enabled": true },
+    { "id": "fire-1",     "name": "Fire",       "svg_filename": "fire-1.svg",     "default_price": 3,  "enabled": true },
+    { "id": "heart-1",    "name": "Heart",      "svg_filename": "heart-1.svg",    "default_price": 2,  "enabled": true },
+    { "id": "skull-1",    "name": "Skull",      "svg_filename": "skull-1.svg",    "default_price": 8,  "enabled": true },
+    { "id": "star-1",     "name": "Star",       "svg_filename": "star-1.svg",    "default_price": 1,  "enabled": true },
+    { "id": "lightning-1", "name": "Lightning", "svg_filename": "lightning-1.svg", "default_price": 4, "enabled": true }
+]

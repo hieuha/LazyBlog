@@ -1,0 +1,10 @@
+{
+    "slug": "graffiti",
+    "name": "Graffiti",
+    "version": "0.1.0",
+    "api_version": 1,
+    "namespace": "Plugins\\Graffiti",
+    "author": "LazyBlog",
+    "description": "Cross-blog stickers between friends. Energy from posts; spend to graffiti a friend's post.",
+    "homepage": "https://github.com/hieuha/LazyBlog/tree/main/plugins/graffiti"
+}

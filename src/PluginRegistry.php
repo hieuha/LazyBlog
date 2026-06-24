@@ -63,8 +63,14 @@ final class PluginRegistry
     /** @var list<callable(PostViewEvent):void> */
     private array $postViewListeners = [];
 
+    /** @var list<callable(PostSaveEvent):void> */
+    private array $postSaveListeners = [];
+
     /** @var list<callable(array<string,mixed>):?string> */
     private array $postMetaRenderers = [];
+
+    /** @var list<callable(array<string,mixed>):?string> */
+    private array $postArticleEndRenderers = [];
 
     public function __construct(
         private readonly string $pluginsDir,
@@ -126,10 +132,22 @@ final class PluginRegistry
         $this->postViewListeners[] = $listener;
     }
 
+    /** Called from PluginContext::onPostSave(). */
+    public function addPostSaveListener(callable $listener): void
+    {
+        $this->postSaveListeners[] = $listener;
+    }
+
     /** Called from PluginContext::onPostMeta(). */
     public function addPostMetaRenderer(callable $renderer): void
     {
         $this->postMetaRenderers[] = $renderer;
+    }
+
+    /** Called from PluginContext::onPostArticleEnd(). */
+    public function addPostArticleEndRenderer(callable $renderer): void
+    {
+        $this->postArticleEndRenderers[] = $renderer;
     }
 
     /**
@@ -149,6 +167,22 @@ final class PluginRegistry
     }
 
     /**
+     * Fire the `post.save` event after `PostRepository::save()` succeeds.
+     * Same try/catch isolation as `dispatchPostView` — one bad plugin
+     * cannot abort the admin save flow.
+     */
+    public function dispatchPostSave(PostSaveEvent $event): void
+    {
+        foreach ($this->postSaveListeners as $listener) {
+            try {
+                $listener($event);
+            } catch (Throwable $e) {
+                error_log("[plugin] post.save listener failed: {$e->getMessage()}");
+            }
+        }
+    }
+
+    /**
      * Collect HTML fragments contributed to the `post.meta` slot. Renderers
      * that throw or return null/empty are skipped. Order follows registration.
      *
@@ -163,6 +197,31 @@ final class PluginRegistry
                 $html = $renderer($context);
             } catch (Throwable $e) {
                 error_log("[plugin] post.meta renderer failed: {$e->getMessage()}");
+                continue;
+            }
+            if (is_string($html) && $html !== '') {
+                $out[] = $html;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Collect HTML fragments for the `post.article_end` slot — rendered as
+     * the last children of `<article class="post-article">` so plugins can
+     * inject absolutely-positioned overlays anchored to the article box.
+     *
+     * @param  array<string,mixed> $context
+     * @return list<string>
+     */
+    public function slotPostArticleEnd(array $context): array
+    {
+        $out = [];
+        foreach ($this->postArticleEndRenderers as $renderer) {
+            try {
+                $html = $renderer($context);
+            } catch (Throwable $e) {
+                error_log("[plugin] post.article_end renderer failed: {$e->getMessage()}");
                 continue;
             }
             if (is_string($html) && $html !== '') {

@@ -1,0 +1,35 @@
+:8080 {
+    root * /var/www/html/public
+    encode gzip
+
+    # User-uploaded images live under content/uploads/ (outside the webroot
+    # so the backup script catches them). Serve them directly from there.
+    handle_path /uploads/* {
+        root * /var/www/html/content/uploads
+        file_server
+    }
+
+    php_fastcgi app-b:9000
+
+    file_server
+
+    # Block dotfiles
+    @hidden path_regexp ^/\.
+    respond @hidden 404
+
+    # Block direct .env or .md request to project root
+    @blocked path /Dockerfile /docker-compose.yml /.env*
+    respond @blocked 404
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

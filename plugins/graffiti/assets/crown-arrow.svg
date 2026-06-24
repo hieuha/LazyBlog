@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- crown -->
+  <path d="M18 20 L24 30 L32 14 L40 30 L46 20 L46 34 L18 34 Z"/>
+  <!-- curved arrow -->
+  <path d="M8 44 Q32 60 56 50 L52 46 M56 50 L52 54"/>
+</svg>

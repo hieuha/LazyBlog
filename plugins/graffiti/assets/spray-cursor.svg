@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- spray particles bursting from nozzle (hotspot anchor ~3,3) -->
+  <circle cx="3"  cy="3"  r="1.4" fill="#39ff14"/>
+  <circle cx="7"  cy="2"  r="0.9" fill="#39ff14" opacity="0.85"/>
+  <circle cx="2"  cy="8"  r="0.7" fill="#39ff14" opacity="0.7"/>
+  <circle cx="6"  cy="7"  r="0.5" fill="#39ff14" opacity="0.6"/>
+  <!-- short nozzle stem -->
+  <rect x="9"  y="8"  width="3"  height="2.5" fill="#888"/>
+  <!-- spray-can body -->
+  <rect x="11" y="9"  width="14" height="20" rx="2"
+        fill="#444" stroke="#0a0a0a" stroke-width="1"/>
+  <!-- coloured label band -->
+  <rect x="12" y="16" width="12" height="7" fill="#ff3344"/>
+  <!-- nozzle button on top -->
+  <rect x="14" y="7"  width="6"  height="2" fill="#222"/>
+</svg>

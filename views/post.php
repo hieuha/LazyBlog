@@ -102,6 +102,15 @@ $renderTocList = function () use ($toc): void {
         <?php endif; ?>
         <a class="view-source-link" href="/">← BACK TO INDEX</a>
     </div>
+
+    <?php
+    // Plugin-contributed overlays anchored to the article box (e.g. graffiti
+    // stickers). Rendered last so `.post-article { position: relative }` set
+    // by a plugin asset can anchor `position:absolute; inset:0` containers.
+    foreach (Http::plugins()?->slotPostArticleEnd(['slug' => $post->slug]) ?? [] as $fragment) {
+        echo $fragment; /* trusted: plugin output */
+    }
+    ?>
 </article>
 
 <?php if ($showToc): ?>

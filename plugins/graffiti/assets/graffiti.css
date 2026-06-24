@@ -1,0 +1,657 @@
+/* =========================================================================
+   graffiti.css — Phase 7
+   - Post-page overlay layer + sticker/text rendering
+   - Admin tabs + admin layout helpers (Friends, Stickers, Send, Energy)
+   ========================================================================= */
+
+/* Graffiti / Sharpie-tag fonts for text decorations only. All four selected
+   for Vietnamese diacritics support (vietnamese subset on Google Fonts) so
+   "Cứt" doesn't fall back to system serif mid-tag. Loaded only when this
+   stylesheet loads (admin viewing post, or post has visible graffiti). */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Bungee+Spice&family=Caveat:wght@700&family=Russo+One&display=swap');
+
+/* --- Post-page overlay ------------------------------------------------- */
+
+.post-article {
+    position: relative;          /* anchor for .graffiti-layer (inset:0) */
+}
+
+.graffiti-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;        /* don't block clicks on the post body */
+    overflow: hidden;            /* clamp stickers to the article box */
+    z-index: 5;                  /* above body content, below site chrome */
+}
+
+/* Shared positioning shell for every overlay item (sticker, spray, text).
+   Inline style on the element supplies left/top/transform so the parent
+   centers the item via translate(-50%,-50%). */
+.graffiti-overlay-item {
+    position: absolute;
+    pointer-events: auto;
+    user-select: none;
+}
+
+.graffiti-overlay-item--sticker {
+    width: 64px;
+    height: 64px;
+    display: inline-block;
+}
+.graffiti-sticker {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0.92;
+    transition: opacity 120ms ease;
+    user-select: none;
+}
+.graffiti-overlay-item--sticker:hover .graffiti-sticker {
+    opacity: 1;
+}
+
+.graffiti-text {
+    /* position + transform supplied inline */
+    max-width: 240px;
+    padding: 8px 12px;
+    background: rgba(10, 14, 10, 0.78);
+    color: var(--accent, #39ff14);
+    font-family: 'Caveat', 'Bangers', cursive;
+    font-size: 20px;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--accent, #39ff14);
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.45);
+}
+.graffiti-text small {
+    display: block;
+    margin-top: 4px;
+    opacity: 0.7;
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 0;
+}
+.graffiti-text small a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+/* --- Per-item dismiss button (session-only, any visitor) ------------- */
+
+.graffiti-item-dismiss {
+    position: absolute;
+    background: rgba(10, 14, 10, 0.92);
+    color: var(--accent, #39ff14);
+    border: 1px solid currentColor;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    z-index: 12;
+    pointer-events: auto;
+    font-family: inherit;
+}
+.graffiti-item-dismiss:hover {
+    background: rgba(255, 51, 68, 0.85);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* Universal dismiss affordance: red tint on hover + click-anywhere to
+   remove. Works the same on desktop hover AND mobile tap. The corner ×
+   button stays visible on touch devices as a discovery hint (no hover
+   = no other way to know the item is dismissable). */
+.graffiti-overlay-item {
+    transition: filter 120ms ease, outline 120ms ease;
+}
+.graffiti-overlay-item:hover {
+    cursor: pointer;
+    filter: brightness(1.1) drop-shadow(0 0 6px #ff556688);
+    outline: 1px dashed #ff5566;
+    outline-offset: 2px;
+}
+/* Attribution link stays a normal pointer + bypasses the removal affordance. */
+.graffiti-overlay-item a:hover {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    /* Hover devices don't need a corner button — hover-tint is the cue. */
+    .graffiti-item-dismiss { display: none; }
+}
+
+@media (hover: none) {
+    /* Touch devices: × stays as visual cue that the item is removable. */
+    .graffiti-icon-broom { display: none; }
+    .graffiti-item-dismiss {
+        top: -10px; right: -10px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        font-size: 14px;
+    }
+}
+
+/* Tab strip + admin section width handled by core .admin-tabs / admin layout
+   (admin.css). We deliberately do NOT redefine those classes here. */
+
+.graffiti-section {
+    /* Fills the admin main column; chrome (width, font, spacing) follows
+       whatever admin.css set up. Just give the section some breathing room. */
+    width: 100%;
+    padding: 8px 0 24px;
+}
+
+.graffiti-section h2 {
+    margin-top: 28px;
+    font-family: var(--font-mono, 'Share Tech Mono', monospace);
+    font-size: 14px;
+    letter-spacing: 0.04em;
+}
+
+.graffiti-flash {
+    padding: 6px 10px;
+    background: rgba(57, 255, 20, 0.08);
+    border-left: 3px solid var(--accent, #39ff14);
+    font-family: var(--font-mono, monospace);
+}
+
+.graffiti-warn {
+    margin-top: 24px;
+    padding: 8px 10px;
+    border: 1px dashed rgba(255, 183, 0, 0.6);
+    color: rgba(255, 183, 0, 0.95);
+    font-size: 13px;
+}
+
+.graffiti-balance {
+    font-family: var(--font-mono, monospace);
+    font-size: 16px;
+}
+
+/* --- Forms ------------------------------------------------------------- */
+
+.graffiti-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 520px;
+    margin: 12px 0;
+}
+.graffiti-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-mono, monospace);
+    font-size: 13px;
+}
+.graffiti-form fieldset {
+    border: 1px dashed currentColor;
+    padding: 8px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.graffiti-form legend {
+    padding: 0 4px;
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    opacity: 0.7;
+}
+.graffiti-form input[type="text"],
+.graffiti-form input[type="url"],
+.graffiti-form input[type="number"],
+.graffiti-form select,
+.graffiti-form textarea {
+    background: rgba(0, 0, 0, 0.25);
+    color: inherit;
+    border: 1px solid currentColor;
+    padding: 4px 6px;
+    font-family: var(--font-mono, monospace);
+}
+.graffiti-form button {
+    align-self: flex-start;
+}
+.graffiti-form-inline {
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+    gap: 6px;
+}
+
+/* Stack action buttons (hide + delete, etc.) on one row inside a table cell. */
+.graffiti-row-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+.graffiti-row-actions form {
+    margin: 0;
+    display: inline-flex;
+}
+
+/* Number input inside a row form keeps the same visual height as the
+   button next to it. Native spin buttons would shift padding inside the
+   field so the digit looks off-centre vs the SAVE button beside it.
+   Border is bumped to `--primary-dim` (same as `.admin-btn`) so the
+   input + button pair reads as a single matched control. */
+.graffiti-form-inline input.admin-input[type="number"] {
+    /* admin-btn-sm = 26px; match it so input + SAVE pair reads as one
+       unified control rather than mismatched heights. */
+    height: 26px;
+    padding: 0 8px;
+    text-align: right;
+    font-size: 12px;
+    border-color: var(--primary-dim);
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.graffiti-form-inline input.admin-input[type="number"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+.graffiti-form-inline input.admin-input[type="number"]::-webkit-outer-spin-button,
+.graffiti-form-inline input.admin-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Tables use core `.admin-table` from admin.css — keeps graffiti admin
+   chrome 1:1 with the post list / plugin list, so visual identity stays
+   consistent without duplicating styles. Override vertical alignment to
+   center: graffiti rows are short single-line cells; top-aligned (post
+   list default for long wrapping titles) leaves controls visually
+   floating against larger preview thumbs. */
+.graffiti-section .admin-table td {
+    vertical-align: middle;
+}
+
+/* --- Invite block textarea ------------------------------------------- */
+
+.graffiti-block-text {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--accent, #39ff14);
+    border: 1px solid var(--accent, #39ff14);
+    padding: 6px 8px;
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.graffiti-friend-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+.graffiti-friend-list li {
+    margin: 4px 0;
+}
+
+.graffiti-badge-new {
+    margin-left: 4px;
+    padding: 0 4px;
+    background: var(--accent, #39ff14);
+    color: #0a0e0a;
+    font-size: 10px;
+    font-family: var(--font-mono, monospace);
+}
+
+/* --- In-page spray controls (admin-only, post pages) ----------------- */
+
+/* Spray button: same chrome as core .back-to-top, stacked just above it.
+   Mobile back-to-top: bottom 20 + 44 + 12 gap → 76. Desktop: 28 + 48 + 12 → 88. */
+.graffiti-spray-btn {
+    position: fixed;
+    bottom: 76px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    cursor: pointer;
+    border-radius: 3px;
+    opacity: 0.85;
+    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.2s ease, background 0.2s ease;
+    z-index: 999;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    filter: drop-shadow(0 0 4px var(--accent-dim));
+}
+.graffiti-spray-btn svg {
+    display: block;
+}
+.graffiti-spray-btn:hover {
+    background: var(--primary-glow);
+    box-shadow: 0 0 12px var(--primary-glow-strong);
+    opacity: 1;
+}
+.graffiti-spray-btn:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+}
+
+@media (min-width: 768px) {
+    .graffiti-spray-btn {
+        bottom: 88px;
+        right: 28px;
+        width: 48px;
+        height: 48px;
+        font-size: 28px;
+    }
+}
+
+/* Modal overlay. The class-level `display: flex` beats the UA `[hidden]`
+   rule on specificity, so we need an explicit override to keep the modal
+   closed until graffiti.js toggles it open. */
+.graffiti-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.graffiti-modal[hidden] {
+    display: none;
+}
+
+.graffiti-modal-card {
+    background: var(--bg, #0a0e0a);
+    /* Drop the full outer border — full-perimeter accent reads as a loud
+       wireframe rather than a control panel. Keep only the left accent
+       stripe + a subtle dim border on the other 3 sides so the card has
+       definition without shouting. Symmetric horizontal padding so the
+       title, sticker grid, and compose row share the same left edge. */
+    border: 1px solid var(--accent-dim, rgba(120, 120, 120, 0.4));
+    border-left: 3px solid var(--accent, #39ff14);
+    color: var(--text, #c8ffd0);
+    padding: 10px 16px 16px;
+    max-width: 540px;
+    width: 100%;
+    max-height: 82vh;
+    overflow-y: auto;
+    font-family: var(--font-mono, monospace);
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.6);
+}
+/* Force every direct child of the card to flush against the same left
+   edge (the padding boundary). The grid and the textrow could otherwise
+   collapse their internal margins and look offset from the title. */
+.graffiti-modal-card > * {
+    margin-left: 0;
+    margin-right: 0;
+}
+.graffiti-modal-card header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--accent-dim, rgba(57, 255, 20, 0.3));
+}
+.graffiti-modal-card h2 {
+    margin: 0;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary, var(--accent));
+    text-shadow: 0 0 8px var(--primary-glow-strong, rgba(57, 255, 20, 0.4));
+}
+.graffiti-modal-hint {
+    font-size: 12px;
+    opacity: 0.75;
+    margin: 0 0 12px;
+}
+
+.graffiti-modal-stickers {
+    display: grid;
+    /* Fixed 6 columns — predictable layout regardless of how many stickers
+       are enabled; gaps stay even rather than one sticker floating alone. */
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+}
+@media (max-width: 480px) {
+    .graffiti-modal-stickers { grid-template-columns: repeat(4, 1fr); }
+}
+.graffiti-modal-sticker-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    aspect-ratio: 1 / 1;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--accent-dim, rgba(57, 255, 20, 0.25));
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+.graffiti-modal-sticker-btn:hover {
+    border-color: var(--accent, #39ff14);
+    background: var(--primary-glow, rgba(57, 255, 20, 0.08));
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px var(--primary-glow-strong, rgba(57, 255, 20, 0.3));
+}
+.graffiti-modal-sticker-btn img {
+    width: 32px;
+    height: 32px;
+}
+.graffiti-modal-sticker-btn small {
+    text-align: center;
+    line-height: 1.2;
+    opacity: 0.85;
+}
+
+/* Compose row: plain flex stack — no wrapping border so the inputs live
+   in the same visual plane as the sticker grid above. */
+.graffiti-modal-textrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.graffiti-modal-textrow input {
+    flex: 1 1 100%;
+    background: rgba(0, 0, 0, 0.4);
+    color: inherit;
+    /* Subtle dim border so the input sits in the same visual plane as the
+       sticker buttons. graffiti.js sets `color` for live preview of the
+       chosen text color, so we pin the border explicitly to avoid
+       currentColor dragging the border along with the preview color. */
+    border: 1px solid var(--accent-dim, rgba(120, 120, 120, 0.4));
+    padding: 6px 10px;
+    font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.graffiti-modal-textrow input:focus {
+    outline: none;
+    border-color: var(--accent, #39ff14);
+    box-shadow: 0 0 8px var(--primary-glow, rgba(57, 255, 20, 0.4));
+}
+/* Native <select> kept around for backward compat if anything else uses it
+   inside the modal; the picker now uses custom .graffiti-dd dropdowns
+   (Safari ignores color-scheme on native select popup, so we drew our own). */
+.graffiti-modal-textrow select {
+    flex: 0 0 auto;
+    color-scheme: dark;
+    background-color: var(--panel, rgba(0, 0, 0, 0.4));
+    color: var(--accent, #39ff14);
+    border: 1px solid var(--accent, #39ff14);
+    padding: 6px 28px 6px 10px;
+    font-family: 'Share Tech Mono', 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    text-shadow: 0 0 6px var(--accent-dim, rgba(57, 255, 20, 0.5));
+    /* Replace the native dropdown chevron with a CRT-friendly accent caret. */
+    appearance: none;
+    -webkit-appearance: none;
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 14px) calc(50% - 2px),
+        calc(100% - 9px) calc(50% - 2px);
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.graffiti-modal-textrow select:hover,
+.graffiti-modal-textrow select:focus {
+    background-color: var(--primary-glow, rgba(57, 255, 20, 0.15));
+    box-shadow: 0 0 10px var(--primary-glow-strong, rgba(57, 255, 20, 0.5));
+    outline: none;
+}
+/* Option items inherit a dark background — most browsers respect this for
+   <option> on desktop; iOS/Safari falls back to native picker which is fine. */
+.graffiti-modal-textrow select option {
+    background: var(--panel, #0a0e0a);
+    color: var(--accent, #39ff14);
+}
+
+/* --- Custom dropdown (.graffiti-dd) — full-control replacement for native
+   <select>, used in the spray modal so the popup matches the CRT theme on
+   every browser (Safari ignores color-scheme on native select popups). */
+.graffiti-dd {
+    position: relative;
+    flex: 0 0 auto;
+    /* Match the inner trigger so the wrapper's bounding box doesn't shift
+       baseline against the sibling [ DRAW TEXT ] button on the same flex row. */
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+}
+.graffiti-dd-trigger {
+    /* Explicit height + box-sizing so the trigger aligns 1:1 with the
+       sibling [ DRAW TEXT ] button on the same row. */
+    height: 30px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel, rgba(0, 0, 0, 0.4));
+    color: var(--accent, #39ff14);
+    border: 1px solid var(--accent-dim, rgba(120, 120, 120, 0.4));
+    padding: 0 10px;
+    font-family: 'Share Tech Mono', 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.graffiti-dd-trigger:hover,
+.graffiti-dd.is-open .graffiti-dd-trigger {
+    border-color: var(--accent, #39ff14);
+    background: var(--primary-glow, rgba(57, 255, 20, 0.1));
+    box-shadow: 0 0 8px var(--primary-glow-strong, rgba(57, 255, 20, 0.3));
+}
+.graffiti-dd-label {
+    /* Inline font/color preview adopted from the chosen <li>. */
+    text-shadow: 0 0 4px currentColor;
+}
+.graffiti-dd-caret {
+    opacity: 0.65;
+    font-size: 10px;
+}
+.graffiti-dd-menu {
+    position: absolute;
+    /* Open UPWARD — both dropdowns live at the bottom of the modal, so
+       opening up keeps the menu inside the card boundary instead of
+       spilling past the bottom edge. */
+    bottom: calc(100% + 4px);
+    top: auto;
+    left: 0;
+    min-width: 140px;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--bg, #0a0e0a);
+    border: 1px solid var(--accent, #39ff14);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.6);
+    z-index: 1100;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.graffiti-dd-menu li {
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+.graffiti-dd-menu li:hover {
+    background: var(--primary-glow, rgba(57, 255, 20, 0.15));
+}
+
+/* Action buttons inside the modal — match the site's .back-to-top accent
+   idiom so [ DRAW TEXT ] / close don't read as default OS chrome. Explicit
+   height matches `.graffiti-dd-trigger` so they line up on the same row. */
+.graffiti-modal-card button:not(.graffiti-modal-sticker-btn):not(.graffiti-modal-close) {
+    height: 30px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    background: var(--panel, rgba(0, 0, 0, 0.4));
+    border: 1px solid var(--accent, #39ff14);
+    color: var(--accent, #39ff14);
+    font-family: 'Share Tech Mono', 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 0 12px;
+    cursor: pointer;
+    text-shadow: 0 0 6px var(--accent-dim, rgba(57, 255, 20, 0.5));
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.graffiti-modal-card button:not(.graffiti-modal-sticker-btn):not(.graffiti-modal-close):hover {
+    background: var(--primary-glow, rgba(57, 255, 20, 0.15));
+    box-shadow: 0 0 10px var(--primary-glow-strong, rgba(57, 255, 20, 0.5));
+}
+
+.graffiti-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-dim, rgba(200, 200, 200, 0.5));
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.7;
+    transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+.graffiti-modal-close:hover {
+    color: #ff5566;
+    opacity: 1;
+    transform: rotate(90deg);
+}
+
+/* Placing mode: spray-can cursor on the whole page with crosshair fallback
+   for browsers that ignore SVG cursors (older Safari). Hotspot 3,3 matches
+   the spray-particle origin in the SVG. Also suppress accidental link
+   navigation while the operator is choosing a target spot. */
+body.graffiti-placing,
+body.graffiti-placing * {
+    cursor: url('/plugin-assets/graffiti/spray-cursor.svg') 3 3, crosshair !important;
+}
+body.graffiti-placing .post-article a,
+body.graffiti-placing .post-article button {
+    pointer-events: none;
+}
+
+body.graffiti-submitting {
+    cursor: progress;
+    opacity: 0.7;
+}

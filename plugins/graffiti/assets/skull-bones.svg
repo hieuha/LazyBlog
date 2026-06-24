@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- crossbones -->
+  <path d="M10 42 L54 18 M10 18 L54 42"/>
+  <circle cx="10" cy="42" r="3" fill="currentColor"/>
+  <circle cx="54" cy="18" r="3" fill="currentColor"/>
+  <circle cx="10" cy="18" r="3" fill="currentColor"/>
+  <circle cx="54" cy="42" r="3" fill="currentColor"/>
+  <!-- skull -->
+  <path d="M18 26 Q18 14 32 14 Q46 14 46 26 L46 38 L40 42 L40 48 L36 48 L36 44 L28 44 L28 48 L24 48 L24 42 L18 38 Z" fill="rgba(0,0,0,0.85)"/>
+  <circle cx="26" cy="28" r="2.5" fill="currentColor"/>
+  <circle cx="38" cy="28" r="2.5" fill="currentColor"/>
+  <path d="M30 36 L34 36"/>
+</svg>

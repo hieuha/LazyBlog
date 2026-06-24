@@ -90,9 +90,17 @@ final class PluginContext
         });
     }
 
-    public function nav(string $label, string $href, string $placement = 'header'): void
+    /**
+     * Register a nav link contributed by this plugin.
+     *
+     * `$auth` gates visibility: 'public' (default) renders for everyone,
+     * 'admin' only renders when the visitor has an admin session. Useful
+     * for plugins that expose admin-only quick-access shortcuts (e.g.,
+     * moderation counters) without core layout changes.
+     */
+    public function nav(string $label, string $href, string $placement = 'header', string $auth = 'public'): void
     {
-        $this->nav->add($this->manifest->slug, $label, $href, $placement);
+        $this->nav->add($this->manifest->slug, $label, $href, $placement, $auth);
     }
 
     /**
@@ -107,6 +115,17 @@ final class PluginContext
     }
 
     /**
+     * Subscribe to the `post.save` event. Fired after `PostRepository::save()`
+     * succeeds in the admin handler — listeners receive a `PostSaveEvent`
+     * with `slug`, `isNew`, `published`, `savedAt`. Listener exceptions are
+     * caught and logged so a bad plugin never aborts the save flow.
+     */
+    public function onPostSave(callable $listener): void
+    {
+        $this->registry->addPostSaveListener($listener);
+    }
+
+    /**
      * Contribute HTML to the `post.meta` slot rendered near the post
      * date/tags. Renderer receives a context array (currently `['slug' => $slug]`)
      * and must return a string of HTML or null to skip. Output ordering is
@@ -115,6 +134,18 @@ final class PluginContext
     public function onPostMeta(callable $renderer): void
     {
         $this->registry->addPostMetaRenderer($renderer);
+    }
+
+    /**
+     * Contribute HTML to the `post.article_end` slot — rendered as the last
+     * children of `<article class="post-article">`. Suitable for absolutely-
+     * positioned overlays (graffiti layer, reaction badges, etc.) that need
+     * to anchor against the article box. Same try/catch isolation as the
+     * other render slots.
+     */
+    public function onPostArticleEnd(callable $renderer): void
+    {
+        $this->registry->addPostArticleEndRenderer($renderer);
     }
 
     public function css(string $file): void

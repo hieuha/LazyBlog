@@ -58,6 +58,32 @@
     --scan: rgba(255, 36, 24, 0.03);
 }
 
+[data-theme="lcd"] {
+    /* Monochrome LCD — Game Boy DMG / digital watch / Nokia 3310 family.
+       Light sage-pea background = the "off pixel" rest state of a
+       reflective LCD; very dark green text = the "on pixel" segment ink.
+       The light-on-light contrast is intentional — that's exactly the
+       look of an unlit LCD panel under ambient light. Inverted from every
+       other theme (which are bright text on dark bg). */
+    --bg: #c7d196;
+    --panel: #b4c082;
+    --primary: #0f380f;
+    --primary-dim: #2a4a2a;
+    --primary-glow: rgba(15, 56, 15, 0.08);
+    --primary-glow-strong: rgba(15, 56, 15, 0.18);
+    /* Mid-tone Game Boy green for chips / CTAs — reads as the partially-
+       lit pixel state between bg and on-segment. */
+    --accent: #306230;
+    --accent-dim: #5a7a35;
+    --text: #1a3a1a;
+    --text-dim: #5a6a4a;
+    --border: #5a7a35;
+    /* Subtle horizontal scanlines — mimic the visible pixel grid of a
+       real LCD panel under glancing light. Dark-green tint at low alpha
+       so the bars register as texture, not as a separate overlay. */
+    --scan: rgba(15, 56, 15, 0.08);
+}
+
 [data-theme="c64"] {
     /* Commodore 64 boot screen palette — saturated periwinkle blue background,
        lighter lavender text, all flat (no CRT glow / no scanline overlay).
@@ -205,13 +231,16 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
         0 0 56px var(--primary-glow);
 }
 
-/* C64 theme: catch-all flatten. The boot screen aesthetic is pixel-
-   precise blocks of lavender on blue — any glow / chromatic smear /
-   drop shadow reads as VHS rot, not Commodore. Scoped to data-theme=c64
-   so the other phosphor themes keep their identity. */
+/* Flat-pixel themes (C64 + LCD): catch-all flatten. Boot-screen + LCD
+   panel aesthetics are crisp pixel blocks — any glow / chromatic smear /
+   drop shadow reads as VHS rot, not Commodore / DMG. Scoped so the
+   other phosphor themes keep their identity. */
 [data-theme="c64"] *,
 [data-theme="c64"] *::before,
-[data-theme="c64"] *::after {
+[data-theme="c64"] *::after,
+[data-theme="lcd"] *,
+[data-theme="lcd"] *::before,
+[data-theme="lcd"] *::after {
     text-shadow: none !important;
     box-shadow: none !important;
     filter: none !important;

@@ -17,7 +17,7 @@
     var menu = picker.querySelector('.theme-picker-menu');
     var label = picker.querySelector('[data-theme-label]');
     var items = picker.querySelectorAll('[data-theme-set]');
-    var VALID = ['amber', 'green', 'crypt', 'brutalist', 'c64'];
+    var VALID = ['amber', 'green', 'crypt', 'brutalist', 'c64', 'lcd'];
 
     function syncUI(theme) {
         if (label) label.textContent = '[ THEME: ' + theme.toUpperCase() + ' ]';

@@ -161,9 +161,9 @@ assertEq(str_repeat('B', 43), $row2['outgoing_token'], 'update patches outgoing_
 
 $store->revoke($id);
 $row3 = $store->find($id);
-assertEq('revoked', $row3['state'], 'revoke sets state=revoked');
+assertEq(null, $row3, 'revoke hard-deletes the row');
 $nothing = $store->findByIncomingToken(str_repeat('A', 43));
-assertEq(null, $nothing, 'findByIncomingToken skips revoked');
+assertEq(null, $nothing, 'findByIncomingToken misses after revoke');
 
 // findByIncomingToken empty string never matches
 assertEq(null, $store->findByIncomingToken(''), 'empty token never matches');

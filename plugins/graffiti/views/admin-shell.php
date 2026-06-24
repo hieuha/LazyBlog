@@ -22,7 +22,7 @@ $tabs = [
     'received' => ['label' => 'Received', 'href' => '/admin/graffiti'],
     'friends'  => ['label' => 'Friends',  'href' => '/admin/graffiti/friends'],
     'stickers' => ['label' => 'Stickers', 'href' => '/admin/graffiti/stickers'],
-    'energy'   => ['label' => 'Energy',   'href' => '/admin/graffiti/energy'],
+    'energy'   => ['label' => 'My energy', 'href' => '/admin/graffiti/energy'],
 ];
 ?>
 <div class="admin-tabs" role="tablist" aria-label="Graffiti sections">

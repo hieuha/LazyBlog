@@ -59,29 +59,29 @@
 }
 
 [data-theme="lcd"] {
-    /* Monochrome LCD — Game Boy DMG / digital watch / Nokia 3310 family.
-       Light sage-pea background = the "off pixel" rest state of a
-       reflective LCD; very dark green text = the "on pixel" segment ink.
-       The light-on-light contrast is intentional — that's exactly the
-       look of an unlit LCD panel under ambient light. Inverted from every
-       other theme (which are bright text on dark bg). */
-    --bg: #c7d196;
-    --panel: #b4c082;
+    /* Canonical Game Boy DMG 4-color palette — the actual hex values
+       Nintendo screen-printed onto the original Game Boy LCD reference:
+         #9bbc0f  lightest  "pixel off" rest state of the panel
+         #8bac0f  light     UI chrome / sub-panel
+         #306230  dark      mid-tone segment
+         #0f380f  darkest   "pixel on" segment ink
+       Keeping these exact values gives the theme an immediate read.
+       Inverted from every other theme (dark text on light bg). */
+    --bg: #9bbc0f;
+    --panel: #8bac0f;
     --primary: #0f380f;
-    --primary-dim: #2a4a2a;
+    --primary-dim: #306230;
     --primary-glow: rgba(15, 56, 15, 0.08);
     --primary-glow-strong: rgba(15, 56, 15, 0.18);
-    /* Mid-tone Game Boy green for chips / CTAs — reads as the partially-
-       lit pixel state between bg and on-segment. */
     --accent: #306230;
-    --accent-dim: #5a7a35;
-    --text: #1a3a1a;
-    --text-dim: #5a6a4a;
-    --border: #5a7a35;
+    --accent-dim: #306230;
+    --text: #0f380f;
+    --text-dim: #306230;
+    --border: #306230;
     /* Subtle horizontal scanlines — mimic the visible pixel grid of a
        real LCD panel under glancing light. Dark-green tint at low alpha
        so the bars register as texture, not as a separate overlay. */
-    --scan: rgba(15, 56, 15, 0.08);
+    --scan: rgba(15, 56, 15, 0.10);
 }
 
 [data-theme="c64"] {

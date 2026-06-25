@@ -161,8 +161,10 @@ $isEdit = $mode === 'edit';
                     Password
                     <?php if ($formValues['is_protected']): ?>
                         <span class="admin-label-hint">[ LOCKED ] · type new value + [ Set ] to replace · leave blank when saving to keep</span>
-                    <?php else: ?>
+                    <?php elseif ($isEdit): ?>
                         <span class="admin-label-hint">(optional · type a password and click [ Set Password ] to lock instantly)</span>
+                    <?php else: ?>
+                        <span class="admin-label-hint">(optional · type a password to lock this post — saved together with the post on [ Create ])</span>
                     <?php endif; ?>
                 </label>
                 <input type="password" name="password" id="post-password"

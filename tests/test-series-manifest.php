@@ -33,15 +33,17 @@ echo "load missing: OK\n";
 $m->save('alpha', [
     'title' => 'Alpha Series',
     'description' => 'First series for the test suite.',
-    'cover_ext' => 'webp',
 ]);
 assert($m->exists('alpha'));
 $loaded = $m->load('alpha');
 assert(is_array($loaded));
 assert($loaded['title'] === 'Alpha Series', 'title round trip');
 assert($loaded['description'] === 'First series for the test suite.', 'desc round trip');
-assert($loaded['cover_ext'] === 'webp');
 assert(is_string($loaded['updated_at']) && $loaded['updated_at'] !== '', 'updated_at stamped');
+
+// Confirm the manifest is JSON on disk (not YAML).
+$raw = file_get_contents($tmpRoot . '/series/alpha/manifest.json');
+assert(is_string($raw) && json_decode($raw, true) !== null, 'manifest is valid JSON');
 echo "save/load round trip: OK\n";
 
 // ---------- save() leaves no temp file behind ----------
@@ -83,10 +85,10 @@ $m->delete('alpha');
 $m->delete('never-existed');
 echo "delete idempotent: OK\n";
 
-// ---------- load() of malformed yaml returns null ----------
+// ---------- load() of malformed json returns null ----------
 mkdir($tmpRoot . '/series/garbled', 0775, true);
-file_put_contents($tmpRoot . '/series/garbled/manifest.yaml', "this: is: invalid: yaml:::\n");
-assert($m->load('garbled') === null, 'malformed yaml returns null');
-echo "malformed yaml safe: OK\n";
+file_put_contents($tmpRoot . '/series/garbled/manifest.json', "{this is not valid json,,,\n");
+assert($m->load('garbled') === null, 'malformed json returns null');
+echo "malformed json safe: OK\n";
 
 echo "\nAll SeriesManifest assertions passed.\n";

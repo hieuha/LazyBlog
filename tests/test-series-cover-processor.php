@@ -38,9 +38,8 @@ $src->setImageCompressionQuality(85);
 $src->writeImage($srcPath);
 $src->clear();
 
-// ---------- process() writes cover.webp + cover-src.jpg ----------
-$ext = $p->process('gamma', $srcPath, 'jpg');
-assert($ext === 'webp', 'process() returns webp token');
+// ---------- process() writes cover.webp + cover-src.webp ----------
+$p->process('gamma', $srcPath);
 $cover = $tmpRoot . '/series/gamma/cover.webp';
 assert(is_file($cover), 'cover.webp produced');
 assert(filesize($cover) > 0, 'cover non-empty');
@@ -87,7 +86,7 @@ echo "commitPreview(): OK\n";
 // ---------- bad source path throws ----------
 $threw = false;
 try {
-    $p->process('delta', '/no/such/file.jpg', 'jpg');
+    $p->process('delta', '/no/such/file.jpg');
 } catch (\Throwable $e) {
     $threw = true;
 }
@@ -109,7 +108,7 @@ foreach ([
     $img->setImageFormat(pathinfo($name, PATHINFO_EXTENSION));
     $img->writeImage($path);
     $img->clear();
-    $p->process($slug, $path, pathinfo($name, PATHINFO_EXTENSION));
+    $p->process($slug, $path);
     $out = new Imagick($tmpRoot . '/series/' . $slug . '/cover.webp');
     assert(
         $out->getImageWidth() === $expectedSize && $out->getImageHeight() === $expectedSize,

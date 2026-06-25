@@ -208,15 +208,13 @@ final class AdminSeriesController
 
         // Optional fresh upload — same flow as preview but commit straight away.
         $uploadError = null;
-        $coverExt = null;
         $upload = $_FILES['cover'] ?? null;
         if (is_array($upload) && (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-            $coverExt = $this->ingestUpload($slug, $upload, $uploadError, /* promote */ true);
+            $this->ingestUpload($slug, $upload, $uploadError, /* promote */ true);
         }
 
         if ($uploadError === null && $promotePreview) {
             $this->processor->commitPreview($slug);
-            $coverExt ??= 'webp';
         }
 
         if ($uploadError !== null) {
@@ -224,14 +222,10 @@ final class AdminSeriesController
             return;
         }
 
-        $payload = [
+        $this->manifest->save($slug, [
             'title' => $title !== '' ? $title : null,
             'description' => $description !== '' ? $description : null,
-        ];
-        if ($this->manifest->hasCover($slug)) {
-            $payload['cover_ext'] = $coverExt ?? 'webp';
-        }
-        $this->manifest->save($slug, $payload);
+        ]);
 
         $this->flash('Saved series: ' . $slug);
         Http::redirect('/admin/series');
@@ -394,47 +388,45 @@ final class AdminSeriesController
     /**
      * @param array<string,mixed> $upload  the $_FILES['cover'] payload
      */
-    private function ingestUpload(string $slug, array $upload, ?string &$error, bool $promote): ?string
+    private function ingestUpload(string $slug, array $upload, ?string &$error, bool $promote): void
     {
         $err = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($err === UPLOAD_ERR_NO_FILE) {
             $error = 'No file selected.';
-            return null;
+            return;
         }
         if ($err !== UPLOAD_ERR_OK) {
             $error = self::uploadErrMessage($err);
-            return null;
+            return;
         }
         $size = (int) ($upload['size'] ?? 0);
         if ($size <= 0 || $size > self::MAX_BYTES) {
             $error = 'File too large (max ' . (self::MAX_BYTES / 1024 / 1024) . ' MB).';
-            return null;
+            return;
         }
         $tmp = (string) ($upload['tmp_name'] ?? '');
         if (!is_uploaded_file($tmp) && !is_file($tmp)) {
             $error = 'Upload temp file missing.';
-            return null;
+            return;
         }
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = (string) $finfo->file($tmp);
         if (!isset(self::ACCEPTED_MIME[$mime])) {
             $error = "Unsupported image type: {$mime}. Allowed: jpeg, png, webp.";
-            return null;
+            return;
         }
         if (!SeriesCoverProcessor::isAvailable()) {
             $error = 'ext-imagick is not installed on this server — cover upload is disabled.';
-            return null;
+            return;
         }
-        $ext = self::ACCEPTED_MIME[$mime];
         try {
             if ($promote) {
-                return $this->processor->process($slug, $tmp, $ext);
+                $this->processor->process($slug, $tmp);
+            } else {
+                $this->processor->preview($slug, $tmp);
             }
-            $this->processor->preview($slug, $tmp);
-            return 'webp';
         } catch (\Throwable $e) {
             $error = 'Cover processing failed: ' . $e->getMessage();
-            return null;
         }
     }
 

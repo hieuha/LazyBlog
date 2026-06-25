@@ -16,7 +16,7 @@ use App\SeriesManifest;
 $tmpRoot = sys_get_temp_dir() . '/lazyblog-test-asset-' . bin2hex(random_bytes(4));
 mkdir($tmpRoot . '/series/legit-slug', 0775, true);
 file_put_contents($tmpRoot . '/series/legit-slug/cover.webp', 'WEBPDATA');
-file_put_contents($tmpRoot . '/series/legit-slug/manifest.yaml', "title: x\n");
+file_put_contents($tmpRoot . '/series/legit-slug/manifest.json', '{"title":"x"}');
 
 register_shutdown_function(static function () use ($tmpRoot): void {
     if (is_dir($tmpRoot)) {
@@ -39,7 +39,7 @@ $cases = [
     ['slug-dotdot',   ['slug' => '..',         'file' => 'cover.webp'],            false],
     ['slug-empty',    ['slug' => '',           'file' => 'cover.webp'],            false],
     ['file-traversal',['slug' => 'legit-slug', 'file' => '../../../etc/passwd'],   false],
-    ['file-yaml',     ['slug' => 'legit-slug', 'file' => 'manifest.yaml'],         false],
+    ['file-json',     ['slug' => 'legit-slug', 'file' => 'manifest.json'],         false],
     ['file-php',      ['slug' => 'legit-slug', 'file' => 'cover.php'],             false],
     ['file-empty',    ['slug' => 'legit-slug', 'file' => ''],                      false],
     ['file-null',     ['slug' => 'legit-slug', 'file' => "cover\x00.webp"],        false],

@@ -11,7 +11,7 @@ use App\SeriesManifest;
  * `/series-assets/{slug}/{file}` URL.
  *
  * Same defence-in-depth posture as PluginAssetController — slug + filename
- * regex, extension allowlist (no `.yaml`, no `.php`), realpath jail.
+ * regex, extension allowlist (no `.json`, no `.php`), realpath jail.
  */
 final class SeriesAssetController
 {

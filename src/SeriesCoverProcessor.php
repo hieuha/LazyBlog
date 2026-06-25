@@ -52,17 +52,11 @@ final class SeriesCoverProcessor
 
     /**
      * Read $uploadedTmpPath, dither, and write
-     *   - cover-src.<ext>  (original, kept for re-render later)
+     *   - cover-src.webp   (original re-encoded for re-render later)
      *   - cover.webp       (dithered, transparent background)
      * under content/series/<slug>/.
-     *
-     * Returns the cover_ext token for the manifest. Always 'webp' for v1.
-     *
-     * @param 'jpg'|'jpeg'|'png'|'webp' $sourceExt source extension, kept for
-     *        API back-compat — the stash now always normalises to WebP for
-     *        smaller backup footprint.
      */
-    public function process(string $slug, string $uploadedTmpPath, string $sourceExt): string
+    public function process(string $slug, string $uploadedTmpPath): void
     {
         if (!self::isAvailable()) {
             throw new RuntimeException('ext-imagick is required for cover processing');
@@ -81,8 +75,6 @@ final class SeriesCoverProcessor
         $this->stashSource($dir, $uploadedTmpPath);
 
         $this->writeCover($dir, $uploadedTmpPath, 'cover.webp');
-
-        return 'webp';
     }
 
     /**

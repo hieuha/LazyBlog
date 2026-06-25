@@ -109,7 +109,7 @@ for editorial metadata (custom title, description, cover image).
 - Slug (link → public series page)
 - Title (manifest if set, else slug → Title Case)
 - Post count
-- Manifest badge (YES if `manifest.yaml` exists)
+- Manifest badge (YES if `manifest.json` exists)
 - Cover thumbnail (40×22 dot preview when `cover.webp` exists)
 - Last activity date
 - Actions: EDIT · DEL MANIFEST
@@ -151,7 +151,7 @@ rename `content/series/{old}/` → `content/series/{new}/` so the manifest
 and cover follow. Refuses to merge into an existing series (the new slug
 must have no manifest and no posts using it).
 
-**Deletion**: `[ DEL MANIFEST ]` removes `manifest.yaml` + `cover.webp` +
+**Deletion**: `[ DEL MANIFEST ]` removes `manifest.json` + `cover.webp` +
 `cover-src.webp`. Posts that reference the series via frontmatter are
 **not** touched — the series simply falls back to its slug-derived title
 and the QR fallback cover.
@@ -170,7 +170,7 @@ fallback. Falls through to `SITE_OG_IMAGE` when no cover exists.
 
 ```
 content/series/<slug>/
-├── manifest.yaml        # title, description, cover_ext, updated_at
+├── manifest.json        # title, description, updated_at
 ├── cover-src.webp       # upload re-encoded to WebP @ q=80 for compact backup
 └── cover.webp           # 600×600 1-bit transparent ordered Bayer dither
 ```

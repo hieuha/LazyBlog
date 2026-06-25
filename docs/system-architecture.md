@@ -122,9 +122,9 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |
 | `BadgeKinds` | 13 reusable badge executors (post-count, longest-streak, time-window, gap-days, etc.) | Closures parameterised by dict; no filesystem or DB |
 | `PostViewEvent` | Immutable event payload `{slug, userAgent, requestTime}` | Dispatched once per `GET /posts/{slug}` before response flush; plugins subscribe via `onPostView()` |
-| `SeriesManifest` | Sidecar metadata for series under `content/series/{slug}/manifest.yaml` (title, description, cover_ext) | Pure model — no HTTP / no Imagick. `load()` returns null for missing or malformed YAML; `save()` is atomic via `FileWriter` |
+| `SeriesManifest` | Sidecar metadata for series under `content/series/{slug}/manifest.json` (title, description, updated_at) | Pure model — no HTTP / no Imagick. `load()` returns null for missing or malformed JSON; `save()` is atomic via `FileWriter` |
 | `SeriesCoverProcessor` | Convert uploaded image → 1-bit Atkinson dither WebP with transparent background | Hard dep on `ext-imagick` (`isAvailable()` gate); downscale-only (never upscale a small upload); preview / commit two-phase flow |
-| `SeriesAssetController` | Serve `content/series/{slug}/{file}` at `/series-assets/{slug}/{file}` | Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg` only — no `yaml`/`php`), realpath jail |
+| `SeriesAssetController` | Serve `content/series/{slug}/{file}` at `/series-assets/{slug}/{file}` | Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg` only — no `json`/`php`), realpath jail |
 | `AdminSeriesController` | CRUD for series manifest + cover (list / edit / preview / save / delete) | Auth + CSRF + slug regex on every endpoint; manifest-delete keeps posts untouched (discovery still works via frontmatter) |
 
 ## Cache pyramid

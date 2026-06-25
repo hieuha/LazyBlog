@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App;
 
 use RuntimeException;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Sidecar metadata for a series — title, description, cover image.
  *
- * Stored under content/series/<slug>/{manifest.yaml, cover-src.*, cover.webp}.
+ * Stored under content/series/<slug>/{manifest.json, cover-src.webp, cover.webp}.
  * The manifest is purely an enhancement layer; series discovery still happens
  * via post frontmatter (`series:` field). A manifest with no matching posts
  * is an orphan and silently ignored on listing surfaces.
+ *
+ * JSON (not YAML) keeps the on-disk format consistent with the rest of the
+ * project's machine-written sidecars (.index.json, badges.json, plugin
+ * state). Cover presence is derived from `is_file(cover.webp)` — no
+ * separate field needed.
  *
  * Pure model — no HTTP, no image processing. Controllers handle slug
  * validation before reaching this layer.
@@ -34,7 +38,7 @@ final class SeriesManifest
 
     public function manifestPath(string $slug): string
     {
-        return $this->dir($slug) . '/manifest.yaml';
+        return $this->dir($slug) . '/manifest.json';
     }
 
     public function coverPath(string $slug): ?string
@@ -69,7 +73,7 @@ final class SeriesManifest
     }
 
     /**
-     * @return array{title:?string, description:?string, cover_ext:?string, updated_at:?string}|null
+     * @return array{title:?string, description:?string, updated_at:?string}|null
      */
     public function load(string $slug): ?array
     {
@@ -78,8 +82,13 @@ final class SeriesManifest
             return null;
         }
 
+        $bytes = @file_get_contents($path);
+        if ($bytes === false) {
+            return null;
+        }
+
         try {
-            $raw = Yaml::parseFile($path);
+            $raw = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
         } catch (\Throwable) {
             return null;
         }
@@ -91,7 +100,6 @@ final class SeriesManifest
         return [
             'title' => isset($raw['title']) && is_string($raw['title']) ? trim($raw['title']) : null,
             'description' => isset($raw['description']) && is_string($raw['description']) ? trim($raw['description']) : null,
-            'cover_ext' => isset($raw['cover_ext']) && is_string($raw['cover_ext']) ? $raw['cover_ext'] : null,
             'updated_at' => isset($raw['updated_at']) && is_string($raw['updated_at']) ? $raw['updated_at'] : null,
         ];
     }
@@ -99,7 +107,7 @@ final class SeriesManifest
     /**
      * Atomic manifest write. Caller already validated slug + data shape.
      *
-     * @param array{title?:?string, description?:?string, cover_ext?:?string} $data
+     * @param array{title?:?string, description?:?string} $data
      */
     public function save(string $slug, array $data): void
     {
@@ -115,13 +123,10 @@ final class SeriesManifest
         if (isset($data['description']) && $data['description'] !== null && $data['description'] !== '') {
             $payload['description'] = (string) $data['description'];
         }
-        if (isset($data['cover_ext']) && $data['cover_ext'] !== null && $data['cover_ext'] !== '') {
-            $payload['cover_ext'] = (string) $data['cover_ext'];
-        }
         $payload['updated_at'] = (new \DateTimeImmutable('now'))->format(\DateTimeInterface::ATOM);
 
-        $yaml = Yaml::dump($payload, 2, 2);
-        FileWriter::writeAtomic($this->manifestPath($slug), $yaml);
+        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        FileWriter::writeAtomic($this->manifestPath($slug), $json);
     }
 
     /**

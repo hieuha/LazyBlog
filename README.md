@@ -39,7 +39,7 @@ title-attribute captions. YouTube URLs still auto-embed as iframes.
 **Series with halftone-dot covers.** A multi-part series (any post
 with `series: my-slug` in its frontmatter) shows up at `/series` and
 `/series/{slug}` — and now carries a manifest sidecar
-(`content/series/{slug}/manifest.yaml`) with editorial title +
+(`content/series/{slug}/manifest.json`) with editorial title +
 description + cover image. Cover uploads are center-cropped to 600×600,
 run through Imagick's ordered Bayer dither, and saved as a
 transparent-where-light WebP that CSS `mask-image` + `currentColor`

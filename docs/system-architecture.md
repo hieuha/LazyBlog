@@ -61,6 +61,9 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
    - PostRepository::bySlug($slug)
      ├─ indexStale()?  rebuildIndex() → writes .index.json + invalidates .llms*.txt + .feed.xml
      └─ file_get_contents on the matched .md
+   - UNLOCK GATE: if post is protected, check Auth::isPostUnlocked($slug)
+     ├─ false → check postUnlockTooMany() and render views/post-password.php instead
+     └─ true → proceed to render body
    - MarkdownRenderer::render($body)
      ├─ preprocessStandaloneImages → collapse consecutive ![](url) into gallery
      ├─ preprocessAdmonitions  → ::: highlight / ::: story → <!--LAZY-INJ-N-->
@@ -75,8 +78,35 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
      ├─ ob_start, require views/post.php
      │  └─ slotPostMeta(['slug'=>$slug]) → collect plugin-contributed HTML fragments
      ├─ ob_get_clean → $body
-     └─ require views/layout.php  emits HTML with SEO / OG / JSON-LD (includes datePublished ISO datetime)
+     └─ require views/layout.php  emits HTML with SEO / OG / JSON-LD
+        └─ if post is protected, set $lockedView=true to skip og:image + og:description
 4. Caddy applies asset cache + compression and returns the response
+```
+
+### Unlock submission (`POST /posts/{slug}/unlock`)
+
+```
+1. Caddy + php-fpm boot (same as above)
+2. PostController::unlockSubmit($params)
+   - CSRF::requireValid()
+   - PostRepository::bySlug($slug)
+   - Auth::postUnlockTooMany($ip)? → 429 or re-render form
+   - verify password against $post->passwordHash() via password_verify()
+   - On success: Auth::markPostUnlocked($slug) + redirect to /posts/{slug}
+   - On failure: Auth::postUnlockRecordFailure($ip) + re-render form with error
+3. Redirect back to GET /posts/{slug} (which now sees isPostUnlocked=true)
+```
+
+### Raw markdown (`GET /posts/{slug}.md`)
+
+```
+1. Caddy + php-fpm boot
+2. PostController::raw($slug)
+   - PostRepository::bySlug($slug)
+   - if protected AND !Auth::check() AND !Auth::isPostUnlocked()
+     → 404 (anonymous cannot download protected post markdown)
+   - stripPasswordHashLine($raw) removes the `password_hash:` line
+   - Serve plaintext markdown with Content-Type: text/plain
 ```
 
 ### Admin save (`POST /admin/save`)
@@ -106,18 +136,19 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | Module | Responsibility | Key invariant |
 |--------|----------------|---------------|
 | `Config` | Read $_ENV, assert required keys at boot | Throws RuntimeException if a required var is missing |
-| `Auth` | Session lifecycle, password verify, requireAuth gate | Session ID regenerated on login; strict_mode rejects unknown SIDs |
+| `Auth` | Session lifecycle, password verify, requireAuth gate, per-post unlock tracking, rate-limit | Session ID regenerated on login; strict_mode rejects unknown SIDs; post-unlock state persists per session; rate-limit counts per IP in `/tmp/*.json` |
 | `Csrf` | Per-session random_bytes(32) token | hash_equals comparison; one token per session |
 | `Router` | Pattern → handler dispatch | Most-specific patterns first; 404 fallback renders `not-found.php` |
 | `Http` | render() with layout wrap; redirect() with CRLF strip; e() escape | Output buffering for body capture; layout always rendered last |
-| `Post` | Immutable value object; expose `dateTime()` + `hasExplicitTime()` helpers | Body stays as raw markdown; rendering happens lazily; ISO datetime support |
-| `PostRepository` | Read/write `.md` files, maintain index cache | Filename = `YYYY-MM-DD-{slug}.md`; rebuilds on mtime drift |
-| `FrontmatterParser` | YAML frontmatter ⇄ body split | Tolerates missing frontmatter; accepts both `YYYY-MM-DD` and ISO datetime |
+| `Post` | Immutable value object; expose `dateTime()` + `hasExplicitTime()` + `passwordHash()` + `isProtected()` helpers | Body stays as raw markdown; rendering happens lazily; ISO datetime support; password hash optional |
+| `PostRepository` | Read/write `.md` files, maintain index cache | Filename = `YYYY-MM-DD-{slug}.md`; rebuilds on mtime drift; index contains `"protected": bool` (never the hash) |
+| `FrontmatterParser` | YAML frontmatter ⇄ body split | Tolerates missing frontmatter; accepts both `YYYY-MM-DD` and ISO datetime; parses optional `password_hash:` field |
 | `SlugUtil` | Slug validation + Vietnamese-aware diacritic strip | `^[a-z0-9-]+$` max 80 chars |
 | `MarkdownRenderer` | Markdown → HTML with LazyBlog extensions | Admonitions go through placeholder bridge to bypass CommonMark's block parser |
 | `FileWriter` | Atomic write helper | tempnam in target dir + rename — never corrupts on crash |
-| `LlmsBuilder` | Generate llms.txt + llms-full.txt | Reads index, lazily reads bodies; outputs follow llmstxt.org |
-| `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); 20-item limit; full HTML in content:encoded |
+| `LlmsBuilder` | Generate llms.txt + llms-full.txt | Reads index, lazily reads bodies; skips protected entries; outputs follow llmstxt.org |
+| `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); filters protected entries BEFORE slicing limit; full HTML in content:encoded |
+| `Searcher` | Full-text index on title + tags + body | Indexes protected post title + tags only; body never indexed; snippet placeholder for protected posts |
 | `GamificationCalculator` | Pure streak + badge evaluation logic | Takes post timestamps + arrays in, emits unlocked-badge list; memoises per-unit longest-streak |
 | `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |
 | `BadgeKinds` | 13 reusable badge executors (post-count, longest-streak, time-window, gap-days, etc.) | Closures parameterised by dict; no filesystem or DB |
@@ -178,6 +209,9 @@ Public visitors transparently warm the caches. No cron, no service.
 | Admin session | Fixation | `session.use_strict_mode` + regenerate_id on login |
 | Admin session | Cookie theft | HttpOnly, SameSite=Lax, Secure (when SESSION_SECURE=true) |
 | Admin login | Brute force | 500ms delay per failed attempt + optional Caddy rate-limit |
+| Protected post unlock | Brute force | 10 failures per IP within 15-min sliding window + 500ms delay per attempt |
+| Protected post unlock | Timing oracle (enumerate locked posts) | Anonymous `.md` fetches return 404 instead of 403 |
+| Protected post password | Plaintext disclosure | Never stored in YAML, never indexed, never served via `.md` routes — only hash on disk |
 | State-changing admin endpoints | CSRF | Csrf::requireValid on every POST |
 | `?next=` parameter | Open redirect / header injection | `safeRedirectTarget` allow-list + CRLF reject |
 | Preview endpoint | DoS via huge payload | 256KB read cap in AdminController::preview |
@@ -209,6 +243,8 @@ Public visitors transparently warm the caches. No cron, no service.
 │       └── admin-editor.js               (admin-only)
 ├── src/                                  ← outside web root
 ├── views/                                ← outside web root
+│   ├── post-password.php                 (unlock form for protected posts)
+│   └── ...
 ├── scripts/
 │   ├── hash-password.php
 │   └── backup-content.sh

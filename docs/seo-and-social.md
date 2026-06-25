@@ -112,6 +112,17 @@ Each platform caches preview metadata for days to weeks. After updating
 - **Discord / Slack**: paste a slightly different query string
   (`?v=2`) the first time so they cache miss
 
+## Password-protected posts
+
+Social platforms cache the og:image and og:description when a link is first
+shared. For protected posts, `views/layout.php` sets `$lockedView=true`,
+which skips `og:image` (via `firstBodyImage()`) and skips og:description
+(via body excerpt fallback). This prevents the locked post body from leaking
+into preview cards on Facebook, Telegram, LinkedIn, etc.
+
+The post title and og:url still appear (so sharers can identify the post),
+but the preview card remains minimal — no image, no body excerpt.
+
 ## Common gotchas
 
 - **`og:url` must match the actual domain** — if you share
@@ -125,3 +136,7 @@ Each platform caches preview metadata for days to weeks. After updating
   (auto-detected) or set `SITE_OG_IMAGE` as the site default.
 - **Cache propagation can take minutes** even after a force re-scrape.
   Test in incognito so your own browser cache doesn't mislead you.
+- **Protected post og:image silently omitted** — if you share a locked
+  post before unlocking it, the preview card won't have an image. Once
+  unlocked in your session and shared again, the cached card doesn't
+  update for days. Plan accordingly if social sharing locked content.

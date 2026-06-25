@@ -73,6 +73,72 @@ escaped form.
   failed password attempts
 - **Preview DoS**: `/admin/preview` reads at most 256KB from the request body
 
+## Password-protected posts
+
+Posts can be individually locked behind a bcrypt-hashed password. Unlock
+state is session-flagged, not cookie-based.
+
+**Storage and secrecy**:
+- Hash lives only in the post frontmatter YAML as `password_hash:` (bcrypt
+  cost 12). Never indexed by search, never served via `.md` routes to
+  unlocked/admin, never sent in feeds or llms.txt.
+- `PostController::raw()` strips the `password_hash:` line before serving
+  plaintext markdown to authenticated visitors
+- `content/.index.json` records `"protected": bool` only — the hash stays in
+  the file itself
+
+**Visitor flow**:
+- `PostController::show()` gates render: locked posts serve the
+  `views/post-password.php` unlock form instead of body until
+  `Auth::isPostUnlocked($slug)` returns true
+- Correct password calls `Auth::markPostUnlocked($slug)` and redirects back;
+  session ends when browser closes
+- Wrong password fails silently after incrementing the per-IP counter
+
+**Rate limiting (per-IP, separate file)**:
+- 10 failures within a 15-minute sliding window throttle the IP and disable
+  input until the window clears. Throttle honours browser F5.
+- 500ms timing burn on every failure (same as admin login)
+- Rate-limit state stored in `/tmp/lazyblog-post-unlock-attempts.json` —
+  ephemeral, cleared on reboot (acceptable for a single-server blog)
+- Anonymous `.md` fetches return 404 for protected posts to avoid a timing
+  oracle
+
+**Listings, search, and feeds**:
+- Locked posts are excluded from `/llms.txt`, `/llms-full.txt`, and
+  `/feed.xml` — title, URL, body all omitted
+- Home, tags, archive: title + `🔒 LOCKED` / `🔒 UNLOCKED` badge (unlocked
+  only if visitor's session is flagged)
+- Search: title + tag matches surface; body terms return zero hits with a
+  `🔒 protected post` placeholder
+
+## Behind a CDN / reverse proxy
+
+When deployed behind Cloudflare or another edge proxy, the reverse proxy
+replaces `REMOTE_ADDR` with its own IP, so rate-limit counters are shared
+across all visitors and become useless.
+
+**`TRUST_CF_CONNECTING_IP` env knob** (default `false`):
+- `false` (recommended): rate-limits apply per `REMOTE_ADDR` only. If you
+  accept direct traffic, this is correct. If ALL traffic flows through
+  Cloudflare, rate-limits won't work.
+- `true`: switch to `CF-Connecting-IP` header (validated as a real IP via
+  `filter_var(FILTER_VALIDATE_IP)`). Only enable when origin traffic
+  actually flows through Cloudflare — see threat model below.
+
+**Threat model when enabling `TRUST_CF_CONNECTING_IP=true`**:
+- The header is spoofable by any client that connects directly to the
+  origin IP (bypassing Cloudflare). If your origin accepts direct HTTP,
+  an attacker can spoof any IP to reset rate-limit counters.
+- **Fix**: lock the origin to Cloudflare ranges only. Use a Cloudflare
+  Tunnel (origin-less), a reverse-proxy allowlist (IP ranges from
+  https://www.cloudflare.com/ips/), or a cloud firewall (AWS SG, Azure NSG)
+  to block non-Cloudflare direct connections.
+- **Multi-server scope**: if you load-balance across multiple servers,
+  `/tmp/*.json` is per-host, so an attacker can distribute requests across
+  servers to bypass the limit. Migrate rate-limit storage to a shared Redis
+  or database if needed.
+
 ## Response headers (set on every request)
 
 ```

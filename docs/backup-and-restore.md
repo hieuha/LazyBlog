@@ -8,19 +8,31 @@ nothing.
 
 ```
 content/
-├── posts/                  # your authored markdown files
-├── uploads/                # admin-UI image uploads, year/month subdirs
-├── .index.json             # frontmatter cache — regenerated on demand
-├── .llms.txt               # derived cache — regenerated on demand
-├── .llms-full.txt          # derived cache — regenerated on demand
-└── .feed.xml               # derived cache — regenerated on demand
+├── posts/                  # your authored markdown files (PRESERVE)
+├── uploads/                # admin-UI image uploads, year/month subdirs (PRESERVE)
+├── series/                 # series manifests + dithered covers (PRESERVE)
+├── .index.json             # frontmatter cache — regenerated on demand (SKIP)
+├── .llms.txt               # derived cache — regenerated on demand (SKIP)
+├── .llms-full.txt          # derived cache — regenerated on demand (SKIP)
+└── .feed.xml               # derived cache — regenerated on demand (SKIP)
 ```
 
 The `.*` dotfiles are caches that rebuild automatically when posts change,
-so the only state you really need to preserve is `content/posts/` and
-`content/uploads/`. The script archives the whole `content/` directory
-which is simpler — caches add a few KB, uploads add whatever you've
-uploaded (typically a few MB per post with images).
+so the only state you really need to preserve is `content/posts/`,
+`content/uploads/`, and `content/series/`. The script archives the whole
+`content/` directory which is simpler — caches add a few KB, uploads and
+series cover WebPs add whatever you've uploaded (typically a few MB per
+post with images).
+
+## Ephemeral rate-limit files (never backed up)
+
+`/tmp/lazyblog-post-unlock-attempts.json` and `/tmp/lazyblog-login-attempts.json`
+track per-IP brute-force attempts. They live in `/tmp`, so:
+
+- **Reboot clears them** — acceptable for a single-server blog
+- **Don't back them up** — they're ephemeral counters, not state
+- **Multi-server scale**: if you load-balance across servers, migrate to Redis
+  or a database to share rate-limit state across hosts
 
 ## Helper script
 

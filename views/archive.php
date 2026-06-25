@@ -5,6 +5,7 @@
 /** @var array{weeks:list<list<array{date:string,count:int,posts:list<array<string,mixed>>,inRange:bool}>>,monthLabels:array<int,string>,maxCount:int,firstDate:string,lastDate:string} $heatmap */
 /** @var int $total */
 
+use App\Auth;
 use App\Http;
 
 /**
@@ -104,7 +105,9 @@ $intensity = static function (int $count, bool $inRange): string {
                             <a class="archive-link" href="/posts/<?= Http::e($entry['slug']) ?>">
                                 <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                 <?= Http::e($entry['title']) ?>
-                                <?php if (!empty($entry['protected'])): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
+                                <?php if (!empty($entry['protected'])):
+                                    $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
+                                ?> <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span><?php endif; ?>
                             </a>
                         </li>
                     <?php endforeach; ?>

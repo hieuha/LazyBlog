@@ -47,6 +47,7 @@ image: "/uploads/2026/06/antenna.webp"
 | `image` | no | Per-post social-card image. Used as `og:image` + `twitter:image` when shared on Telegram/Facebook/Slack/Twitter. Path (`/uploads/…webp`) gets prefixed with `SITE_URL`; absolute URLs pass through. Falls back to auto-detected first body image, then `SITE_OG_IMAGE` env when omitted. |
 | `series` | no | Slug grouping this post into a multi-part series. Add the same value to every post in the series. Shows a banner at the top of the post ("Part N of M") + prev/next nav at the bottom. The series index lives at `/series/{slug}`. The editor's series field auto-suggests existing slugs via a native `<datalist>` — pick one or type a new kebab-case slug to start a series. |
 | `part` | no | Explicit numeric ordering within a series (e.g. `1`, `2`). When omitted, posts in the series are ordered by `date` ascending. |
+| `password_hash` | no | bcrypt hash of a password. When present, public visits to `/posts/{slug}` render an unlock form instead of the body until the visitor enters the password. Set/remove via the admin editor — never edit this line by hand. See "Password-protected posts" below. |
 
 ## Body — markdown syntax
 
@@ -191,6 +192,66 @@ reopen the tab after an accidental close. Cleared from localStorage after succes
 
 **Unsaved-changes guard** — navigating away with unsaved edits triggers a
 browser confirm. Cleared on actual SAVE.
+
+## Password-protected posts
+
+Lock a single post behind a password without changing the rest of the
+admin flow.
+
+**Admin UI** (editor at `/admin/edit/{slug}`):
+
+- `[ Set Password ]` button next to the password input → type the
+  password (min 4 chars) and click. The post is locked in one click,
+  no full Save Post round trip. Stays in the editor afterwards.
+- `[ Update Password ]` (same button, label flips when the post is
+  already locked) → rotate to a new password.
+- `[ Remove Password ]` (only visible when the post is locked) →
+  confirm dialog, then the hash is dropped from the frontmatter and
+  the post is public again.
+
+**On disk**, the frontmatter gains a single line:
+
+```yaml
+password_hash: '$2y$12$abc...'
+```
+
+This is bcrypt — never the plaintext. Editing the post body and saving
+with the password field blank keeps the existing hash. To clear it
+without using the button, delete the `password_hash:` line manually.
+
+**What visitors see** at `/posts/{slug}` when the post is locked:
+
+- An "ACCESS RESTRICTED" HUD form replaces the body. Title and
+  `summary:` are visible (so a reader who knows the post exists can
+  decide whether to ask for the password). Body, code blocks, embedded
+  media — none of that renders.
+- Correct password sets a session flag, redirects back to the post,
+  and the body renders for the rest of the session. Closing the
+  browser ends the unlock.
+- Wrong password shakes the panel red and shows "X attempts left" —
+  10 failures within a 15-minute sliding window throttle that IP and
+  disable the input until the window clears. F5 honours the throttle.
+- `/posts/{slug}.md` returns 404 to anonymous visitors. Visitors who
+  have unlocked the post in this session, and admins, do get the raw
+  markdown — with the `password_hash:` line stripped before serving.
+
+**Listings & feeds** for locked posts:
+
+- Home, `/tags/{tag}`, `/archive`, admin list: title and 🔒 badge.
+  `summary:` is shown when present; no body excerpt.
+- `/search?q=...`: title and tag matches still surface; body terms
+  return zero matches and the snippet renders as `🔒 protected post`.
+- `/llms.txt`, `/llms-full.txt`, `/feed.xml`: the post is dropped
+  entirely — title, URL, and body all stay out of the corpus.
+
+**Rate limit + IP source**:
+
+The unlock throttle counts per IP. Behind Cloudflare every visitor
+arrives via the same edge IP and would share a single counter, so the
+`.env` knob `TRUST_CF_CONNECTING_IP=true` switches the IP source from
+`REMOTE_ADDR` to the `CF-Connecting-IP` header (validated as a real
+IP). Only turn this on when origin traffic actually flows through
+Cloudflare — see `security.md` for the threat model.
 
 ## Drafts and scheduling
 

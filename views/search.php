@@ -4,6 +4,7 @@
 /** @var list<array{slug:string,title:string,date:string,tags:list<string>,icon:?string,score:int,snippet:string}> $hits */
 /** @var \Closure $fold */
 
+use App\Auth;
 use App\Http;
 
 /**
@@ -97,7 +98,9 @@ $highlight = static function (string $text, string $q) use ($fold): string {
                         <span class="search-title">
                             <?php if (!empty($hit['icon'])): ?><span class="search-icon"><?= Http::e($hit['icon']) ?></span> <?php endif; ?>
                             <?= $highlight($hit['title'], $q) ?>
-                            <?php if (($hit['snippet'] ?? '') === '🔒 protected post'): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
+                            <?php if (($hit['snippet'] ?? '') === '🔒 protected post'):
+                                $unlocked = Auth::isPostUnlocked((string) $hit['slug']);
+                            ?> <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span><?php endif; ?>
                         </span>
                     </a>
                     <p class="search-snippet"><?= $highlight($hit['snippet'], $q) ?></p>

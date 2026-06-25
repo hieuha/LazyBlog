@@ -2,6 +2,7 @@
 /** @var string $title */
 /** @var list<array{slug:string,title:string,date:string,tags:list<string>,draft:bool,icon:?string,summary:?string,file:string,mtime:int}> $posts */
 
+use App\Auth;
 use App\Http;
 
 // Group posts by calendar day so each date becomes a section header.
@@ -30,7 +31,9 @@ foreach ($posts as $entry) {
                                 <span class="post-title">
                                     <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                     <?= Http::e($entry['title']) ?>
-                                    <?php if (!empty($entry['protected'])): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
+                                    <?php if (!empty($entry['protected'])):
+                                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
+                                    ?> <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span><?php endif; ?>
                                 </span>
                             </a>
                             <?php if (!empty($entry['summary'])): ?>

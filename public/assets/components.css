@@ -364,12 +364,31 @@
 
 /* Password-protected post badge — used in title lines on home/tag/archive/search
    listings to flag posts that gate body content behind a password form.
-   Emoji renders inline at the surrounding text size; tiny opacity drop keeps
-   the icon from competing with the title. */
+   Rendered as a small knockout pill (theme color background, --bg text)
+   so it sits visually consistent with the date pill used on listing
+   timelines, rather than a colourful emoji that clashes with the
+   phosphor/CRT aesthetic.
+   `.post-lock--unlocked` is the same pill outlined instead of filled —
+   reader has already entered the password this session, so the badge
+   stays present (it's still protected) but reads less alarming. */
 .post-lock {
     display: inline-block;
-    font-size: 0.85em;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: 1.5px;
+    color: var(--bg);
+    background: var(--primary);
+    padding: 3px 6px;
+    margin-left: 6px;
+    vertical-align: 1px;
+    text-transform: uppercase;
+    border-radius: 1px;
+}
+.post-lock--unlocked {
+    color: var(--primary);
+    background: transparent;
+    border: 1px solid var(--primary-dim);
+    padding: 2px 5px;     /* compensate for the 1px border so total height matches */
     opacity: 0.85;
-    margin-left: 4px;
-    vertical-align: baseline;
 }

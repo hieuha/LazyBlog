@@ -16,6 +16,7 @@
 | `ADMIN_PASSWORD_HASH` | yes for admin | bcrypt hash. Empty = login disabled — site is read-only |
 | `SESSION_NAME` | no | Cookie name. Default `lazyblog_sess` |
 | `SESSION_SECURE` | yes for HTTPS | `true` in production (HTTPS-only cookie); `false` for local HTTP dev |
+| `TRUST_CF_CONNECTING_IP` | no | `true` to read the visitor IP from the `CF-Connecting-IP` header instead of `REMOTE_ADDR`. Default `false`. Only turn this on when the origin server **only** accepts traffic that has actually transited Cloudflare — otherwise the header is spoofable and the unlock-attempt rate limit becomes useless. See [`security.md`](security.md) → "Behind a CDN / reverse proxy" |
 | `SITE_OG_IMAGE` | no | Default social-card image (path or absolute URL). Used when a post doesn't define `image:` in frontmatter. Recommended 1200×630 px |
 | `SITE_TWITTER_HANDLE` | no | Site's Twitter handle with `@`. Emitted as `twitter:site` so the rich card credits your account |
 | `SITE_GITHUB_URL` | no | Project source link in footer "§ SOURCE" block. Defaults to the upstream LazyBlog repo. Empty hides the line |
@@ -72,6 +73,8 @@ readers find the feed without a URL hint.
 | `GET /admin/edit/{slug}` | Prefilled edit form |
 | `POST /admin/save` | Validates + atomic write + cache invalidation |
 | `POST /admin/delete/{slug}` | CSRF-protected unlink |
+| `POST /admin/set-password/{slug}` | One-click: bcrypt-hash the submitted password and lock the post (or rotate the existing password). No save-post round trip |
+| `POST /admin/remove-password/{slug}` | One-click: strip `password_hash:` from the post's frontmatter |
 | `POST /admin/preview` | Server-side markdown render for EasyMDE preview pane |
 | `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp` |
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |

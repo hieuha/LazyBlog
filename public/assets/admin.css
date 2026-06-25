@@ -532,21 +532,6 @@ button.admin-btn-sm { font-size: 10px; }
     background: #ffb700;
     box-shadow: 0 0 6px rgba(255, 183, 0, 0.5);
 }
-/* `.admin-status` zeroes the font-size to render dot states. The locked
-   indicator wants the actual emoji, so undo the zeroing for this variant
-   and drop the background pill so the icon sits next to the live/draft dot. */
-.admin-status-locked {
-    width: auto;
-    height: auto;
-    background: transparent;
-    box-shadow: none;
-    border-radius: 0;
-    font-size: 14px;
-    line-height: 1;
-    margin-left: 6px;
-    margin-top: 0;
-    vertical-align: middle;
-}
 
 @media (max-width: 600px) {
     .admin-table thead { display: none; }

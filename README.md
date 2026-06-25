@@ -76,6 +76,27 @@ magic-link cross-blog spray, symmetric revoke — see
 `plugins/graffiti/README.md`). Empty `PLUGINS=` is a no-op. See
 `docs/plugin-development.md`.
 
+**Password-protected posts.** Lock a single post behind a per-post
+password without touching the rest of the editor flow. Set it in the
+admin editor with one click ([ Set Password ] / [ Remove Password ]
+side-channel buttons — no save-post round trip); the password is
+bcrypt-hashed into the YAML frontmatter as `password_hash:`. Visitors
+land on an "ACCESS RESTRICTED" HUD form (theme-colored, terminal
+aesthetic) instead of the body; the correct password sets a session
+flag and unlocks for the rest of that browser session. Wrong-password
+state shakes the panel red and shows attempts-left; 10 failures in a
+sliding 15-min window throttle the IP and disable the field
+(`TRUST_CF_CONNECTING_IP=true` switches the IP source to the
+`CF-Connecting-IP` header when traffic actually flows through
+Cloudflare). Listings show a small `[ LOCKED ]` / `[ UNLOCKED ]`
+phosphor pill so the operator can see at a glance which posts are
+gated. Raw `.md`, `/llms.txt`, `/llms-full.txt`, `/feed.xml` exclude
+protected posts entirely (anonymous 404 on the `.md` endpoint;
+unlocked-session readers and admins get the markdown back with the
+`password_hash:` line stripped). Search still surfaces title + tag
+matches with a `// protected post` snippet but never indexes the body.
+See `docs/writing-posts.md` → "Password-protected posts".
+
 **Hardened, ergonomic.** CSP (incl. `media-src`), CSRF, atomic file
 writes, session hardening, scheme-whitelisted image URLs. Stylesheets
 split by concern and cache-busted via `filemtime` so deploys
@@ -94,6 +115,7 @@ Backup with `rsync`. Restore in seconds.
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
 │  Series with covers   ·  Bayer-dither WebP + manifest│
+│  Password-protected   ·  bcrypt + session unlock HUD │
 │  Search + Archive     ·  reading-progress meter     │
 │  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
@@ -156,7 +178,7 @@ playbook.
 
 | File | Read when |
 |------|-----------|
-| `docs/writing-posts.md` | Authoring posts — frontmatter, admin UI, drafts |
+| `docs/writing-posts.md` | Authoring posts — frontmatter, admin UI, drafts, password-protected posts |
 | `docs/markdown-syntax.md` | What renders inside post `.md` files |
 | `docs/configuration.md` | `.env` variables + URL route reference |
 | `docs/bare-metal-deployment-guide.md` | Manual VPS playbook (what `install-vps.sh` automates) |

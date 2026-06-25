@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App;
 
 use League\CommonMark\CommonMarkConverter;
+use League\CommonMark\Extension\Footnote\FootnoteExtension;
+use League\CommonMark\Extension\Strikethrough\StrikethroughExtension;
 use League\CommonMark\Extension\Table\TableExtension;
+use League\CommonMark\Extension\TaskList\TaskListExtension;
 
 /**
  * Markdown → HTML with the CRT design pattern library baked in.
@@ -44,7 +47,11 @@ final class MarkdownRenderer
             'html_input' => 'allow',
             'allow_unsafe_links' => false,
         ]);
-        $this->converter->getEnvironment()->addExtension(new TableExtension());
+        $env = $this->converter->getEnvironment();
+        $env->addExtension(new TableExtension());
+        $env->addExtension(new TaskListExtension());
+        $env->addExtension(new StrikethroughExtension());
+        $env->addExtension(new FootnoteExtension());
     }
 
     /**
@@ -60,6 +67,8 @@ final class MarkdownRenderer
         $pre = $this->preprocessAdmonitions($pre);
         $html = (string) $this->converter->convert($pre);
         $html = $this->reinjectStashed($html);
+        $html = $this->postprocessHighlights($html);
+        $html = $this->postprocessStrikethrough($html);
         $html = $this->postprocessFreqTags($html);
         $html = $this->postprocessFigures($html);
         $html = $this->injectHeadingIds($html);
@@ -521,6 +530,68 @@ final class MarkdownRenderer
         $parts[] = $autoplay ? 'preload="auto"' : 'preload="metadata"';
 
         return ' ' . implode(' ', $parts);
+    }
+
+    /**
+     * Lenient `~~text~~` → `<del>text</del>` catch-up pass. GFM's strict
+     * flanking rule rejects `~~text ~~` (trailing space before close) and
+     * `~~text~~word` (close immediately followed by alphanumeric), which
+     * surprises writers who expect Obsidian/Notion-style loose strike. The
+     * StrikethroughExtension still handles strict cases at AST level
+     * (covers nesting with bold/italic) — this pass only mops up what
+     * survived as literal `~~…~~` text. Skips `<pre>` and `<code>` so
+     * source samples stay literal.
+     */
+    private function postprocessStrikethrough(string $html): string
+    {
+        return $this->replaceOutsideCode(
+            $html,
+            '/~~([^~\n]+?)~~/u',
+            '<del>$1</del>',
+        );
+    }
+
+    /**
+     * Convert `==text==` to `<mark>text</mark>` (extended-markdown highlight).
+     * Skips anything inside `<pre>` and `<code>` so code samples that contain
+     * `==` (Python equality, etc.) stay literal. Inner content can't include
+     * `=` or newlines, and can't start/end with whitespace — that filters out
+     * comparison operators like `5 == 4` while still matching real highlights.
+     */
+    private function postprocessHighlights(string $html): string
+    {
+        return $this->replaceOutsideCode(
+            $html,
+            '/==(?!\s)([^\n=]+?)(?<!\s)==/u',
+            '<mark>$1</mark>',
+        );
+    }
+
+    /**
+     * Apply a regex replacement to HTML while leaving `<pre>` and `<code>`
+     * regions untouched. Code blocks are stashed first, the replacement
+     * runs on the remaining HTML, then the stashed blocks are restored.
+     * Used by both the highlight (`==`) and lenient strikethrough (`~~`)
+     * postprocessors so neither corrupts source samples that contain the
+     * marker chars literally.
+     */
+    private function replaceOutsideCode(string $html, string $pattern, string $replacement): string
+    {
+        $stashed = [];
+        $stash = static function (array $m) use (&$stashed): string {
+            $idx = count($stashed);
+            $stashed[$idx] = $m[0];
+            return "\x01RX{$idx}\x01";
+        };
+        $html = (string) preg_replace_callback('/<pre[\s\S]*?<\/pre>/u', $stash, $html);
+        $html = (string) preg_replace_callback('/<code[\s\S]*?<\/code>/u', $stash, $html);
+        $html = (string) preg_replace($pattern, $replacement, $html);
+        $html = (string) preg_replace_callback(
+            '/\x01RX(\d+)\x01/',
+            static fn (array $m): string => $stashed[(int) $m[1]] ?? '',
+            $html,
+        );
+        return $html;
     }
 
     /**

@@ -25,13 +25,115 @@ Everything in the CommonMark 0.31 spec works:
 - Raw HTML is **allowed** (`html_input => allow`) — useful for one-off
   embeds, but you give up XSS protection for what you write
 
+Also enabled (extended-markdown additions — see sections below):
+
+- Task lists (`- [ ]` / `- [x]`)
+- Strikethrough (`~~x~~`)
+- Footnotes (`[^id]` + `[^id]: definition`)
+- Highlight (`==x==`)
+
 Not supported (by design — kept the surface small):
 
-- Strikethrough (`~~x~~`)
-- Task lists (`- [ ]`)
-- Footnotes (`[^1]`)
 - Emoji shortcodes (`:smile:`)
 - Plain URL autolinking (write `<https://x.com>` or `[label](url)`)
+
+---
+
+## Task lists
+
+Checkboxes inside list items — exactly the GitHub syntax. Rendered as
+`<input type="checkbox" disabled>` with a CRT-tile box (`✓` for checked).
+The bullet is dropped automatically so the checkbox sits flush with the
+text.
+
+```markdown
+- [x] Antenna soldered
+- [x] Tracker calibrated
+- [ ] Cold-soak test
+- [ ] Launch window confirmed
+```
+
+Mix and nest with normal list items freely.
+
+---
+
+## Strikethrough
+
+`~~text~~` becomes `<del>text</del>`. Renders dimmed with a 1px
+line-through — useful for retracted statements you want to keep visible
+as historical context.
+
+```markdown
+The downlink was ~~437.500 MHz~~ 437.475 MHz after the last keplerian update.
+```
+
+**Lenient matching.** GFM's strict flanking-delimiter rule rejects
+`~~text ~~next` (trailing space before close) and `~~text~~next` (close
+followed by alphanumeric). LazyBlog adds a forgiving fallback so both
+shapes still strike — content can be anything except `~` or newlines. If
+you need a literal `~~` in prose, wrap it in inline `` `~~code~~` ``.
+
+---
+
+## Highlight
+
+Surround any inline span with `==` to mark it as highlighted prose.
+Renders as `<mark>` styled like the active TOC link (phosphor block on
+the background color). Skipped inside `<code>` and fenced code blocks,
+so equality comparisons (`5 == 4`) in code samples stay literal.
+
+```markdown
+The takeaway: ==always log the raw IQ stream before any DSP==.
+```
+
+Rules: the inner content can't span multiple lines, can't contain `=`,
+and can't start or end with whitespace — that filters out comparison
+operators in prose (e.g. `result == expected`).
+
+---
+
+## Footnotes
+
+Inline reference plus a definition block. The reference renders as a
+bracketed superscript link; the definition gets collected into a
+`<div class="footnotes">` section at the bottom of the post with a back
+arrow (`↩`) returning to the reference.
+
+```markdown
+The dish saw first light at 0413 UTC.[^pass]
+
+[^pass]: Pass #4 of METEOR M N2-3 — elevation peaked at 47°.
+```
+
+The footnote ID can be any token (`[^1]`, `[^pass]`, `[^author-note]`) —
+multiple references to the same ID reuse the same definition.
+
+---
+
+## Code block syntax highlighting
+
+Fenced code blocks with a language tag get token-level highlighting via
+[Prism.js](https://prismjs.com/). Prism is loaded only on `/posts/*`
+pages, and grammars (php, js, python, etc.) lazy-load from the CDN on
+demand — posts with no code pay nothing extra.
+
+```markdown
+    ```php
+    function greet(string $name): void {
+        echo "hello {$name}";
+    }
+    ```
+```
+
+Supported languages: anything Prism ships
+([component list](https://prismjs.com/#supported-languages)) — common
+picks: `php`, `js`, `ts`, `python`, `bash`, `json`, `yaml`, `sql`,
+`html`, `css`, `markdown`, `nginx`, `rust`, `go`, `c`, `cpp`.
+
+Token colors map to the active phosphor palette — switch themes (amber,
+green, crypt, brutalist, c64, lcd) and syntax recolors with the rest of
+the page. Code blocks without a language tag stay literal (no
+highlighting), with the dashed HUD frame and `COPY` button still active.
 
 ---
 

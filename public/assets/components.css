@@ -92,6 +92,102 @@
     white-space: nowrap;
 }
 
+/* ---------- mark (extended-markdown ==highlight==) ----------
+   Phosphor highlighter — same look as the active TOC link so highlighted
+   prose visually rhymes with the active section indicator. */
+.post-body mark {
+    background: var(--primary);
+    color: var(--bg);
+    padding: 0 4px;
+    border-radius: 1px;
+    text-shadow: none;
+}
+
+/* ---------- del (extended-markdown ~~strikethrough~~) ---------- */
+.post-body del {
+    color: var(--text-dim);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* ---------- Task lists (extended-markdown `- [ ]` / `- [x]`) ----------
+   CommonMark TaskListExtension emits a plain `<li>` whose first child is
+   `<input type="checkbox" disabled>`. We drop the bullet on those `<li>`s
+   and restyle the checkbox as a CRT-tile box. `:has()` is supported in
+   every browser this site already targets (CSS Grid + clamp() era). */
+.post-body li:has(> input[type="checkbox"]) {
+    list-style: none;
+    margin-left: -1.1em;
+}
+.post-body input[type="checkbox"][disabled] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border: 1px solid var(--primary-dim);
+    background: var(--panel);
+    border-radius: 2px;
+    cursor: default;
+}
+.post-body input[type="checkbox"][disabled]:checked {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 6px var(--primary-glow);
+    position: relative;
+}
+.post-body input[type="checkbox"][disabled]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -3px;
+    left: 1px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--bg);
+    line-height: 1;
+}
+
+/* ---------- Footnotes (extended-markdown `[^N]`) ----------
+   Inline `<sup>` reference + bottom `<div class="footnotes">` section.
+   Treats the section as a phosphor sub-panel below the main content. */
+.post-body sup .footnote-ref {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 0 2px;
+}
+.post-body sup .footnote-ref:hover {
+    color: var(--primary);
+    text-shadow: 0 0 4px var(--primary-glow-strong);
+}
+.post-body sup .footnote-ref::before { content: '['; color: var(--primary-dim); }
+.post-body sup .footnote-ref::after  { content: ']'; color: var(--primary-dim); }
+
+.post-body .footnotes {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+.post-body .footnotes hr { display: none; }
+.post-body .footnotes ol { padding-left: 24px; margin: 8px 0; }
+.post-body .footnotes li { margin: 6px 0; }
+.post-body .footnotes li::marker { color: var(--accent); }
+.post-body .footnotes p { margin: 4px 0; color: var(--text-dim); }
+.post-body .footnote-backref {
+    color: var(--accent);
+    text-decoration: none;
+    margin-left: 4px;
+}
+.post-body .footnote-backref:hover {
+    color: var(--primary);
+    text-shadow: 0 0 4px var(--primary-glow-strong);
+}
+
 /* ---------- Section tag (used by views) ---------- */
 .section-tag, [class*="section"] > .callsign {
     font-family: 'Share Tech Mono', monospace;

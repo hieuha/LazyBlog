@@ -4,25 +4,47 @@
 /** @var string $seriesTitle */
 /** @var ?string $description */
 /** @var ?string $coverUrl */
+/** @var ?string $qrSvg */
+/** @var ?string $qrMark */
 /** @var list<array<string,mixed>> $posts */
 
 use App\Auth;
 use App\Http;
+
+$hasArt = !empty($coverUrl) || !empty($qrSvg);
 ?>
 
 <section class="series-page">
-    <?php if (!empty($coverUrl)): ?>
-        <div class="series-detail-cover">
-            <span class="series-detail-cover-dot"
-                  style="--dot-mask: url('<?= Http::e((string) $coverUrl) ?>');"
-                  aria-hidden="true"></span>
+    <header class="series-detail-header<?= $hasArt ? ' has-cover' : '' ?>">
+        <?php if (!empty($coverUrl) || !empty($qrSvg)): ?>
+            <div class="series-detail-cover">
+                <?php if (!empty($coverUrl)): ?>
+                    <span class="series-detail-cover-dot"
+                          style="--dot-mask: url('<?= Http::e((string) $coverUrl) ?>');"
+                          aria-hidden="true"></span>
+                <?php else: ?>
+                    <span class="series-detail-cover-qr" aria-hidden="true">
+                        <?= $qrSvg ?>
+                        <?php if (!empty($qrMark)): ?>
+                            <span class="series-detail-cover-mark"><?= Http::e((string) $qrMark) ?></span>
+                        <?php endif; ?>
+                    </span>
+                <?php endif; ?>
+                <span class="series-detail-cover-tag">
+                    <?= count($posts) ?> PART<?= count($posts) === 1 ? '' : 'S' ?>
+                </span>
+            </div>
+        <?php endif; ?>
+        <div class="series-detail-meta">
+            <h2 class="series-page-title"><span class="series-page-title-mark"><?= Http::e($seriesTitle) ?></span></h2>
+            <?php if (!empty($description)): ?>
+                <p class="series-detail-desc"><?= Http::e((string) $description) ?></p>
+            <?php endif; ?>
+            <?php if (empty($coverUrl) && empty($qrSvg)): ?>
+                <p class="series-meta"><?= count($posts) ?> PART<?= count($posts) === 1 ? '' : 'S' ?></p>
+            <?php endif; ?>
         </div>
-    <?php endif; ?>
-    <h2 class="series-page-title">> SERIE: <?= Http::e($seriesTitle) ?></h2>
-    <?php if (!empty($description)): ?>
-        <p class="series-detail-desc"><?= Http::e((string) $description) ?></p>
-    <?php endif; ?>
-    <p class="series-meta"><?= count($posts) ?> PART<?= count($posts) === 1 ? '' : 'S' ?></p>
+    </header>
 
     <ul class="series-list">
         <?php foreach ($posts as $i => $entry): ?>

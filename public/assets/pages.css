@@ -510,21 +510,77 @@ a.heatmap-cell:hover {
     color: var(--text-dim);
     letter-spacing: 1px;
 }
-/* Detail page banner. Forced 1:1 to match the cover processor's canonical
-   square output (SeriesCoverProcessor::COVER_SIZE). The card grid uses 1:1
-   already; aligning the banner avoids letterbox / pillarbox on either
-   surface no matter what aspect ratio the user uploads. */
-.series-detail-cover {
-    width: 100%;
-    max-width: 360px;
-    aspect-ratio: 1 / 1;
-    margin: 0 auto 18px;
-    color: var(--primary);
+/* Detail header — cover inline-left, title/desc/meta stack to the right.
+   Two-column grid collapses to single-column on narrow viewports so the
+   cover and metadata stay legible without a giant centered image
+   dominating the page. Both columns explicitly text-align: left + justify-
+   self: start to override any header/main centering that might leak in. */
+.series-detail-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    /* Symmetric vertical breathing room — same gap above (main padding +
+       this `margin-top`) and below (this `margin-bottom`). Numbers chosen
+       so the page header → cover → posts-list rhythm reads as evenly
+       weighted instead of bottom-heavy. */
+    margin: 4px 0 12px;
+    align-items: start;
+    justify-items: start;
+    text-align: left;
 }
-.series-detail-cover-dot {
+.series-detail-header.has-cover {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 22px;
+}
+@media (max-width: 640px) {
+    /* Stay 2-column on mobile — shrink the cover instead of collapsing
+       to a stack. Keeps the visual relationship "cover ↔ meta" intact
+       on narrow viewports. */
+    .series-detail-header.has-cover {
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: 14px;
+    }
+}
+.series-detail-cover {
+    position: relative;
+    width: 200px;
+    aspect-ratio: 1 / 1;
+    color: var(--primary);
+    border: 1px solid var(--border);
+    padding: 6px;
+    background: var(--panel);
+    justify-self: start;
+    margin: 0;
+    overflow: hidden;
+}
+.series-detail-cover-tag {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+}
+@media (max-width: 640px) {
+    .series-detail-cover {
+        width: 120px;
+        padding: 4px;
+    }
+}
+.series-detail-cover-dot,
+.series-detail-cover-qr {
     display: block;
     width: 100%;
     height: 100%;
+    color: var(--primary);
+}
+.series-detail-cover-dot {
     background-color: currentColor;
     -webkit-mask-image: var(--dot-mask);
     mask-image: var(--dot-mask);
@@ -535,13 +591,86 @@ a.heatmap-cell:hover {
     -webkit-mask-position: center;
     mask-position: center;
 }
+.series-detail-cover-qr {
+    position: relative;
+    line-height: 0;
+}
+.series-detail-cover-qr svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+.series-detail-cover-qr .series-detail-cover-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 24%;
+    min-height: 24%;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 1.6vw, 22px);
+    letter-spacing: 1px;
+    line-height: 1;
+}
+.series-detail-meta {
+    min-width: 0;
+    text-align: left;
+    justify-self: stretch;
+    align-self: start;
+    /* Cancel any inherited top margin on the first child so the title
+       hugs the cover top edge instead of leaving a gap. */
+    margin-top: 0;
+}
+.series-detail-meta > :first-child {
+    margin-top: 0 !important;
+}
+.series-detail-meta .series-page-title {
+    margin: 0 0 10px;
+    text-align: left;
+    /* Tight line-height + small negative top adjustment cancels the
+       font's ascent leading so the cap-line of "> SERIE:" aligns with
+       the cover's top border instead of sitting visually lower. */
+    line-height: 1.05;
+    padding-top: 0;
+}
+/* Selection-highlight treatment — inverted block that wraps tight around
+   the text on each line. box-decoration-break: clone keeps the background
+   from collapsing into one giant rectangle on multi-line titles, so
+   wrapped titles read as multiple "selected" segments stacked, matching
+   the real text-selection visual the user wants. */
+.series-detail-meta .series-page-title-mark {
+    display: inline;
+    background-color: var(--primary);
+    color: var(--bg);
+    padding: 4px 10px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    /* Strip the global h1/h2 RGB-split text-shadow — it reads as chromatic
+       noise on the inverted block instead of phosphor glow. */
+    text-shadow: none;
+    /* Slight negative letter-spacing keeps the VT323 block tight against
+       the text edges so the highlight doesn't feel ballooned. */
+    box-shadow: 0 0 16px var(--primary-glow);
+}
 .series-detail-desc {
     font-family: 'Share Tech Mono', monospace;
     font-size: 14px;
     color: var(--text);
     line-height: 1.55;
     max-width: 60ch;
-    margin: 8px 0 14px;
+    margin: 8px 0 12px;
+    text-align: left;
+}
+.series-detail-meta .series-meta {
+    margin: 0;
+    text-align: left;
 }
 .series-detail-actions {
     margin-top: 32px;

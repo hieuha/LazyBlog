@@ -64,7 +64,7 @@ use App\Http;
                         <td class="admin-mono"><?= (int) $s['count'] ?></td>
                         <td class="admin-mono">
                             <?php if ($hasManifest): ?>
-                                <span class="admin-status admin-status-live" title="Manifest present">YES</span>
+                                <span class="admin-series-flag" title="Manifest present" aria-label="Manifest present"></span>
                             <?php else: ?>
                                 <span style="color: var(--text-dim);">—</span>
                             <?php endif; ?>

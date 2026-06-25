@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Auth;
 use App\Csrf;
 use App\Http;
+use App\Post;
 use App\PostRepository;
 use App\SeriesCoverProcessor;
 use App\SeriesManifest;
@@ -92,10 +93,101 @@ final class AdminSeriesController
             'hasCover' => $this->manifest->hasCover($slug),
             'hasPreview' => is_file($this->manifest->dir($slug) . '/.preview.webp'),
             'postsInSeries' => $this->repo->bySeries($slug),
+            'candidatePosts' => $this->candidatePostsForAttach($slug),
             'imagickAvailable' => SeriesCoverProcessor::isAvailable(),
             'formError' => null,
             'flash' => $this->consumeFlash(),
         ]);
+    }
+
+    /**
+     * Posts that aren't already in this series, sorted newest-first. Used
+     * to populate the attach-post datalist on the edit form. We list ALL
+     * posts (including those in OTHER series) so the operator can move
+     * a post between series without first having to detach it — saving
+     * a click. The slugs being attached overwrite the post's existing
+     * `series:` frontmatter, which is the intended semantics.
+     *
+     * @return list<array{slug:string,title:string,date:string,series:?string}>
+     */
+    private function candidatePostsForAttach(string $slug): array
+    {
+        $candidates = [];
+        foreach ($this->repo->published() as $entry) {
+            if (($entry['series'] ?? null) === $slug) {
+                continue;
+            }
+            $candidates[] = [
+                'slug' => (string) $entry['slug'],
+                'title' => (string) $entry['title'],
+                'date' => substr((string) ($entry['date'] ?? ''), 0, 10),
+                'series' => isset($entry['series']) && is_string($entry['series']) ? $entry['series'] : null,
+            ];
+        }
+        return $candidates;
+    }
+
+    /**
+     * POST /admin/series/{slug}/attach — set the target post's frontmatter
+     * `series:` field to {slug} and save. If the post already belonged to
+     * another series, the previous series silently loses that post on
+     * discovery (manifest preserved for re-attachment later).
+     *
+     * @param array<string,string> $params
+     */
+    public function attach(array $params): void
+    {
+        Auth::requireAuth();
+        Csrf::requireValid();
+
+        $slug = self::cleanSlug($params['slug'] ?? '');
+        if ($slug === null) {
+            $this->notFound();
+            return;
+        }
+
+        $postSlug = trim((string) ($_POST['post_slug'] ?? ''));
+        $part = trim((string) ($_POST['part'] ?? ''));
+        if ($postSlug === '') {
+            $this->flash('No post selected to attach.');
+            Http::redirect('/admin/series/' . $slug);
+            return;
+        }
+
+        $post = $this->repo->bySlug($postSlug);
+        if ($post === null) {
+            $this->flash('Post not found: ' . $postSlug);
+            Http::redirect('/admin/series/' . $slug);
+            return;
+        }
+
+        $updated = new Post(
+            slug: $post->slug,
+            title: $post->title,
+            date: $post->date,
+            tags: $post->tags,
+            draft: $post->draft,
+            bodyMarkdown: $post->bodyMarkdown,
+            icon: $post->icon,
+            summary: $post->summary,
+            author: $post->author,
+            image: $post->image,
+            series: $slug,
+            part: $part !== '' && ctype_digit($part) ? (int) $part : $post->part,
+        );
+
+        $originalFilename = substr($post->date, 0, 10) . '-' . $post->slug . '.md';
+
+        try {
+            $this->repo->save($updated, $originalFilename);
+        } catch (\Throwable $e) {
+            $this->flash('Attach failed: ' . $e->getMessage());
+            Http::redirect('/admin/series/' . $slug);
+            return;
+        }
+
+        $this->flash('Attached: ' . $postSlug . ' → ' . $slug);
+        Http::redirect('/admin/series/' . $slug);
     }
 
     /** @param array<string,string> $params */
@@ -197,6 +289,89 @@ final class AdminSeriesController
             'formError' => null,
             'flash' => 'Preview rendered — click [ SAVE ] to promote it.',
         ]);
+    }
+
+    /**
+     * POST /admin/series/{slug}/rename — change the series slug everywhere.
+     * Rewrites the `series:` frontmatter on every post that currently uses
+     * the old slug, then renames `content/series/{old}/` to
+     * `content/series/{new}/` so the manifest + cover follow. The active
+     * URL changes; we redirect to the new admin URL.
+     *
+     * @param array<string,string> $params
+     */
+    public function rename(array $params): void
+    {
+        Auth::requireAuth();
+        Csrf::requireValid();
+
+        $oldSlug = self::cleanSlug($params['slug'] ?? '');
+        $newSlug = self::cleanSlug($_POST['new_slug'] ?? '');
+        if ($oldSlug === null) {
+            $this->notFound();
+            return;
+        }
+        if ($newSlug === null) {
+            $this->flash('Invalid new slug. Use kebab-case: lowercase + digits + hyphens.');
+            Http::redirect('/admin/series/' . $oldSlug);
+            return;
+        }
+        if ($oldSlug === $newSlug) {
+            Http::redirect('/admin/series/' . $oldSlug);
+            return;
+        }
+
+        // Refuse if the target already has a manifest or any posts —
+        // otherwise the rename would silently merge into an existing series.
+        if ($this->manifest->exists($newSlug) || $this->manifest->hasCover($newSlug)) {
+            $this->flash("Cannot rename: a manifest already exists at '{$newSlug}'.");
+            Http::redirect('/admin/series/' . $oldSlug);
+            return;
+        }
+        if ($this->repo->bySeries($newSlug) !== []) {
+            $this->flash("Cannot rename: posts already use 'series: {$newSlug}'.");
+            Http::redirect('/admin/series/' . $oldSlug);
+            return;
+        }
+
+        // Re-stamp every post's frontmatter. Each save is atomic via the
+        // PostRepository's tmp+rename pattern, so a mid-way crash leaves
+        // partial-but-valid state we can resume from.
+        $rewritten = 0;
+        foreach ($this->repo->bySeries($oldSlug) as $entry) {
+            $post = $this->repo->bySlug((string) $entry['slug']);
+            if ($post === null) {
+                continue;
+            }
+            $updated = new Post(
+                slug: $post->slug,
+                title: $post->title,
+                date: $post->date,
+                tags: $post->tags,
+                draft: $post->draft,
+                bodyMarkdown: $post->bodyMarkdown,
+                icon: $post->icon,
+                summary: $post->summary,
+                author: $post->author,
+                image: $post->image,
+                series: $newSlug,
+                part: $post->part,
+            );
+            $original = substr($post->date, 0, 10) . '-' . $post->slug . '.md';
+            $this->repo->save($updated, $original);
+            $rewritten++;
+        }
+
+        // Move the manifest directory onto the new slug. POSIX rename is
+        // atomic when src+dst are on the same filesystem (always true here).
+        $oldDir = $this->manifest->dir($oldSlug);
+        $newDir = $this->manifest->dir($newSlug);
+        if (is_dir($oldDir)) {
+            @rename($oldDir, $newDir);
+        }
+
+        $this->flash("Renamed series: {$oldSlug} → {$newSlug} ({$rewritten} post" . ($rewritten === 1 ? '' : 's') . " updated)");
+        Http::redirect('/admin/series/' . $newSlug);
     }
 
     /** @param array<string,string> $params */

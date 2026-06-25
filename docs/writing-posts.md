@@ -119,11 +119,14 @@ for editorial metadata (custom title, description, cover image).
 - **Title** — overrides slug-derived title on `/series` index card + detail banner.
 - **Description** — 1-2 sentences, shown on card + detail banner. Two-line clamp on cards.
 - **Cover image** — JPG/PNG/WebP up to 5 MB. Server center-crops every
-  upload to a canonical 600×600 square (no matter the source aspect ratio:
-  portrait, panorama, screenshot — all land at the same dimensions), runs
-  Atkinson 1-bit error-diffusion dither (the buzzy Mac 1984 halftone-photo
-  aesthetic), outputs a transparent-where-light WebP, and renders it via
-  CSS `mask-image: url(cover.webp)` + `currentColor`. The active theme
+  upload to a canonical 900×900 square (no matter the source aspect ratio:
+  portrait, panorama, screenshot — all land at the same dimensions),
+  applies tonal prep (histogram normalise + ~12% brightness lift +
+  gentle contrast S-curve so dark photos don't dither into ink slabs),
+  runs Atkinson 1-bit error-diffusion dither (the buzzy Mac 1984 halftone-
+  photo aesthetic) with a slight light-bias threshold, outputs a
+  transparent-where-light WebP, and renders it via CSS
+  `mask-image: url(cover.webp)` + `currentColor`. The active theme
   colour (phosphor green, amber, C64, LCD, …) flows through the dots
   automatically. Same trick the QR cover uses today.
 
@@ -148,7 +151,7 @@ slug or delete the orphan via the admin.
 content/series/<slug>/
 ├── manifest.yaml        # title, description, cover_ext, updated_at
 ├── cover-src.webp       # upload re-encoded to WebP @ q=80 for compact backup
-└── cover.webp           # 600×600 1-bit transparent Atkinson dither
+└── cover.webp           # 900×900 1-bit transparent Atkinson dither
 ```
 
 All uploads are normalised to WebP regardless of source format (JPG / PNG /

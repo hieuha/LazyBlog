@@ -5,6 +5,7 @@
 /** @var bool $hasCover */
 /** @var bool $hasPreview */
 /** @var list<array<string,mixed>> $postsInSeries */
+/** @var list<array{slug:string,title:string,date:string,series:?string}> $candidatePosts */
 /** @var bool $imagickAvailable */
 /** @var ?string $formError */
 /** @var ?string $flash */
@@ -18,7 +19,7 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
 
 <section>
     <div class="admin-header-row">
-        <h1 class="admin-title">> EDIT SERIES // <?= Http::e($slug) ?></h1>
+        <h2>> EDIT SERIES // <?= Http::e($slug) ?></h2>
         <div class="admin-actions">
             <a class="admin-btn" href="/admin/series">[ ← BACK ]</a>
             <a class="admin-btn" href="/series/<?= Http::e($slug) ?>" target="_blank">[ VIEW PUBLIC ]</a>
@@ -114,6 +115,40 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
                         </li>
                     <?php endforeach; ?>
                 </ul>
+            <?php endif; ?>
+
+            <h3 class="admin-aside-heading" style="margin-top: 22px;">+ Attach a post</h3>
+            <?php if (empty($candidatePosts)): ?>
+                <p style="color: var(--text-dim);">// no other posts available.</p>
+            <?php else: ?>
+                <form method="post" action="/admin/series/<?= Http::e($slug) ?>/attach" class="admin-series-attach-form">
+                    <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
+                    <label class="admin-label" for="attach-slug">Post slug
+                        <span class="admin-label-hint">(pick existing or type)</span>
+                    </label>
+                    <input type="text" name="post_slug" id="attach-slug"
+                           list="series-attach-candidates"
+                           class="admin-input"
+                           autocomplete="off"
+                           placeholder="post-slug-here" required>
+                    <datalist id="series-attach-candidates">
+                        <?php foreach ($candidatePosts as $c): ?>
+                            <option value="<?= Http::e($c['slug']) ?>">
+                                <?= Http::e($c['title']) ?><?= $c['series'] !== null ? ' · ' . $c['series'] : '' ?> · <?= Http::e($c['date']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </datalist>
+                    <label class="admin-label" for="attach-part" style="margin-top: 8px;">Part #
+                        <span class="admin-label-hint">(optional)</span>
+                    </label>
+                    <input type="number" name="part" id="attach-part" min="1" step="1"
+                           class="admin-input"
+                           placeholder="1">
+                    <button type="submit" class="admin-btn admin-btn-primary" style="margin-top: 10px;">[ ATTACH ]</button>
+                </form>
+                <p class="admin-series-attach-hint" style="color: var(--text-dim); font-size: 11px; margin-top: 8px;">
+                    // Re-writes the post's <code>series:</code> frontmatter to <?= Http::e($slug) ?>. Posts already in another series get moved.
+                </p>
             <?php endif; ?>
         </aside>
     </div>

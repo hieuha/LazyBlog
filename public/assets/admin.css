@@ -627,10 +627,54 @@ button.admin-btn-sm { font-size: 10px; }
     border-left-color: #ffce5b;
     background: rgba(255, 200, 80, 0.08);
 }
+/* Row content middle-aligned so the cover thumbnail, date, and action
+   buttons share a single horizontal baseline. The base `.admin-table td`
+   rule sets `vertical-align: top`; we override with !important because
+   media-query specificity ties with the base selector and a partial
+   override leaves the action cell snapped to the top. Desktop-only
+   because the mobile rules below collapse cells into block stacks. */
+@media (min-width: 601px) {
+    .admin-series-table td {
+        vertical-align: middle !important;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .admin-series-table th { vertical-align: middle !important; }
+    /* The shared `.admin-row-actions` rule sets `display: flex` on the TD,
+       which breaks table-cell vertical alignment — flex items center
+       within the flex container's intrinsic height, not the row's table-
+       cell height, so EDIT / DEL MANIFEST end up at a different baseline
+       than the cover thumb and date in the same row. Force this table
+       back to `display: table-cell` and lay the buttons out as a small
+       inline-block cluster that honours the cell's `vertical-align`. */
+    .admin-series-table td.admin-row-actions {
+        display: table-cell !important;
+        white-space: nowrap;
+        text-align: left;
+        line-height: 1;
+    }
+    /* Keep `.admin-btn` at its native `inline-flex` so the text inside
+       EDIT (an <a>) stays vertically centered like DEL MANIFEST (a
+       <button> with native text-centering). Only the wrapping <form>
+       needs the inline-block + middle align shim. */
+    .admin-series-table td.admin-row-actions .admin-btn {
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    .admin-series-table td.admin-row-actions form {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    .admin-series-table td.admin-row-actions form:last-child,
+    .admin-series-table td.admin-row-actions .admin-btn:last-child {
+        margin-right: 0;
+    }
+}
 .admin-series-table .admin-series-cover-thumb {
     display: inline-block;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     background-color: currentColor;
     -webkit-mask-image: var(--dot-mask);
     mask-image: var(--dot-mask);
@@ -642,6 +686,72 @@ button.admin-btn-sm { font-size: 10px; }
     mask-position: center;
     color: var(--primary);
     vertical-align: middle;
+}
+/* Slim YES/NO dot indicator for the MANIFEST column — replaces the
+   chunky status badge which was visually overwhelming the row. */
+.admin-series-flag {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary-glow-strong);
+    vertical-align: middle;
+}
+.admin-series-table .admin-row-actions {
+    white-space: nowrap;
+}
+/* Column widths — narrow columns get explicit ch widths so the layout
+   stays stable when rows have or don't have a cover. Desktop only;
+   the mobile rules at the bottom of this file collapse cells to block. */
+@media (min-width: 601px) {
+    .admin-series-table th:nth-child(1),
+    .admin-series-table td:nth-child(1) { width: 22ch; }
+    .admin-series-table th:nth-child(3),
+    .admin-series-table td:nth-child(3),
+    .admin-series-table th:nth-child(4),
+    .admin-series-table td:nth-child(4) { width: 8ch; text-align: center; }
+    .admin-series-table th:nth-child(5),
+    .admin-series-table td:nth-child(5) { width: 56px; text-align: center; }
+    .admin-series-table th:nth-child(6),
+    .admin-series-table td:nth-child(6) { width: 14ch; white-space: nowrap; }
+}
+
+/* Mobile-only — series table converts each row into a compact card.
+   Skip the global posts-table rules that hide tag columns; reveal every
+   cell on its own line, give it a small label-style prefix via the data-
+   label hint already in the HTML (graceful fallback if none), and put
+   the action buttons at the bottom of the card with consistent spacing
+   so they don't overlap each other or bleed into adjacent rows. */
+@media (max-width: 600px) {
+    .admin-series-table tbody tr {
+        padding: 14px 0;
+        display: block;
+    }
+    .admin-series-table td {
+        padding: 2px 0 !important;
+        width: 100% !important;
+        text-align: left !important;
+        display: block !important;
+        white-space: normal !important;
+    }
+    .admin-series-table td.admin-row-actions {
+        margin-top: 8px;
+    }
+    .admin-series-table .admin-series-cover-thumb {
+        width: 56px;
+        height: 56px;
+    }
+    .admin-series-table .admin-series-flag {
+        margin-right: 8px;
+    }
+}
+/* Cancel the global h2 top margin (base.css `h2 { margin: 28px 0 16px }`)
+   inside admin header rows — the page already has main padding above and
+   actions on the right, so the title doesn't need its own breathing room. */
+.admin-header-row h2 {
+    margin: 0;
+    line-height: 1.05;
 }
 .admin-series-edit-grid {
     display: grid;
@@ -728,6 +838,57 @@ button.admin-btn-sm { font-size: 10px; }
 .admin-series-promote-toggle {
     color: var(--text-dim);
     font-size: 13px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.admin-series-promote-toggle input[type="checkbox"] {
+    accent-color: var(--primary);
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+}
+/* Native <input type="file"> styled to match the terminal/CRT aesthetic.
+   ::file-selector-button targets the trigger button across modern browsers
+   (Chrome, Firefox, Safari 15+). The wrapper input gets monospace text +
+   border so the "No file chosen" label reads as a console line, not a
+   default-OS Arial fragment. */
+input[type="file"].admin-file-input,
+.admin-series-cover-block input[type="file"] {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+    border-radius: 2px;
+    max-width: 100%;
+}
+input[type="file"].admin-file-input::file-selector-button,
+.admin-series-cover-block input[type="file"]::file-selector-button {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent-dim);
+    border-radius: 2px;
+    padding: 4px 10px;
+    margin-right: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+input[type="file"].admin-file-input::file-selector-button:hover,
+.admin-series-cover-block input[type="file"]::file-selector-button:hover {
+    background: var(--primary-glow);
+    border-color: var(--accent);
+    color: var(--primary);
 }
 .admin-form-actions {
     margin-top: 22px;

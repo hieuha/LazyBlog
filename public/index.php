@@ -122,6 +122,8 @@ $router->get('/admin/series', fn () => $adminSeries->index());
 $router->get('/admin/series/{slug}', fn (array $p) => $adminSeries->editForm($p));
 $router->post('/admin/series/{slug}', fn (array $p) => $adminSeries->save($p));
 $router->post('/admin/series/{slug}/preview', fn (array $p) => $adminSeries->preview($p));
+$router->post('/admin/series/{slug}/attach', fn (array $p) => $adminSeries->attach($p));
+$router->post('/admin/series/{slug}/rename', fn (array $p) => $adminSeries->rename($p));
 $router->post('/admin/series/{slug}/delete', fn (array $p) => $adminSeries->delete($p));
 $router->get('/admin', fn () => $admin->index());
 

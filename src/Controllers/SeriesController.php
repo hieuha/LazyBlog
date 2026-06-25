@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Config;
 use App\Http;
 use App\PostRepository;
+use App\QrCache;
 use App\SeriesManifest;
 
 /**
@@ -62,9 +64,21 @@ final class SeriesController
             ? $manifest['description']
             : null;
         $displayTitle = $manifestTitle ?? self::titleFromSlug($slug);
-        $coverUrl = $this->manifest->hasCover($slug)
-            ? Http::seriesAsset($slug, 'cover.webp')
-            : null;
+        $hasCover = $this->manifest->hasCover($slug);
+        $coverUrl = $hasCover ? Http::seriesAsset($slug, 'cover.webp') : null;
+
+        // QR fallback so the detail page never sits with an empty square
+        // when the operator hasn't uploaded a cover yet — mirrors the
+        // /series index card behaviour.
+        $qrSvg = null;
+        $qrMark = null;
+        if (!$hasCover) {
+            $siteUrl = rtrim((string) Config::get('SITE_URL'), '/');
+            $seriesPath = '/series/' . $slug;
+            $absUrl = $siteUrl !== '' ? $siteUrl . $seriesPath : $seriesPath;
+            $qrSvg = (new QrCache())->svg($absUrl);
+            $qrMark = QrCache::mark($slug);
+        }
 
         Http::render('series', [
             'title' => 'Series // ' . $displayTitle,
@@ -72,6 +86,8 @@ final class SeriesController
             'seriesTitle' => $displayTitle,
             'description' => $description,
             'coverUrl' => $coverUrl,
+            'qrSvg' => $qrSvg,
+            'qrMark' => $qrMark,
             'posts' => $posts,
         ]);
     }

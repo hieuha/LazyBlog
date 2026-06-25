@@ -4,7 +4,7 @@
 /** @var \App\Post|null $post */
 /** @var string $originalFilename */
 /** @var string|null $formError */
-/** @var array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string} $formValues */
+/** @var array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string,password:string,remove_password:bool,is_protected:bool} $formValues */
 
 use App\Csrf;
 use App\Http;
@@ -149,6 +149,53 @@ $isEdit = $mode === 'edit';
                        class="admin-input"
                        placeholder="1">
             </div>
+        </div>
+
+        <!-- Password protection — bcrypt hash stored in frontmatter.
+             Field is always rendered blank: existing hash is NEVER echoed.
+             3-state save: blank field = keep existing, value = replace,
+             "remove" checkbox = drop the hash entirely. -->
+        <div class="admin-form-row">
+            <div class="admin-field admin-field-grow">
+                <label class="admin-label" for="post-password">
+                    Password
+                    <?php if ($formValues['is_protected']): ?>
+                        <span class="admin-label-hint">🔒 currently protected · type new value + [ Set ] to replace · leave blank when saving to keep</span>
+                    <?php else: ?>
+                        <span class="admin-label-hint">(optional · type a password and click [ Set Password ] to lock instantly)</span>
+                    <?php endif; ?>
+                </label>
+                <input type="password" name="password" id="post-password"
+                       value=""
+                       autocomplete="new-password"
+                       class="admin-input admin-mono"
+                       placeholder="<?= $formValues['is_protected'] ? 'Leave blank to keep current password' : 'Leave blank for no protection' ?>">
+            </div>
+            <?php if ($isEdit && $formValues['slug'] !== ''): ?>
+                <div class="admin-field" style="flex: 0 0 auto">
+                    <label class="admin-label">&nbsp;</label>
+                    <!-- Side-channel submit: formaction overrides /admin/save
+                         just for this click, so password set/remove happens
+                         without saving any other unsaved field on the form.
+                         CSRF token rides via the parent form. -->
+                    <button type="submit"
+                            formaction="/admin/set-password/<?= Http::e($formValues['slug']) ?>"
+                            class="admin-btn admin-btn-primary">
+                        [ <?= $formValues['is_protected'] ? 'Update' : 'Set' ?> Password ]
+                    </button>
+                </div>
+            <?php endif; ?>
+            <?php if ($formValues['is_protected'] && $formValues['slug'] !== ''): ?>
+                <div class="admin-field" style="flex: 0 0 auto">
+                    <label class="admin-label">&nbsp;</label>
+                    <button type="submit"
+                            formaction="/admin/remove-password/<?= Http::e($formValues['slug']) ?>"
+                            class="admin-btn admin-btn-danger"
+                            onclick="return confirm('Remove password protection from this post?');">
+                        [ Remove Password ]
+                    </button>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Body — the focus -->

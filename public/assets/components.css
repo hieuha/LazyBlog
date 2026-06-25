@@ -361,3 +361,15 @@
     .pagination { justify-content: center; }
     .page-indicator { flex-basis: 100%; order: -1; }
 }
+
+/* Password-protected post badge — used in title lines on home/tag/archive/search
+   listings to flag posts that gate body content behind a password form.
+   Emoji renders inline at the surrounding text size; tiny opacity drop keeps
+   the icon from competing with the title. */
+.post-lock {
+    display: inline-block;
+    font-size: 0.85em;
+    opacity: 0.85;
+    margin-left: 4px;
+    vertical-align: baseline;
+}

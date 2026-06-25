@@ -99,24 +99,55 @@ final class Auth
     }
 
     private const RATE_LIMIT_FILE = '/tmp/lazyblog-login-attempts.json';
+    private const POST_UNLOCK_FILE = '/tmp/lazyblog-post-unlock-attempts.json';
     private const RATE_LIMIT_MAX = 10;
     private const RATE_LIMIT_WINDOW_SEC = 900;  // 15 minutes
 
     private static function clientIp(): string
     {
-        // REMOTE_ADDR is the only IP source we trust by default. If you put
-        // LazyBlog behind a reverse proxy that sets X-Forwarded-For, swap
-        // this for a header-aware lookup that strictly validates the proxy.
+        // Default: REMOTE_ADDR is the only IP source we trust. Behind
+        // Cloudflare, every visitor lands on the same edge IP and would
+        // share one rate-limit counter, so opt-in to honouring the
+        // `CF-Connecting-IP` header via TRUST_CF_CONNECTING_IP=true in
+        // .env. We validate the header value as a real IP before using
+        // it so a forged header from a non-CF client can't poison the
+        // counter (still trust-on-config — operators MUST only enable
+        // this when traffic actually comes through Cloudflare). Falls
+        // back to REMOTE_ADDR when missing or invalid.
+        $trustCf = strtolower((string) Config::get('TRUST_CF_CONNECTING_IP', 'false'));
+        if ($trustCf === 'true' || $trustCf === '1') {
+            $cf = (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
+            if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP) !== false) {
+                return $cf;
+            }
+        }
         return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
     }
 
-    /** @return array<string,list<int>> */
-    private static function loadAttempts(): array
+    private static function tooManyFailures(string $ip): bool
     {
-        if (!is_file(self::RATE_LIMIT_FILE)) {
+        return self::tooManyFailuresIn(self::RATE_LIMIT_FILE, $ip);
+    }
+
+    private static function recordFailure(string $ip): void
+    {
+        self::recordFailureIn(self::RATE_LIMIT_FILE, $ip);
+    }
+
+    private static function clearFailures(string $ip): void
+    {
+        self::clearFailuresIn(self::RATE_LIMIT_FILE, $ip);
+    }
+
+    // ---- Generic rate-limit primitives (shared with post-unlock) ----
+
+    /** @return array<string,list<int>> */
+    private static function loadAttemptsFile(string $path): array
+    {
+        if (!is_file($path)) {
             return [];
         }
-        $raw = @file_get_contents(self::RATE_LIMIT_FILE);
+        $raw = @file_get_contents($path);
         if (!is_string($raw) || $raw === '') {
             return [];
         }
@@ -125,23 +156,23 @@ final class Auth
     }
 
     /** @param array<string,list<int>> $attempts */
-    private static function saveAttempts(array $attempts): void
+    private static function saveAttemptsFile(string $path, array $attempts): void
     {
-        @file_put_contents(self::RATE_LIMIT_FILE, (string) json_encode($attempts), LOCK_EX);
+        @file_put_contents($path, (string) json_encode($attempts), LOCK_EX);
     }
 
-    private static function tooManyFailures(string $ip): bool
+    private static function tooManyFailuresIn(string $path, string $ip): bool
     {
-        $attempts = self::loadAttempts();
+        $attempts = self::loadAttemptsFile($path);
         $timestamps = $attempts[$ip] ?? [];
         $cutoff = time() - self::RATE_LIMIT_WINDOW_SEC;
         $recent = array_values(array_filter($timestamps, static fn (int $t): bool => $t > $cutoff));
         return count($recent) >= self::RATE_LIMIT_MAX;
     }
 
-    private static function recordFailure(string $ip): void
+    private static function recordFailureIn(string $path, string $ip): void
     {
-        $attempts = self::loadAttempts();
+        $attempts = self::loadAttemptsFile($path);
         $cutoff = time() - self::RATE_LIMIT_WINDOW_SEC;
         $timestamps = $attempts[$ip] ?? [];
         $timestamps = array_values(array_filter($timestamps, static fn (int $t): bool => $t > $cutoff));
@@ -154,16 +185,64 @@ final class Auth
                 unset($attempts[$key]);
             }
         }
-        self::saveAttempts($attempts);
+        self::saveAttemptsFile($path, $attempts);
     }
 
-    private static function clearFailures(string $ip): void
+    private static function clearFailuresIn(string $path, string $ip): void
     {
-        $attempts = self::loadAttempts();
+        $attempts = self::loadAttemptsFile($path);
         if (isset($attempts[$ip])) {
             unset($attempts[$ip]);
-            self::saveAttempts($attempts);
+            self::saveAttemptsFile($path, $attempts);
         }
+    }
+
+    // ---- Per-post unlock: session flag + rate-limit (separate file from
+    // admin login so a flood of bad guesses on a public post does NOT
+    // lock the operator out of /admin/login). ----
+
+    public static function isPostUnlocked(string $slug): bool
+    {
+        self::start();
+        $map = $_SESSION['unlocked_posts'] ?? null;
+        return is_array($map) && !empty($map[$slug]);
+    }
+
+    public static function markPostUnlocked(string $slug): void
+    {
+        self::start();
+        if (!isset($_SESSION['unlocked_posts']) || !is_array($_SESSION['unlocked_posts'])) {
+            $_SESSION['unlocked_posts'] = [];
+        }
+        $_SESSION['unlocked_posts'][$slug] = true;
+    }
+
+    public static function postUnlockTooMany(string $ip): bool
+    {
+        return self::tooManyFailuresIn(self::POST_UNLOCK_FILE, $ip);
+    }
+
+    public static function postUnlockRecordFailure(string $ip): void
+    {
+        self::recordFailureIn(self::POST_UNLOCK_FILE, $ip);
+    }
+
+    public static function postUnlockClearFailures(string $ip): void
+    {
+        self::clearFailuresIn(self::POST_UNLOCK_FILE, $ip);
+    }
+
+    /**
+     * Number of failed unlock attempts left in the current sliding window
+     * for this IP before the throttle kicks in. Returns 0 once the IP is
+     * throttled; returns RATE_LIMIT_MAX for a fresh IP with no history.
+     */
+    public static function postUnlockAttemptsRemaining(string $ip): int
+    {
+        $attempts = self::loadAttemptsFile(self::POST_UNLOCK_FILE);
+        $cutoff = time() - self::RATE_LIMIT_WINDOW_SEC;
+        $recent = array_filter($attempts[$ip] ?? [], static fn (int $t): bool => $t > $cutoff);
+        return max(0, self::RATE_LIMIT_MAX - count($recent));
     }
 
     public static function check(): bool

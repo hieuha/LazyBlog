@@ -139,6 +139,9 @@ final class AdminController
                 'series' => '',
                 'part' => '',
                 'body' => '',
+                'password' => '',
+                'remove_password' => false,
+                'is_protected' => false,
             ],
         ]);
     }
@@ -199,6 +202,12 @@ final class AdminController
                 'series' => $post->series ?? '',
                 'part' => $post->part !== null ? (string) $post->part : '',
                 'body' => $post->bodyMarkdown,
+                // Password field is ALWAYS rendered blank — the hash is
+                // never echoed back to the form. `is_protected` controls
+                // visibility of the "Remove" checkbox + the hint text.
+                'password' => '',
+                'remove_password' => false,
+                'is_protected' => $post->isProtected(),
             ],
         ]);
     }
@@ -250,11 +259,30 @@ final class AdminController
             $values['slug'] = SlugUtil::fromTitle($values['title']);
         }
 
+        // Load the existing post hash on edit so the 3-state password
+        // logic in buildPostFromForm can carry it forward when the form
+        // field is blank (the dominant edit case — author tweaks body,
+        // doesn't retype password).
+        $existingHash = null;
+        $existingProtected = false;
+        if ($originalFilename !== '' && preg_match('/^\d{4}-\d{2}-\d{2}-(.+)\.md$/', basename($originalFilename), $m)) {
+            $existingPost = $this->repo->bySlug($m[1]);
+            if ($existingPost !== null) {
+                $existingHash = $existingPost->passwordHash;
+                $existingProtected = $existingPost->isProtected();
+            }
+        }
+
         try {
-            $post = self::buildPostFromForm($values);
+            $post = self::buildPostFromForm($values, $existingHash);
             $this->repo->save($post, $originalFilename !== '' ? $originalFilename : null);
         } catch (\Throwable $e) {
             http_response_code(400);
+            // Wipe the password the user just typed BEFORE re-rendering so
+            // the new HTML response cannot ship the plaintext back to the
+            // browser (and into back/forward cache, the network tab, etc).
+            $values['password'] = '';
+            $values['is_protected'] = $existingProtected;
             Http::render('admin/edit', [
                 'title' => $mode === 'edit' ? 'Edit Post' : 'New Post',
                 'mode' => $mode,
@@ -297,10 +325,116 @@ final class AdminController
         Http::redirect('/admin');
     }
 
+    /**
+     * Set or replace the password on a single post in one click — no
+     * save-post round trip. Mirrors removePassword(): the operator can
+     * lock or rotate the password without leaving the editor or saving
+     * unrelated form fields.
+     *
+     * @param array<string,string> $params
+     */
+    public function setPassword(array $params): void
+    {
+        Auth::requireAuth();
+        Csrf::requireValid();
+
+        $slug = $params['slug'] ?? '';
+        $post = $this->repo->bySlug($slug);
+        if ($post === null) {
+            http_response_code(404);
+            Http::render('not-found', ['title' => '404 // NO SIGNAL']);
+            return;
+        }
+
+        $password = (string) ($_POST['password'] ?? '');
+        if ($password === '' || mb_strlen($password) < 4) {
+            self::setFlash('Password must be at least 4 characters.');
+            Http::redirect('/admin/edit/' . rawurlencode($slug));
+            return;
+        }
+
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+        if (!is_string($hashed) || $hashed === '') {
+            self::setFlash('Failed to hash password.');
+            Http::redirect('/admin/edit/' . rawurlencode($slug));
+            return;
+        }
+
+        $updated = new Post(
+            slug: $post->slug,
+            title: $post->title,
+            date: $post->date,
+            tags: $post->tags,
+            draft: $post->draft,
+            bodyMarkdown: $post->bodyMarkdown,
+            icon: $post->icon,
+            summary: $post->summary,
+            author: $post->author,
+            image: $post->image,
+            series: $post->series,
+            part: $post->part,
+            passwordHash: $hashed,
+        );
+        $previousFilename = $post->displayDate() . '-' . $post->slug . '.md';
+        $this->repo->save($updated, $previousFilename);
+
+        self::setFlash($post->isProtected() ? "Password updated: {$slug}" : "Password set: {$slug}");
+        Http::redirect('/admin/edit/' . rawurlencode($slug));
+    }
+
+    /**
+     * Strip the password from a single post in one click — no save-post
+     * round trip. Useful when the operator just wants to make a post
+     * public again without re-editing anything else (and risking that
+     * they accidentally lose unsaved body changes by leaving the editor).
+     *
+     * @param array<string,string> $params
+     */
+    public function removePassword(array $params): void
+    {
+        Auth::requireAuth();
+        Csrf::requireValid();
+
+        $slug = $params['slug'] ?? '';
+        $post = $this->repo->bySlug($slug);
+        if ($post === null) {
+            http_response_code(404);
+            Http::render('not-found', ['title' => '404 // NO SIGNAL']);
+            return;
+        }
+        if (!$post->isProtected()) {
+            // Already public — nothing to do, just redirect back.
+            self::setFlash("No password to remove: {$slug}");
+            Http::redirect('/admin/edit/' . rawurlencode($slug));
+            return;
+        }
+
+        $updated = new Post(
+            slug: $post->slug,
+            title: $post->title,
+            date: $post->date,
+            tags: $post->tags,
+            draft: $post->draft,
+            bodyMarkdown: $post->bodyMarkdown,
+            icon: $post->icon,
+            summary: $post->summary,
+            author: $post->author,
+            image: $post->image,
+            series: $post->series,
+            part: $post->part,
+            passwordHash: null,
+        );
+        $previousFilename = $post->displayDate() . '-' . $post->slug . '.md';
+        $this->repo->save($updated, $previousFilename);
+
+        self::setFlash("Password removed: {$slug}");
+        Http::redirect('/admin/edit/' . rawurlencode($slug));
+    }
+
     // ----- Helpers -----
 
     /**
-     * @return array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string}
+     * @return array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string,password:string,remove_password:bool,is_protected:bool}
      */
     private static function readFormValues(): array
     {
@@ -324,13 +458,20 @@ final class AdminController
             'series' => trim((string) ($_POST['series'] ?? '')),
             'part' => trim((string) ($_POST['part'] ?? '')),
             'body' => (string) ($_POST['body'] ?? ''),
+            // NOTE: do NOT trim password — leading/trailing whitespace is
+            // semantically meaningful in a password, even if it's a UX
+            // smell.
+            'password' => (string) ($_POST['password'] ?? ''),
+            'remove_password' => !empty($_POST['remove_password']),
+            // Re-render only; overwritten by save() based on existing post.
+            'is_protected' => false,
         ];
     }
 
     /**
-     * @param array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string} $v
+     * @param array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string,password:string,remove_password:bool,is_protected:bool} $v
      */
-    private static function buildPostFromForm(array $v): Post
+    private static function buildPostFromForm(array $v, ?string $existingHash = null): Post
     {
         if ($v['title'] === '') {
             throw new \RuntimeException('Title is required.');
@@ -374,6 +515,26 @@ final class AdminController
         $series = $v['series'] !== '' ? strtolower(trim($v['series'])) : null;
         $part = ($v['part'] !== '' && is_numeric($v['part'])) ? (int) $v['part'] : null;
 
+        // Password 3-state precedence (highest first):
+        //   1. remove_password=1   → drop the protection entirely
+        //   2. password not empty  → replace with a fresh bcrypt hash
+        //   3. otherwise           → carry $existingHash forward unchanged
+        // The MUST-have invariant is #3: a save that doesn't touch the
+        // password field cannot accidentally strip a previously-set hash.
+        $passwordHash = $existingHash;
+        if ($v['remove_password']) {
+            $passwordHash = null;
+        } elseif ($v['password'] !== '') {
+            if (mb_strlen($v['password']) < 4) {
+                throw new \RuntimeException('Password must be at least 4 characters.');
+            }
+            $hashed = password_hash($v['password'], PASSWORD_BCRYPT);
+            if (!is_string($hashed) || $hashed === '') {
+                throw new \RuntimeException('Failed to hash password.');
+            }
+            $passwordHash = $hashed;
+        }
+
         return new Post(
             slug: $v['slug'],
             title: $v['title'],
@@ -389,6 +550,7 @@ final class AdminController
             image: \App\PostRepository::safeImage($v['image']),
             series: $series,
             part: $part,
+            passwordHash: $passwordHash,
         );
     }
 

@@ -91,7 +91,15 @@ final class FeedBuilder
         $channel->appendChild($self);
 
         // ---------- items ----------
-        $entries = array_slice($this->repo->published(), 0, self::ITEM_LIMIT);
+        // Filter password-protected posts BEFORE slicing the limit. If we
+        // sliced first, a protected post in the freshest N could shadow a
+        // newer-but-published post out of the feed entirely; readers would
+        // miss content that should be visible.
+        $unprotected = array_values(array_filter(
+            $this->repo->published(),
+            static fn (array $e): bool => empty($e['protected']),
+        ));
+        $entries = array_slice($unprotected, 0, self::ITEM_LIMIT);
         foreach ($entries as $entry) {
             $post = $this->repo->bySlug($entry['slug']);
             if ($post === null) {

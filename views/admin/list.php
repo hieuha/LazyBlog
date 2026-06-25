@@ -117,6 +117,9 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                                     <?php else: ?>
                                         <span class="admin-status admin-status-live" title="Live" aria-label="Live">Live</span>
                                     <?php endif; ?>
+                                    <?php if (!empty($entry['protected'])): ?>
+                                        <span class="admin-status admin-status-locked" title="Password protected" aria-label="Password protected">🔒</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="admin-row-actions">
                                     <a class="admin-btn admin-btn-sm" href="/admin/edit/<?= Http::e((string) $entry['slug']) ?>">EDIT</a>

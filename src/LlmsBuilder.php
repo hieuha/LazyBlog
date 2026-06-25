@@ -44,6 +44,13 @@ final class LlmsBuilder
 
         $out .= "## Posts\n\n";
         foreach ($this->repo->published() as $entry) {
+            // Password-protected posts are dropped from the LLM-facing index
+            // entirely — title, URL, and summary all stay out of the corpus.
+            // The whole point of the feature dies if a crawler can still find
+            // the post here.
+            if (!empty($entry['protected'])) {
+                continue;
+            }
             $summary = $entry['summary'] ?? '';
             if ($summary === '') {
                 // Lightweight excerpt: read body and trim. Acceptable cost here
@@ -88,6 +95,9 @@ final class LlmsBuilder
 
         $parts = [];
         foreach ($this->repo->published() as $entry) {
+            if (!empty($entry['protected'])) {
+                continue;
+            }
             $raw = $this->repo->rawMarkdownBySlug($entry['slug']);
             if ($raw === null) {
                 continue;

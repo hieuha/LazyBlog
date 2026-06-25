@@ -710,3 +710,280 @@ body.is-post main {
 @media (max-width: 600px) {
     .series-nav { grid-template-columns: 1fr; }
 }
+
+/* ---------- Password unlock panel — HUD warning aesthetic ----------
+   Public unlock form for password-protected posts. Lives in post.css
+   (universal sheet) — admin.css doesn't load on /posts/*. Colors
+   inherit from the active theme (--primary, --primary-glow, --panel,
+   --bg) so the HUD reads as the same console as the rest of the site
+   (amber on amber theme, green on green, etc.). Only the error pill
+   keeps a hard danger-red so the wrong-password state stays obvious
+   regardless of theme.
+   --------------------------------------------------------------- */
+
+.alert-panel {
+    position: relative;
+    width: 100%;
+    /* Top margin stays small — `main` already pads the page. Bottom
+       margin is generous so the panel doesn't bump into the site
+       footer's separator rule below it. */
+    margin: 4px 0 36px;
+    /* Symmetric vertical padding so the top stripe→content gap matches
+       the content→bottom stripe gap. Stripes bleed into this padding via
+       negative margins below; if top != bottom the layout reads lopsided. */
+    padding: 32px 32px;
+    background:
+        radial-gradient(ellipse at top, var(--primary-glow) 0%, transparent 60%),
+        var(--panel);
+    /* No border — the hazard stripes top/bottom are the frame. A border
+       on top of them double-stacks parallel rules and reads cluttered. */
+    box-shadow: inset 0 0 30px var(--primary-glow);
+    color: var(--primary);
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* ── Eyebrow label ──
+   Stamped pill at the top of the panel — solid theme color with knockout
+   text reads like a console stencil mark sitting on the panel surface. */
+.alert-eyebrow {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--bg);
+    background: var(--primary);
+    letter-spacing: 5px;
+    padding: 6px 16px;
+    margin: 0 0 18px;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 0 12px var(--primary-glow-strong);
+    animation: alert-pulse 2.4s ease-in-out infinite;
+}
+@keyframes alert-pulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.45; }
+}
+
+/* ── Headline + meta ──
+   Post title is the headline. Sizing stays modest so a long Vietnamese
+   title fits without wrapping into a wall of red on wide screens — the
+   panel framing carries the visual weight, not the type itself. */
+.alert-headline {
+    font-family: 'VT323', 'Share Tech Mono', monospace;
+    font-size: clamp(24px, 3.6vw, 38px);
+    color: var(--primary);
+    text-shadow:
+        0 0 10px var(--primary-glow-strong),
+        0 0 22px var(--primary-glow);
+    letter-spacing: 3px;
+    margin: 0 0 8px;
+    line-height: 1.15;
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.alert-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--primary);
+    opacity: 0.75;
+    letter-spacing: 2px;
+    padding: 6px 0;
+    border-top: 1px solid var(--primary-dim);
+    border-bottom: 1px solid var(--primary-dim);
+    margin: 6px 0 16px;
+}
+.alert-meta-sep { margin: 0 6px; opacity: 0.5; }
+.alert-summary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.8;
+    letter-spacing: 1px;
+    margin: 0 0 18px;
+    line-height: 1.5;
+}
+
+/* ── Form ── */
+.alert-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 4px;
+}
+.alert-input-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--primary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1;
+}
+.alert-input-tick {
+    color: var(--primary);
+    margin-right: 6px;
+    animation: alert-blink 1s step-end infinite;
+}
+@keyframes alert-blink {
+    50% { opacity: 0; }
+}
+.alert-input {
+    width: 100%;
+    max-width: 380px;
+    background: var(--bg);
+    border: 1px solid var(--primary-dim);
+    color: var(--primary);
+    font-family: 'Share Tech Mono', monospace;
+    /* Chunky bullets so each entered character is clearly visible —
+       password fields default to glyphs that are tiny in this monospace
+       face. Letter-spacing keeps consecutive bullets from merging into
+       a single blob. */
+    font-size: 38px;
+    line-height: 1;
+    padding: 16px 18px;
+    border-radius: 2px;
+    box-sizing: border-box;
+    text-align: center;
+    letter-spacing: 14px;
+    caret-color: var(--primary);
+}
+.alert-input::placeholder {
+    color: var(--primary-dim);
+    opacity: 0.55;
+    letter-spacing: 8px;
+    /* Placeholder stays smaller than the typed bullets so the field's
+       active state reads visually distinct from the resting state. */
+    font-size: 22px;
+}
+.alert-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 12px var(--primary-glow-strong);
+}
+
+/* Wrong-password state lives INSIDE the input itself: red border,
+   red glow, and the error string is the placeholder. Once the user
+   types again, the placeholder disappears — which is exactly the
+   right semantics ("you're retrying now, the old warning no longer
+   applies"). Saves a whole stacked panel block of vertical space. */
+.alert-input-error {
+    border-color: #ff3333;
+    box-shadow: 0 0 12px rgba(255, 51, 51, 0.55);
+    color: #ff5555;
+    caret-color: #ff5555;
+}
+.alert-input-error::placeholder {
+    color: #ff5555;
+    opacity: 0.95;
+    /* Compact spacing so even the longer throttle message
+       ("Too many attempts. Try again later.") fits on a single line and
+       stays centered instead of overflowing left-aligned. */
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/* Disabled state: the rate-limit throttle has kicked in. Show that
+   the field cannot accept input — dimmed, no-cursor, no glow. The
+   browser already sets `cursor: not-allowed` on disabled inputs but
+   we restate it for clarity. The accompanying button uses the same
+   semantic. */
+.alert-input:disabled,
+.alert-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.alert-input:disabled {
+    box-shadow: none;
+}
+
+.alert-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 6px;
+}
+.alert-btn {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--primary);
+    background: transparent;
+    border: 1px solid var(--primary-dim);
+    padding: 0 18px;
+    margin: 0;
+    letter-spacing: 3px;
+    text-decoration: none;
+    border-radius: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    line-height: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.alert-btn:hover {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow-strong);
+}
+.alert-btn-primary {
+    background: var(--primary-glow-strong);
+    border-color: var(--primary);
+}
+.alert-btn-primary:hover {
+    background: var(--primary);
+    color: var(--bg);
+}
+
+/* ── Footer label ──
+   Pushed down toward the panel bottom edge with a large top margin so
+   it reads as a console footer rather than a caption that belongs to
+   the buttons just above it. */
+.alert-footer {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--primary-dim);
+    letter-spacing: 2px;
+    margin: 36px 0 0;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+/* ── Wrong-password feedback: shake + red glow ──
+   Panel-wide signal that the last attempt failed. Inset shadow tints
+   the panel interior red; outer shadow surrounds it with a red halo
+   that's visible past the page background. Animation gives it a one-
+   shot shake on first paint after submit. */
+.alert-panel-error {
+    box-shadow:
+        0 0 22px rgba(255, 51, 51, 0.55),
+        inset 0 0 40px rgba(255, 51, 51, 0.18);
+    animation: alert-shake 0.42s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes alert-shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-7px); }
+    40%, 60% { transform: translateX(7px); }
+}
+
+@media (max-width: 600px) {
+    .alert-panel { padding: 26px 18px; margin: 8px 0 24px; }
+    .alert-headline { letter-spacing: 2px; }
+    .alert-input { font-size: 28px; letter-spacing: 10px; padding: 12px 14px; }
+}

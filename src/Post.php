@@ -28,7 +28,20 @@ final class Post
         public readonly ?string $image = null,
         public readonly ?string $series = null,
         public readonly ?int $part = null,
+        public readonly ?string $passwordHash = null,
     ) {
+    }
+
+    /**
+     * True when a bcrypt `password_hash` is set in frontmatter. Public
+     * read paths gate body rendering on this; raw `.md`, RSS, llms.txt,
+     * and llms-full.txt drop the entry entirely (a session unlock does
+     * NOT re-enable those — see PostController::raw, FeedBuilder,
+     * LlmsBuilder, Searcher).
+     */
+    public function isProtected(): bool
+    {
+        return $this->passwordHash !== null && $this->passwordHash !== '';
     }
 
     /**

@@ -114,6 +114,8 @@ $router->get('/admin/new', fn () => $admin->newForm());
 $router->get('/admin/edit/{slug}', fn (array $p) => $admin->editForm($p));
 $router->post('/admin/save', fn () => $admin->save());
 $router->post('/admin/delete/{slug}', fn (array $p) => $admin->delete($p));
+$router->post('/admin/set-password/{slug}', fn (array $p) => $admin->setPassword($p));
+$router->post('/admin/remove-password/{slug}', fn (array $p) => $admin->removePassword($p));
 $router->post('/admin/preview', fn () => $admin->preview());
 $router->post('/admin/upload', fn () => $upload->upload());
 $router->get('/admin/about', fn () => $adminAboutCtl->editForm());
@@ -128,6 +130,7 @@ $router->post('/admin/series/{slug}/delete', fn (array $p) => $adminSeries->dele
 $router->get('/admin', fn () => $admin->index());
 
 // Public.
+$router->post('/posts/{slug}/unlock', fn (array $p) => $post->unlockSubmit($p));
 $router->get('/posts/{slug}.md', fn (array $p) => $post->raw($p));
 $router->get('/posts/{slug}', fn (array $p) => $post->show($p));
 $router->get('/tags/{tag}', fn (array $p) => $tag->show($p));

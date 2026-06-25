@@ -25,6 +25,12 @@ $canonicalUrl = $siteUrl . $path . ($qs !== '' ? '?' . $qs : '');
 
 // Pull $post from the render data when the post view set it.
 $isPost = isset($post) && $post instanceof Post;
+// `lockedView` is true on the password-unlock form for a protected post.
+// Body-derived meta fallbacks (og:image via firstBodyImage, og:description
+// via body excerpt) MUST stay off in that state — otherwise the social
+// preview leaks the very content the password gates. Summary (typed by
+// the operator) is still allowed because it's intentional public framing.
+$lockedView = $isPost && $post->isProtected() && !\App\Auth::isPostUnlocked($post->slug);
 $isTag = isset($tag) && is_string($tag) && $tag !== '';
 // Series detail view sets $seriesSlug + $description + $coverUrl; surface
 // those for SEO meta so social previews show the series card art and blurb.
@@ -50,7 +56,14 @@ $ogType = $isPost ? 'article' : 'website';
 // empty: skip the tag (platforms fall back to title-only card).
 $ogImageRaw = '';
 if ($isPost) {
-    $ogImageRaw = !empty($post->image) ? $post->image : ($post->firstBodyImage() ?? '');
+    // Locked view: never scan body for an image fallback. Only the
+    // explicitly typed `image:` frontmatter (operator-controlled) and
+    // SITE_OG_IMAGE (site-wide chrome) remain in the cascade.
+    if ($lockedView) {
+        $ogImageRaw = !empty($post->image) ? $post->image : '';
+    } else {
+        $ogImageRaw = !empty($post->image) ? $post->image : ($post->firstBodyImage() ?? '');
+    }
 }
 // Series detail page → use its dithered cover.webp as og:image when one
 // exists. The /series-assets/{slug}/cover.webp route serves it with the

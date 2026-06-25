@@ -323,6 +323,11 @@ final class PostRepository
         if ($post->part !== null) {
             $meta['part'] = $post->part;
         }
+        // Hash field deliberately written last so a casual `head -n 10`
+        // peek at the file shows the human-meaningful frontmatter first.
+        if ($post->passwordHash !== null && $post->passwordHash !== '') {
+            $meta['password_hash'] = $post->passwordHash;
+        }
 
         // Inline tags array (`[a, b]`) is friendlier than YAML's default
         // block style for short lists.
@@ -427,6 +432,13 @@ final class PostRepository
                 'image' => self::safeImage(isset($meta['image']) && is_string($meta['image']) ? (string) $meta['image'] : null),
                 'series' => isset($meta['series']) && is_string($meta['series']) && $meta['series'] !== '' ? strtolower(trim($meta['series'])) : null,
                 'part' => isset($meta['part']) && is_numeric($meta['part']) ? (int) $meta['part'] : null,
+                // Boolean only — never serialize the bcrypt hash into the
+                // index file. Index is read by listing pages, search, and
+                // anything that calls `published()`; leaking the hash here
+                // would re-create the very leak the feature exists to close.
+                'protected' => isset($meta['password_hash'])
+                    && is_string($meta['password_hash'])
+                    && $meta['password_hash'] !== '',
                 // Store basename only — keeps the index portable between
                 // Docker (/var/www/html/...) and host (./content/...) paths.
                 // Resolved back to absolute in all().
@@ -502,6 +514,9 @@ final class PostRepository
             image: isset($meta['image']) && is_string($meta['image']) ? (string) $meta['image'] : null,
             series: isset($meta['series']) && is_string($meta['series']) && $meta['series'] !== '' ? strtolower(trim($meta['series'])) : null,
             part: isset($meta['part']) && is_numeric($meta['part']) ? (int) $meta['part'] : null,
+            passwordHash: isset($meta['password_hash']) && is_string($meta['password_hash']) && $meta['password_hash'] !== ''
+                ? (string) $meta['password_hash']
+                : null,
         );
     }
 

@@ -97,6 +97,7 @@ $highlight = static function (string $text, string $q) use ($fold): string {
                         <span class="search-title">
                             <?php if (!empty($hit['icon'])): ?><span class="search-icon"><?= Http::e($hit['icon']) ?></span> <?php endif; ?>
                             <?= $highlight($hit['title'], $q) ?>
+                            <?php if (($hit['snippet'] ?? '') === '🔒 protected post'): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
                         </span>
                     </a>
                     <p class="search-snippet"><?= $highlight($hit['snippet'], $q) ?></p>

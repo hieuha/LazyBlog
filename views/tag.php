@@ -30,6 +30,7 @@ foreach ($posts as $entry) {
                                 <span class="post-title">
                                     <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                     <?= Http::e($entry['title']) ?>
+                                    <?php if (!empty($entry['protected'])): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
                                 </span>
                             </a>
                             <?php if (!empty($entry['summary'])): ?>

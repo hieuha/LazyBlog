@@ -60,18 +60,50 @@ final class Searcher
 
         $hits = [];
         foreach ($this->repo->published() as $entry) {
+            $isProtected = !empty($entry['protected']);
+            $title = $entry['title'];
+            $tags = $entry['tags'];
+            $titleN = $this->fold($title);
+            $tagsN = array_map([$this, 'fold'], $tags);
+
+            if ($isProtected) {
+                // Protected posts: title + tags are searchable so the operator
+                // can still find them in admin scenarios and readers know they
+                // exist, but the body never enters the search index and the
+                // snippet does NOT leak the body opening either.
+                $score = 0;
+                $allFound = true;
+                foreach ($terms as $term) {
+                    $titleHits = substr_count($titleN, $term);
+                    $tagHits = count(array_filter($tagsN, static fn (string $t): bool => $t === $term));
+                    if ($titleHits === 0 && $tagHits === 0) {
+                        $allFound = false;
+                        break;
+                    }
+                    $score += $titleHits * 10 + $tagHits * 5;
+                }
+                if (!$allFound) {
+                    continue;
+                }
+                $hits[] = [
+                    'slug' => $entry['slug'],
+                    'title' => $title,
+                    'date' => $entry['date'],
+                    'tags' => $tags,
+                    'icon' => $entry['icon'] ?? null,
+                    'score' => $score,
+                    'snippet' => '🔒 protected post',
+                ];
+                continue;
+            }
+
             $raw = (string) @file_get_contents($entry['file']);
             // Reuse FrontmatterParser instead of a duplicate regex — the
             // lazy `(.*?)` form would devour body content when the body
             // contains a `---` horizontal rule (CommonMark HR).
             [, $body] = FrontmatterParser::parse($raw);
 
-            $title = $entry['title'];
-            $tags = $entry['tags'];
-
-            $titleN = $this->fold($title);
             $bodyN = $this->fold($body);
-            $tagsN = array_map([$this, 'fold'], $tags);
 
             $score = 0;
             $allFound = true;

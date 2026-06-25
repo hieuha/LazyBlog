@@ -104,6 +104,7 @@ $intensity = static function (int $count, bool $inRange): string {
                             <a class="archive-link" href="/posts/<?= Http::e($entry['slug']) ?>">
                                 <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                 <?= Http::e($entry['title']) ?>
+                                <?php if (!empty($entry['protected'])): ?> <span class="post-lock" title="Password protected" aria-label="Password protected">🔒</span><?php endif; ?>
                             </a>
                         </li>
                     <?php endforeach; ?>

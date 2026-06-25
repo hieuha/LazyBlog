@@ -125,8 +125,9 @@ ensure_php82() {
     # symfony/string) needs to render its own console output.
     # php8.2-gd is required by the /admin/upload endpoint (image strip +
     # resize + WebP encode).
-    # php8.2-imagick powers the series cover Atkinson dither pipeline. Without
-    # it, /admin/series still saves title + description; cover upload disables.
+    # php8.2-imagick powers the series cover ordered-Bayer dither pipeline.
+    # Without it, /admin/series still saves title + description; cover
+    # upload disables (and the page shows a friendly warning).
     apt-get install -y -qq \
         php8.2-fpm php8.2-cli php8.2-mbstring \
         php8.2-zip php8.2-xml php8.2-curl php8.2-intl php8.2-gd \

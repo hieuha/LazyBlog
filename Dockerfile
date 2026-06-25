@@ -18,9 +18,9 @@ RUN apk add --no-cache \
         mbstring \
         opcache \
         gd \
-    # ext-imagick: powers the series cover Atkinson dither pipeline. Built
-    # via pecl (no docker-php-ext-install recipe). Build deps are dropped
-    # after compile to keep the image small.
+    # ext-imagick: powers the series cover ordered-Bayer dither pipeline.
+    # Built via pecl (no docker-php-ext-install recipe). Build deps are
+    # dropped after compile to keep the image small.
     && apk add --no-cache --virtual .imagick-build ${PHPIZE_DEPS} imagemagick-dev \
     && pecl install imagick \
     && docker-php-ext-enable imagick \

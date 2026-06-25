@@ -108,9 +108,6 @@ code blocks, freq-tags, story-cards, etc."><?= Http::e($formValues['body']) ?></
         <div class="admin-actions">
             <button type="submit" class="admin-btn admin-btn-primary">[ <?= $isNew ? 'CREATE' : 'SAVE' ?> ]</button>
             <a class="admin-btn" href="/admin">[ CANCEL ]</a>
-            <?php if (!$isNew): ?>
-                <a class="admin-btn" href="/about" target="_blank">[ VIEW ]</a>
-            <?php endif; ?>
         </div>
     </form>
 </section>

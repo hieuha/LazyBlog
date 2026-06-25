@@ -156,8 +156,46 @@
                 sizeUnits: ' B, KB, MB',
             },
             toolbar: [
-                'bold', 'italic', 'heading', '|',
-                'quote', 'unordered-list', 'ordered-list', '|',
+                'bold', 'italic', 'strikethrough', 'heading', '|',
+                'quote', 'unordered-list', 'ordered-list',
+                {
+                    name: 'task-list',
+                    action: function (editor) {
+                        var cm = editor.codemirror;
+                        var sel = cm.getSelection();
+                        // Wrap each selected line (or insert a single empty
+                        // item when nothing's selected) as a `- [ ]` task.
+                        var lines = sel !== '' ? sel.split('\n') : [''];
+                        var out = lines.map(function (l) {
+                            return '- [ ] ' + l;
+                        }).join('\n');
+                        cm.replaceSelection(out);
+                    },
+                    className: 'fa fa-check-square-o',
+                    title: 'Task list (- [ ] item)',
+                },
+                {
+                    name: 'mark',
+                    action: function (editor) {
+                        var cm = editor.codemirror;
+                        var sel = cm.getSelection();
+                        if (sel === '') {
+                            cm.replaceSelection('==highlight==');
+                            // Position cursor inside the marks so user can
+                            // start typing the highlighted phrase.
+                            var pos = cm.getCursor();
+                            cm.setSelection(
+                                { line: pos.line, ch: pos.ch - 11 },
+                                { line: pos.line, ch: pos.ch - 2 },
+                            );
+                        } else {
+                            cm.replaceSelection('==' + sel + '==');
+                        }
+                    },
+                    className: 'fa fa-paint-brush',
+                    title: 'Highlight (==text==)',
+                },
+                '|',
                 'code', 'link', 'image', 'upload-image', 'table', '|',
                 {
                     name: 'highlight',
@@ -189,6 +227,27 @@
                 toggleFullScreen: 'F11',
             },
         });
+
+        // EasyMDE ships both `image` (insert by URL) and `upload-image`
+        // (file picker) with picture-frame icons by default, so the two
+        // adjacent toolbar buttons look identical. Swap the upload one
+        // to a cloud-upload glyph so the affordance is obvious at a glance.
+        //
+        // EasyMDE may render the glyph via the button's own ::before OR
+        // via an inner <i>; pick whichever exists so we don't end up with
+        // two stacked cloud icons. Strip existing fa-* classes first, then
+        // add FontAwesome 4 cloud-upload (loaded from CDN above).
+        var uploadBtn = document.querySelector('.editor-toolbar .upload-image');
+        if (uploadBtn) {
+            var target = uploadBtn.querySelector('i') || uploadBtn;
+            Array.from(target.classList).forEach(function (c) {
+                if (c !== 'fa' && c.indexOf('fa-') === 0) {
+                    target.classList.remove(c);
+                }
+            });
+            if (!target.classList.contains('fa')) target.classList.add('fa');
+            target.classList.add('fa-cloud-upload');
+        }
     }
 
     /* ---------- 2. Tag chip input ---------- */

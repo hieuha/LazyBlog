@@ -163,9 +163,6 @@ Body of the story card.
         <div class="admin-actions">
             <button type="submit" class="admin-btn admin-btn-primary">[ <?= $isEdit ? 'SAVE' : 'CREATE' ?> ]</button>
             <a class="admin-btn" href="/admin">[ CANCEL ]</a>
-            <?php if ($isEdit && $post !== null): ?>
-                <a class="admin-btn" href="/posts/<?= Http::e($post->slug) ?>" target="_blank">[ VIEW ]</a>
-            <?php endif; ?>
         </div>
     </form>
 </section>

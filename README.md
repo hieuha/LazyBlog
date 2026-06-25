@@ -101,16 +101,9 @@ Backup with `rsync`. Restore in seconds.
 
 ## Screenshots
 
-| | |
-|---|---|
-| ![Home — amber (default)](docs/screenshot/home-amber.webp) | ![Home — green theme](docs/screenshot/home.webp) |
-| _Home — amber (default theme)_ | _Home — green via theme picker_ |
-| ![Single post with TOC + reading progress + figure](docs/screenshot/post.webp) | ![About page with streak flame + badge grid](docs/screenshot/about.webp) |
-| _Single post — TOC, reading progress, full-bleed figure_ | _`/about` — operator profile, streak flame, JSON-driven badge grid_ |
+![Six theme variants: amber, green, C64, crypt, brutalist, LCD](docs/screenshot/themes-showcase.webp)
 
-![Archive heatmap, search results, admin post list](docs/screenshot/triptych-archive-search-admin.webp)
-
-_Left to right: `/archive` heatmap + posts by year · `/search` diacritic-insensitive highlighted snippets · `/admin` post management with EasyMDE editor._
+_Left to right: amber (default) · green · C64 lavender · crypt red · brutalist mono · LCD paper — all swappable from the in-page theme picker._
 
 ## Stack
 

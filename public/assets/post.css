@@ -456,9 +456,15 @@ body.is-post main {
    Cross-hatch grid drawn over the panel bg via repeating-linear-gradients
    in the accent color, plus a dashed accent border around the whole
    block — reads as a targeting/output frame. */
-.post-body pre {
+/* `.post-code-wrap` is injected by post.js around every <pre>. The HUD
+   frame (background + dashed border) lives on the WRAPPER so the corner
+   widgets (.code-lang-tag, .copy-btn) can be absolutely positioned
+   against a non-scrolling box. The inner <pre> owns only the scroll
+   surface — without this split, absolute children inside an
+   `overflow:auto` <pre> drift with the horizontal scroll. */
+.post-body .post-code-wrap {
     position: relative;
-    padding: 36px 18px 16px;
+    margin: 20px 0;
     background:
         repeating-linear-gradient(0deg,
             rgba(255, 183, 0, 0.05) 0, rgba(255, 183, 0, 0.05) 1px,
@@ -469,8 +475,15 @@ body.is-post main {
         var(--panel);
     border: 1px dashed var(--accent-dim);
     border-radius: 2px;
+}
+.post-body pre {
+    margin: 0;
+    padding: 36px 18px 16px;
+    background: transparent;
+    border: 0;
     font-size: 13px;
     line-height: 1.6;
+    overflow-x: auto;
 }
 .post-body pre code {
     color: var(--accent);

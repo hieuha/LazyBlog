@@ -102,11 +102,21 @@
             if (match) lang = match[1];
         }
 
+        // Wrap <pre> in a non-scrolling positioned container so the
+        // language tag + COPY button can sit absolutely in its corner
+        // without being dragged along when the <pre> itself scrolls
+        // horizontally for long single-line code (absolute children
+        // inside an `overflow:auto` element scroll with the content).
+        var wrap = document.createElement('div');
+        wrap.className = 'post-code-wrap';
+        pre.parentNode.insertBefore(wrap, pre);
+        wrap.appendChild(pre);
+
         if (lang) {
             var label = document.createElement('span');
             label.className = 'code-lang-tag';
             label.textContent = lang;
-            pre.appendChild(label);
+            wrap.appendChild(label);
         }
 
         var btn = document.createElement('button');
@@ -132,7 +142,7 @@
                 fallbackCopy(text, done);
             }
         });
-        pre.appendChild(btn);
+        wrap.appendChild(btn);
     });
 
     function fallbackCopy(text, cb) {

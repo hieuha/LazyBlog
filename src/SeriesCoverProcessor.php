@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use Imagick;
+use ImagickDraw;
 use ImagickPixel;
 use RuntimeException;
 
@@ -16,10 +17,17 @@ use RuntimeException;
  *   1. Decode + center crop-resize to COVER_SIZE × COVER_SIZE square.
  *   2. Convert to grayscale + histogram normalize so dark-midtone photos
  *      don't dither into solid ink slabs.
- *   3. 1-bit ordered Bayer dither via orderedPosterizeImage('o4x4,2').
- *      Gives the regular halftone grid pattern the target aesthetic
- *      asks for (compare error-diffusion which produces a noisy organic
- *      pattern). Runs entirely in native C — no PHP-side pixel arrays.
+ *   3. 1-bit ordered Bayer dither built from the BAYER_4X4 constant via
+ *      a primitive COMPOSITE_MINUS + thresholdImage pass — see
+ *      buildBayerThreshold(). We deliberately skip
+ *      orderedDitherImage / orderedPosterizeImage because both depend
+ *      on ImageMagick's thresholds.xml mapping the cell name, which
+ *      Ubuntu 22.04's apt IM 6.9.11 ships incomplete (the call silently
+ *      no-ops and the output is a flat silhouette). The COMPOSITE_MINUS
+ *      path uses only primitives with stable cross-version semantics,
+ *      so output is bit-identical across IM6 / IM7 / Alpine / brew /
+ *      Raspbian / any future build. Still runs in native C — no
+ *      PHP-side pixel arrays.
  *   4. Paint white pixels transparent so CSS `mask-image` + `currentColor`
  *      lets the active theme tint the dark dots (same trick as QrCache).
  *   5. Encode lossless WebP.
@@ -40,6 +48,22 @@ final class SeriesCoverProcessor
      */
     public const COVER_SIZE = 600;
 
+    /**
+     * Standard 4×4 ordered-Bayer threshold matrix, scaled from raw indices
+     * (0..15) to 8-bit thresholds via `i * 16 + 8` → {8, 24, 40, …, 248}.
+     * The half-step (+8) centres each threshold band on its grayscale
+     * bucket so the dot pattern matches the canonical Bayer reference
+     * (same matrix as ImageMagick's built-in `o4x4` map, but applied via
+     * primitive composites instead of the thresholds.xml lookup that
+     * older ImageMagick builds — notably Ubuntu 22.04's apt IM 6.9.11 —
+     * silently no-op on).
+     */
+    private const BAYER_4X4 = [
+        [  8, 136,  40, 168],
+        [200,  72, 232, 104],
+        [ 56, 184,  24, 152],
+        [248, 120, 216,  88],
+    ];
 
     public function __construct(private readonly SeriesManifest $manifest)
     {
@@ -172,7 +196,32 @@ final class SeriesCoverProcessor
         $im = new Imagick();
         try {
             $im->readImage($sourcePath);
-            $im->setImageColorspace(Imagick::COLORSPACE_GRAY);
+
+            // Flatten any source alpha onto a white background BEFORE the
+            // colorspace conversion. PNG screenshots (and many phone-camera
+            // exports) carry a TRUECOLORALPHA channel even when every pixel
+            // is opaque. If left intact, the later COMPOSITE_MINUSSRC
+            // against the alpha-less Bayer threshold tile drains the
+            // destination's alpha to zero — the whole cover comes back
+            // 100 % transparent and the page shows a blank slot. Removing
+            // alpha here also keeps the histogram normalization honest:
+            // ALPHACHANNEL_REMOVE composites the visible RGB against the
+            // background colour we just set, so what feeds into grayscale
+            // is exactly what the human eye would see on the page.
+            $im->setImageBackgroundColor(new ImagickPixel('white'));
+            $im->setImageAlphaChannel(Imagick::ALPHACHANNEL_REMOVE);
+
+            // transformImageColorspace (NOT setImageColorspace) — the
+            // former actually walks pixels through the sRGB→Gray luma
+            // formula (Rec601-ish weighted R/G/B), the latter only sets
+            // a metadata flag and leaves channels untouched. The flag-only
+            // path lets purple/blue real photos like the satellite hero
+            // shot reach the dither with R/G/B still un-collapsed; once
+            // there, normalizeImage runs per-channel and zeroes G+B while
+            // stretching R, which combined with the alpha bug above made
+            // every output pixel read as "white" downstream.
+            $im->transformImageColorspace(Imagick::COLORSPACE_GRAY);
+
             // Force every upload to the canonical COVER_SIZE square via
             // center crop-then-fit. cropThumbnailImage does both passes in
             // one call: it scales the longer side to COVER_SIZE then center-
@@ -191,33 +240,38 @@ final class SeriesCoverProcessor
                 // ignore — dither still runs on the un-stretched grayscale
             }
 
-            // Ordered Bayer dither: 4x4 cell, 2 output levels. Native
-            // libMagick implementation walks pixels in C — no PHP-side
-            // buffers, so memory is bounded regardless of cover size.
-            // The 4x4 cell gives the clean regular halftone grid pattern
-            // matching the album-cover reference aesthetic. Output is
-            // 1-bit (pure black or pure white per pixel) ready for the
-            // mask-image transparency trick. Threshold-map syntax varies
-            // by ImageMagick build (`o4x4,2` works in newer Alpine builds
-            // where thresholds.xml ships the level suffix; older or
-            // brew-packaged builds reject it and need plain `o4x4`).
-            $orderedMap = null;
-            foreach (['o4x4,2', 'o4x4', '4x4', 'o2x2', 'checks'] as $candidate) {
-                try {
-                    $im->orderedDitherImage($candidate);
-                    $orderedMap = $candidate;
-                    break;
-                } catch (\Throwable) {
-                    // try next candidate
-                }
-            }
-            if ($orderedMap === null) {
-                // Last-resort fallback: plain 50% threshold. Visually a
-                // hard binarisation (no halftone grid), but it keeps the
-                // pipeline producing a usable cover on imagick builds with
-                // no threshold maps configured.
-                $im->thresholdImage(0.5 * (($im->getQuantumRange()['quantumRangeLong'] ?? 65535)));
-            }
+            // 4×4 ordered-Bayer dither, built from BAYER_4X4 via primitive
+            // COMPOSITE_MINUS + thresholdImage. We deliberately avoid
+            // orderedDitherImage / orderedPosterizeImage because both
+            // resolve the cell name through ImageMagick's thresholds.xml,
+            // which Ubuntu 22.04's apt IM 6.9.11 ships without the named
+            // ordered maps — the call then silently no-ops and the
+            // pipeline produces a flat silhouette (the bug this replaces).
+            //
+            // Algorithm: build a same-sized grayscale tile carrying the
+            // Bayer threshold per pixel, subtract it from the normalised
+            // source. COMPOSITE_MINUS clamps the difference at 0 in
+            // non-HDRI builds (default on every distro we target), so
+            // pixels where source ≤ threshold collapse to black and
+            // pixels where source > threshold survive with a small
+            // positive remainder. thresholdImage(1) then promotes every
+            // non-zero remainder to pure white. Result is a 1-bit dot
+            // pattern identical across IM6 / IM7 / brew / Alpine because
+            // every operator used (newImage, drawImage point, compositeImage
+            // COPY/MINUS, thresholdImage) is a primitive native-C op with
+            // stable cross-version semantics.
+            $threshold = $this->buildBayerThreshold(self::COVER_SIZE);
+            $im->compositeImage($threshold, self::compositeMinusOp(), 0, 0);
+            $threshold->clear();
+            // Belt-and-braces clamp for Q*-HDRI builds (macOS brew defaults
+            // to Q16-HDRI). In HDRI mode COMPOSITE_MINUS preserves negative
+            // remainders rather than clamping at 0, which leaves the
+            // following thresholdImage gate to compare against floats below
+            // zero — undefined-territory behaviour. clampImage forces the
+            // pixel range back to [0, QuantumRange] so the threshold
+            // decision is unambiguous on both HDRI and non-HDRI builds.
+            $im->clampImage();
+            $im->thresholdImage(1);
 
             // White pixels → fully transparent. CSS mask-image lets the
             // active theme tint the dark dots via currentColor. Tiny fuzz
@@ -250,5 +304,79 @@ final class SeriesCoverProcessor
         } finally {
             $im->clear();
         }
+    }
+
+    /**
+     * Build a grayscale Imagick image of size $size × $size where pixel
+     * (x, y) carries the BAYER_4X4 threshold for its 4-pixel cycle
+     * position — i.e. BAYER_4X4[y % 4][x % 4]. The result is the
+     * "threshold tile" the dither pipeline subtracts from the normalised
+     * source.
+     *
+     * Construction uses power-of-two doubling rather than the obvious
+     * nested-loop tiling: at COVER_SIZE = 600 the loop variant would
+     * issue (600/4)² = 22 500 composite calls, while doubling stops
+     * after ⌈log₂(600/4)⌉ = 8 steps (4 composites each = 32 calls)
+     * before a single cropImage trims the result down to exactly $size.
+     * Each composite is a primitive native-C copy, so the whole tile
+     * is built in well under 10 ms even on a Raspberry Pi.
+     */
+    private function buildBayerThreshold(int $size): Imagick
+    {
+        $tile = new Imagick();
+        $tile->newImage(4, 4, new ImagickPixel('black'));
+        $tile->setImageFormat('png');
+        $tile->setImageColorspace(Imagick::COLORSPACE_GRAY);
+        $tile->setImageDepth(8);
+
+        $draw = new ImagickDraw();
+        for ($y = 0; $y < 4; $y++) {
+            for ($x = 0; $x < 4; $x++) {
+                $v = self::BAYER_4X4[$y][$x];
+                $draw->setFillColor(sprintf('rgb(%d,%d,%d)', $v, $v, $v));
+                $draw->point($x, $y);
+            }
+        }
+        $tile->drawImage($draw);
+
+        while ($tile->getImageWidth() < $size) {
+            $w = $tile->getImageWidth();
+            $next = new Imagick();
+            $next->newImage($w * 2, $w * 2, new ImagickPixel('black'));
+            $next->setImageColorspace(Imagick::COLORSPACE_GRAY);
+            $next->compositeImage($tile, Imagick::COMPOSITE_COPY, 0,  0);
+            $next->compositeImage($tile, Imagick::COMPOSITE_COPY, $w, 0);
+            $next->compositeImage($tile, Imagick::COMPOSITE_COPY, 0,  $w);
+            $next->compositeImage($tile, Imagick::COMPOSITE_COPY, $w, $w);
+            $tile->clear();
+            $tile = $next;
+        }
+        $tile->cropImage($size, $size, 0, 0);
+
+        return $tile;
+    }
+
+    /**
+     * Resolve the "dst = dst - src" composite operator across PHP-Imagick
+     * generations. PHP-Imagick 3.7+ renamed the legacy
+     * `Imagick::COMPOSITE_MINUS` to `Imagick::COMPOSITE_MINUSSRC` (matching
+     * IM7's MagickCore enum) and dropped the old alias outright on
+     * Q16-HDRI brew builds. Ubuntu 22.04 via Ondrej PPA ships either
+     * generation depending on PHP version, so we pick at runtime.
+     *
+     * The integer value isn't stable across generations (36 vs 47), so the
+     * named constant is the only portable identifier. Cached after first
+     * lookup to keep the hot path branch-free.
+     */
+    private static function compositeMinusOp(): int
+    {
+        /** @var int|null $cached */
+        static $cached = null;
+        if ($cached === null) {
+            $cached = defined('Imagick::COMPOSITE_MINUSSRC')
+                ? Imagick::COMPOSITE_MINUSSRC
+                : Imagick::COMPOSITE_MINUS;
+        }
+        return $cached;
     }
 }

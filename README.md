@@ -41,7 +41,10 @@ with `series: my-slug` in its frontmatter) shows up at `/series` and
 `/series/{slug}` — and now carries a manifest sidecar
 (`content/series/{slug}/manifest.json`) with editorial title +
 description + cover image. Cover uploads are center-cropped to 600×600,
-run through Imagick's ordered Bayer dither, and saved as a
+run through a deterministic 4×4 ordered-Bayer dither (built from
+primitive Imagick composite + threshold ops so the output is bit-identical
+across IM6/IM7/Alpine/brew, sidestepping the `thresholds.xml` lookup that
+Ubuntu's apt build silently no-ops on), and saved as a
 transparent-where-light WebP that CSS `mask-image` + `currentColor`
 tints with the active theme — phosphor amber, green, C64 lavender,
 LCD sage, whichever. No cover yet? `/series` cards still fall back

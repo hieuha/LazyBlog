@@ -56,6 +56,60 @@
             if (uploadStatusEl) uploadStatusEl.classList.remove('visible');
         }
 
+        // Shared upload helper used by both EasyMDE's image-upload pipeline
+        // (drag/drop, paste, cloud-icon picker) and the bespoke "Bayer
+        // dither" toolbar button below. `dither=true` flips the server
+        // routing to PostImageDitherer instead of ImageProcessor; the
+        // response shape is identical.
+        function runImageUpload(file, dither, onSuccess, onError) {
+            var label = dither ? 'Dithering ' : 'Uploading ';
+            showUploadStatus(label + (file.name || 'image') + '…');
+            // Re-read the meta tag each call so token rotation (e.g. on
+            // login) doesn't leave a stale value cached in closure.
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            var token = meta ? meta.getAttribute('content') : '';
+
+            var form = new FormData();
+            form.append('file', file);
+            if (dither) form.append('dither', '1');
+
+            fetch('/admin/upload', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': token },
+                body: form,
+                credentials: 'same-origin',
+            }).then(function (r) {
+                // If we followed a redirect (fetch default), we landed on
+                // the login page — session expired.
+                if (r.redirected && r.url.indexOf('/admin/login') !== -1) {
+                    hideUploadStatus();
+                    onError('Session expired — refresh the page and log in again.');
+                    return;
+                }
+                // Detect non-JSON responses (PHP error page, plain-text
+                // 403, HTML login page) and surface the actual content.
+                var ctype = r.headers.get('content-type') || '';
+                if (ctype.indexOf('application/json') === -1) {
+                    return r.text().then(function (body) {
+                        hideUploadStatus();
+                        var excerpt = body.replace(/\s+/g, ' ').slice(0, 200);
+                        onError('HTTP ' + r.status + ' ' + ctype + ' — ' + (excerpt || '(empty body)'));
+                    });
+                }
+                return r.json().then(function (data) {
+                    hideUploadStatus();
+                    if (!r.ok) {
+                        onError('Upload failed (HTTP ' + r.status + '): ' + (data.error || 'unknown'));
+                        return;
+                    }
+                    onSuccess(data.url);
+                });
+            }).catch(function (e) {
+                hideUploadStatus();
+                onError('Network error: ' + (e.message || e));
+            });
+        }
+
         function previewRender(plainText, previewEl) {
             clearTimeout(previewTimer);
             previewTimer = setTimeout(function () {
@@ -98,52 +152,12 @@
             tabSize: 2,
             indentWithTabs: false,
             // Drag/drop + paste + image-button upload. EasyMDE inserts
-            // ![alt](returned-url) at the cursor on success.
+            // ![alt](returned-url) at the cursor on success. Routes
+            // through the shared runImageUpload helper above with the
+            // dither flag off — plain re-encode through ImageProcessor.
             uploadImage: true,
             imageUploadFunction: function (file, onSuccess, onError) {
-                showUploadStatus('Uploading ' + (file.name || 'image') + '…');
-                // Re-read the meta tag each call so token rotation (e.g. on
-                // login) doesn't leave a stale value cached in closure.
-                var meta = document.querySelector('meta[name="csrf-token"]');
-                var token = meta ? meta.getAttribute('content') : '';
-
-                var form = new FormData();
-                form.append('file', file);
-                fetch('/admin/upload', {
-                    method: 'POST',
-                    headers: { 'X-CSRF-Token': token },
-                    body: form,
-                    credentials: 'same-origin',
-                }).then(function (r) {
-                    // If we followed a redirect (fetch default), we landed
-                    // on the login page — session expired.
-                    if (r.redirected && r.url.indexOf('/admin/login') !== -1) {
-                        hideUploadStatus();
-                        onError('Session expired — refresh the page and log in again.');
-                        return;
-                    }
-                    // Detect non-JSON responses (PHP error page, plain-text
-                    // 403, HTML login page) and surface the actual content.
-                    var ctype = r.headers.get('content-type') || '';
-                    if (ctype.indexOf('application/json') === -1) {
-                        return r.text().then(function (body) {
-                            hideUploadStatus();
-                            var excerpt = body.replace(/\s+/g, ' ').slice(0, 200);
-                            onError('HTTP ' + r.status + ' ' + ctype + ' — ' + (excerpt || '(empty body)'));
-                        });
-                    }
-                    return r.json().then(function (data) {
-                        hideUploadStatus();
-                        if (!r.ok) {
-                            onError('Upload failed (HTTP ' + r.status + '): ' + (data.error || 'unknown'));
-                            return;
-                        }
-                        onSuccess(data.url);
-                    });
-                }).catch(function (e) {
-                    hideUploadStatus();
-                    onError('Network error: ' + (e.message || e));
-                });
+                runImageUpload(file, false, onSuccess, onError);
             },
             imageMaxSize: 10 * 1024 * 1024,
             imageAccept: 'image/png, image/jpeg, image/webp',
@@ -196,7 +210,41 @@
                     title: 'Highlight (==text==)',
                 },
                 '|',
-                'code', 'link', 'image', 'upload-image', 'table', '|',
+                'code', 'link', 'image', 'upload-image',
+                {
+                    name: 'upload-image-dither',
+                    action: function (editor) {
+                        // EasyMDE's `upload-image` opens a built-in file
+                        // picker we can't repurpose, so synthesize one
+                        // ourselves and feed the result to the shared
+                        // runImageUpload helper with dither=true.
+                        var input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/png, image/jpeg, image/webp';
+                        input.style.display = 'none';
+                        document.body.appendChild(input);
+                        input.onchange = function () {
+                            var f = input.files && input.files[0];
+                            document.body.removeChild(input);
+                            if (!f) return;
+                            runImageUpload(f, true, function (url) {
+                                // Same insertion shape EasyMDE's image
+                                // button uses — `![](url)` at the cursor.
+                                editor.codemirror.replaceSelection('![](' + url + ')');
+                            }, function (msg) {
+                                // Match EasyMDE's onError convention — a
+                                // browser-native alert is loud enough that
+                                // a writer working in fullscreen mode
+                                // notices without a status pill timeout.
+                                window.alert(msg);
+                            });
+                        };
+                        input.click();
+                    },
+                    className: 'fa fa-th',
+                    title: 'Upload + Bayer dither',
+                },
+                'table', '|',
                 {
                     name: 'highlight',
                     action: function (editor) {

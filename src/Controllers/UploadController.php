@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Auth;
 use App\Csrf;
 use App\ImageProcessor;
+use App\PostImageDitherer;
 
 /**
  * POST /admin/upload — multipart form upload of a single image.
@@ -15,6 +16,11 @@ use App\ImageProcessor;
  * preview endpoint pattern). Source image is decoded, downscaled if
  * wider than ImageProcessor::MAX_WIDTH, and re-encoded as WebP — that
  * strips ALL metadata (EXIF, GPS, color profile, etc.) as a side effect.
+ *
+ * If the multipart form carries `dither=1`, the source runs through the
+ * 4×4 ordered-Bayer pipeline (PostImageDitherer) instead — same retina
+ * cap, but the output is a 1-bit B&W dot-grid WebP for the album-cover
+ * aesthetic. Routed by the second toolbar button in admin-editor.js.
  *
  * Files land under content/uploads/YYYY/MM/{rand}.webp so the existing
  * backup-content.sh cron picks them up automatically.
@@ -75,8 +81,22 @@ final class UploadController
         $filename = bin2hex(random_bytes(8)) . '.webp';
         $absPath = $absDir . '/' . $filename;
 
+        // `dither=1` opts the upload into the Bayer pipeline. Anything else
+        // (absent, '0', empty) keeps the existing plain re-encode path so
+        // drag/drop + paste + the legacy cloud button are unchanged.
+        $wantDither = (string) ($_POST['dither'] ?? '') === '1';
+        if ($wantDither && !PostImageDitherer::isAvailable()) {
+            $this->fail(
+                500,
+                'Dithered uploads require ext-imagick. Install php8.2-imagick '
+                . '(Debian/Ubuntu) or rebuild the container with the pecl recipe.',
+            );
+        }
+
         try {
-            $dims = ImageProcessor::processToWebp((string) $file['tmp_name'], $absPath);
+            $dims = $wantDither
+                ? PostImageDitherer::processToWebp((string) $file['tmp_name'], $absPath)
+                : ImageProcessor::processToWebp((string) $file['tmp_name'], $absPath);
         } catch (\Throwable $e) {
             $this->fail(400, $e->getMessage());
         }

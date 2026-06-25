@@ -563,11 +563,49 @@ a.about-contact-value:hover {
     margin-top: auto;
 }
 
+/* Cap the H1 inside the identity strip — the base h1 rule scales to
+   `clamp(38px, 9vw, 68px)` for post titles, which wraps the operator
+   name to 2-3 lines when squeezed next to the avatar. Smaller clamp
+   keeps "HA TRUNG HIEU" on ONE line so info-right stays vertically
+   inside the avatar's box. */
+@media (max-width: 900px) {
+    .about-name { font-size: clamp(28px, 5.5vw, 44px); margin: 2px 0 4px; }
+    .about-currently-inline { font-size: 12px; padding: 8px 10px; }
+}
 @media (max-width: 600px) {
-    .about-identity { gap: 16px; }
-    .about-avatar-photo { width: 140px; height: 140px; }
+    /* Keep the horizontal avatar | name-block layout on narrow viewports
+       too — without nowrap + flex-basis:0 the name-block wraps below
+       the avatar (because its 280px flex-basis can't fit), producing a
+       big empty gutter to the right of the photo. */
+    .about-identity {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: 14px;
+    }
+    .about-name-block {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .about-name { font-size: clamp(20px, 6vw, 30px); letter-spacing: 1px; }
+    .about-callsign { font-size: 12px; letter-spacing: 1.5px; margin-bottom: 2px; }
+    .about-location { font-size: 11px; letter-spacing: 1px; }
+    .about-currently-inline {
+        font-size: 11px;
+        padding: 6px 8px;
+        letter-spacing: 0;
+        line-height: 1.4;
+    }
+    .about-currently-label { font-size: 10px; letter-spacing: 1px; margin-right: 6px; }
+    .about-avatar-photo { width: 120px; height: 120px; }
     .about-contact-label { min-width: 100px; }
     .about-badges-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 380px) {
+    /* Squeeze further on tiny viewports so the H1 still has room to
+       wrap to two lines without forcing horizontal overflow. */
+    .about-avatar-photo { width: 96px; height: 96px; }
+    .about-name { font-size: clamp(18px, 6.5vw, 24px); }
+    .about-identity { gap: 12px; }
 }
 @media (max-width: 400px) {
     .about-badges-grid { grid-template-columns: 1fr; }

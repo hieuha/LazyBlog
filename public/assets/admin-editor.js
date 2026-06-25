@@ -282,6 +282,7 @@
             return (raw || '')
                 .toLowerCase()
                 .trim()
+                .replace(/ +/g, '-')
                 .replace(/[^a-z0-9-]/g, '');
         }
 
@@ -326,6 +327,19 @@
         });
         syncHidden();
         renderChips();
+
+        // Live convert spaces to hyphens so the operator sees "Ordered-Bayer"
+        // as they type instead of being surprised by silent space-collapsing
+        // at submit time. Preserves caret position; only fires when a space
+        // is present so the textbox stays inert for ordinary typing.
+        entry.addEventListener('input', function () {
+            if (entry.value.indexOf(' ') === -1) return;
+            var pos = entry.selectionStart;
+            entry.value = entry.value.replace(/ +/g, '-');
+            if (typeof pos === 'number') {
+                try { entry.setSelectionRange(pos, pos); } catch (_) {}
+            }
+        });
 
         entry.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' || e.key === ',') {

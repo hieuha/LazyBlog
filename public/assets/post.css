@@ -479,6 +479,68 @@ body.is-post main {
     text-shadow: 0 0 4px var(--accent-dim);
 }
 
+/* ---------- Prism syntax highlighting (phosphor token theme) ----------
+   Prism loads grammars on demand via the autoloader (see layout.php).
+   Token colors map to existing palette vars so every theme (amber, green,
+   crypt, brutalist, c64, lcd) recolors syntax highlighting for free.
+   Keep buckets coarse — three colors plus dim comment is enough to read
+   without competing with the CRT phosphor aesthetic. */
+.post-body pre[class*="language-"] code,
+.post-body code[class*="language-"] {
+    color: var(--accent);
+    text-shadow: 0 0 4px var(--accent-dim);
+    background: transparent;
+}
+.post-body .token.comment,
+.post-body .token.prolog,
+.post-body .token.doctype,
+.post-body .token.cdata {
+    color: var(--text-dim);
+    font-style: italic;
+}
+.post-body .token.punctuation { color: var(--text); }
+.post-body .token.namespace { opacity: 0.7; }
+.post-body .token.property,
+.post-body .token.tag,
+.post-body .token.boolean,
+.post-body .token.number,
+.post-body .token.constant,
+.post-body .token.symbol,
+.post-body .token.deleted {
+    color: var(--primary);
+}
+.post-body .token.selector,
+.post-body .token.attr-name,
+.post-body .token.string,
+.post-body .token.char,
+.post-body .token.builtin,
+.post-body .token.inserted {
+    color: var(--accent);
+}
+.post-body .token.operator,
+.post-body .token.entity,
+.post-body .token.url,
+.post-body .token.variable {
+    color: var(--text);
+}
+.post-body .token.atrule,
+.post-body .token.attr-value,
+.post-body .token.keyword,
+.post-body .token.important {
+    color: var(--primary);
+    font-weight: 600;
+}
+.post-body .token.function,
+.post-body .token.class-name {
+    color: var(--accent);
+    font-weight: 600;
+}
+.post-body .token.regex {
+    color: var(--primary-dim);
+}
+.post-body .token.bold { font-weight: bold; }
+.post-body .token.italic { font-style: italic; }
+
 .code-lang-tag {
     position: absolute;
     top: 8px;

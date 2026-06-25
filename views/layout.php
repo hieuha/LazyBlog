@@ -419,6 +419,27 @@ $favicon = 'data:image/svg+xml,'
 
 <script defer src="<?= Http::e(Http::asset('assets/site.js')) ?>"></script>
 <?php if ($isPost): ?>
+    <?php
+    // Prism syntax highlighting for fenced code blocks. Loaded only on
+    // post pages so other routes don't pay for the JS. Autoloader fetches
+    // each language grammar (php, js, python, ...) on demand from the same
+    // CDN — keeps the initial payload tiny for posts with no code.
+    // Theme tokens (.token.*) are defined inline in post.css using the
+    // active phosphor palette CSS vars, so highlight colors swap with theme.
+    ?>
+    <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script defer>
+        // Point the autoloader at the same CDN we loaded core from. Runs
+        // before post.js so by the time copy buttons mount the tokens
+        // are already in place.
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.Prism && Prism.plugins && Prism.plugins.autoloader) {
+                Prism.plugins.autoloader.languages_path =
+                    'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/';
+            }
+        });
+    </script>
     <script defer src="<?= Http::e(Http::asset('assets/post.js')) ?>"></script>
 <?php endif; ?>
 <?php

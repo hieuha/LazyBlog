@@ -519,14 +519,17 @@ a.heatmap-cell:hover {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
-    /* Symmetric vertical breathing room — same gap above (main padding +
-       this `margin-top`) and below (this `margin-bottom`). Numbers chosen
-       so the page header → cover → posts-list rhythm reads as evenly
-       weighted instead of bottom-heavy. */
-    margin: 4px 0 12px;
+    /* Pull tight to the top of <main> — the page header band already
+       provides separation from above, so the title/cover row doesn't
+       need its own top margin. Bottom margin keeps a small gap above
+       the posts list. */
+    margin: -12px 0 12px;
     align-items: start;
     justify-items: start;
     text-align: left;
+}
+@media (min-width: 1200px) {
+    .series-detail-header { margin-top: -20px; }
 }
 .series-detail-header.has-cover {
     grid-template-columns: 200px minmax(0, 1fr);
@@ -634,11 +637,14 @@ a.heatmap-cell:hover {
 .series-detail-meta .series-page-title {
     margin: 0 0 10px;
     text-align: left;
-    /* Tight line-height + small negative top adjustment cancels the
-       font's ascent leading so the cap-line of "> SERIE:" aligns with
-       the cover's top border instead of sitting visually lower. */
-    line-height: 1.05;
+    /* VT323 has a generous ascent above cap height — without a negative
+       top offset the title's visual top sits 6-10px below the cover's
+       top edge despite both grid items being `align-items: start`. Pull
+       the line box up so the highlight block's top matches the cover's
+       border y. */
+    line-height: 1;
     padding-top: 0;
+    margin-top: -8px;
 }
 /* Selection-highlight treatment — inverted block that wraps tight around
    the text on each line. box-decoration-break: clone keeps the background
@@ -649,14 +655,12 @@ a.heatmap-cell:hover {
     display: inline;
     background-color: var(--primary);
     color: var(--bg);
-    padding: 4px 10px;
+    padding: 2px 10px 4px;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
     /* Strip the global h1/h2 RGB-split text-shadow — it reads as chromatic
        noise on the inverted block instead of phosphor glow. */
     text-shadow: none;
-    /* Slight negative letter-spacing keeps the VT323 block tight against
-       the text edges so the highlight doesn't feel ballooned. */
     box-shadow: 0 0 16px var(--primary-glow);
 }
 .series-detail-desc {

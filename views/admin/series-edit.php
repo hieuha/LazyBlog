@@ -34,6 +34,27 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
     <?php endif; ?>
 
     <div class="admin-series-edit-grid">
+      <div class="admin-series-edit-left">
+        <form id="rename-form" method="post" action="/admin/series/<?= Http::e($slug) ?>/rename"
+              class="admin-series-rename-block"
+              onsubmit="return confirm('Rename this series? It will rewrite the series field on every post that uses this slug + move content/series/<?= Http::e($slug) ?>/ to the new path. Cannot be undone.');">
+            <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
+            <label class="admin-label" for="new_slug">Slug
+                <span class="admin-label-hint">(kebab-case · renaming rewrites every post's frontmatter)</span>
+            </label>
+            <div class="admin-series-rename-row">
+                <input type="text" name="new_slug" id="new_slug"
+                       value="<?= Http::e($slug) ?>"
+                       pattern="[a-z0-9][a-z0-9-]*"
+                       class="admin-input"
+                       title="kebab-case: lowercase + digits + hyphens, starts with letter or digit"
+                       required>
+                <button type="submit" class="admin-btn admin-btn-danger">
+                    [ RENAME SLUG ]
+                </button>
+            </div>
+        </form>
+
         <form class="admin-series-edit-form" method="post" action="/admin/series/<?= Http::e($slug) ?>" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
 
@@ -73,9 +94,8 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
                 </div>
 
                 <label class="admin-label" for="cover">Upload new image (jpg / png / webp, max 5 MB)</label>
-                <input type="file" name="cover" id="cover" accept="image/jpeg,image/png,image/webp" <?= $imagickAvailable ? '' : 'disabled' ?>>
-
                 <div class="admin-series-cover-actions">
+                    <input type="file" name="cover" id="cover" accept="image/jpeg,image/png,image/webp" <?= $imagickAvailable ? '' : 'disabled' ?>>
                     <button type="submit"
                             formaction="/admin/series/<?= Http::e($slug) ?>/preview"
                             class="admin-btn" <?= $imagickAvailable ? '' : 'disabled' ?>>
@@ -94,6 +114,7 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
                 <button type="submit" class="admin-btn admin-btn-primary">[ SAVE ]</button>
             </div>
         </form>
+      </div>
 
         <aside class="admin-series-edit-aside">
             <h3 class="admin-aside-heading">Posts in this series (<?= count($postsInSeries) ?>)</h3>

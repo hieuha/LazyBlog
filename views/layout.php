@@ -26,11 +26,17 @@ $canonicalUrl = $siteUrl . $path . ($qs !== '' ? '?' . $qs : '');
 // Pull $post from the render data when the post view set it.
 $isPost = isset($post) && $post instanceof Post;
 $isTag = isset($tag) && is_string($tag) && $tag !== '';
+// Series detail view sets $seriesSlug + $description + $coverUrl; surface
+// those for SEO meta so social previews show the series card art and blurb.
+$isSeries = isset($seriesSlug) && is_string($seriesSlug) && $seriesSlug !== ''
+    && isset($posts) && is_array($posts);
 
-// Page-specific description: post summary > site description.
+// Page-specific description: post summary > series description > tag hint > site description.
 $pageDesc = $isPost && $post->summary !== null && $post->summary !== ''
     ? $post->summary
-    : ($isTag ? "Posts tagged #{$tag} on {$siteTitle}." : $siteDesc);
+    : ($isSeries && isset($description) && is_string($description) && $description !== ''
+        ? $description
+        : ($isTag ? "Posts tagged #{$tag} on {$siteTitle}." : $siteDesc));
 
 // og:type — `article` for posts, `website` otherwise.
 $ogType = $isPost ? 'article' : 'website';
@@ -45,6 +51,12 @@ $ogType = $isPost ? 'article' : 'website';
 $ogImageRaw = '';
 if ($isPost) {
     $ogImageRaw = !empty($post->image) ? $post->image : ($post->firstBodyImage() ?? '');
+}
+// Series detail page → use its dithered cover.webp as og:image when one
+// exists. The /series-assets/{slug}/cover.webp route serves it with the
+// long max-age the social crawlers like to cache against.
+if ($ogImageRaw === '' && $isSeries && isset($coverUrl) && is_string($coverUrl) && $coverUrl !== '') {
+    $ogImageRaw = $coverUrl;
 }
 if ($ogImageRaw === '') {
     $ogImageRaw = (string) Config::get('SITE_OG_IMAGE', '');

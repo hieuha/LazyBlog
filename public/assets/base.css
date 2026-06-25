@@ -244,7 +244,11 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
 }
 
 h1, .site-brand { font-size: clamp(38px, 9vw, 68px); }
-.site-brand { margin: 0; }
+/* `<p class="site-brand">` is normal-weight by default; h1 is browser-bold.
+   The weight mismatch makes the brand on non-home pages render thinner,
+   so the phosphor text-shadow reads visibly dimmer than the same title
+   on home. Pin to bold so every page shows the brand at identical glow. */
+.site-brand { margin: 0; font-weight: bold; }
 h1 .brand-link, .site-brand .brand-link { color: inherit; text-decoration: none; }
 h1 .brand-link:hover,
 .site-brand .brand-link:hover { text-shadow: 0 0 16px var(--primary), 0 0 48px var(--primary-glow-strong); }

@@ -478,6 +478,24 @@ a.heatmap-cell:hover {
        leaving the panel background as a safe fallback. */
     .series-card-cover-dot { display: none; }
 }
+/* Hover affordance: peel the theme-tint mask off the cover and surface
+   the underlying 1-bit Bayer render in solid black-on-white — the same
+   look as the reference dither aesthetic the cover was authored against.
+   Scoped via :has() so the QR + greek-glyph fallback (rendered when no
+   cover.webp exists) doesn't flash white on hover. (hover: hover) guards
+   the rule from touch devices where :hover sticks after a tap. */
+.series-card-cover,
+.series-card-cover-dot {
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+@media (hover: hover) {
+    .series-card-cover:has(.series-card-cover-dot):hover {
+        background-color: #fff;
+    }
+    .series-card-cover:has(.series-card-cover-dot):hover .series-card-cover-dot {
+        color: #000;
+    }
+}
 .series-card-body {
     padding: 10px 12px 14px;
 }
@@ -593,6 +611,20 @@ a.heatmap-cell:hover {
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
+}
+/* Mirrors the .series-card-cover hover behaviour — see the comment block
+   above the card rule. Same :has() + (hover: hover) scoping. */
+.series-detail-cover,
+.series-detail-cover-dot {
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+@media (hover: hover) {
+    .series-detail-cover:has(.series-detail-cover-dot):hover {
+        background-color: #fff;
+    }
+    .series-detail-cover:has(.series-detail-cover-dot):hover .series-detail-cover-dot {
+        color: #000;
+    }
 }
 .series-detail-cover-qr {
     position: relative;

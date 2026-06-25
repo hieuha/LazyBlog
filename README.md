@@ -36,6 +36,27 @@ Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
 collapse into a CSS Grid gallery (`count-2` through `count-6`) with
 title-attribute captions. YouTube URLs still auto-embed as iframes.
 
+**Series with halftone-dot covers.** A multi-part series (any post
+with `series: my-slug` in its frontmatter) shows up at `/series` and
+`/series/{slug}` — and now carries a manifest sidecar
+(`content/series/{slug}/manifest.yaml`) with editorial title +
+description + cover image. Cover uploads are center-cropped to 600×600,
+run through Imagick's ordered Bayer dither, and saved as a
+transparent-where-light WebP that CSS `mask-image` + `currentColor`
+tints with the active theme — phosphor amber, green, C64 lavender,
+LCD sage, whichever. No cover yet? `/series` cards still fall back
+to the QR + greek-glyph stamp. The admin canvas at `/admin/series`
+lists every discovered series with manifest + cover state and supports
+editing metadata, **renaming the slug** (bulk-rewrites every matching
+post's frontmatter atomically + moves `content/series/{slug}/`), and
+**attaching arbitrary posts** to the series via native HTML5 datalist.
+Social meta on `/series/{slug}` carries the cover as `og:image` so
+Telegram / X / Slack link previews show the dithered art. The
+post editor's `series:` field is now a `<datalist>` autocomplete of
+every existing slug. ext-imagick is a soft dep — title + description
+still save without it; only cover upload is gated. See
+`docs/writing-posts.md` → "Series management".
+
 **Opt-in plugins.** Drop a folder into `plugins/{slug}/`, set
 `PLUGINS=slug` in `.env`, and the site picks up a new page, header
 link, and (optionally) admin section — without touching core. Each
@@ -69,6 +90,7 @@ Backup with `rsync`. Restore in seconds.
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
+│  Series with covers   ·  Bayer-dither WebP + manifest│
 │  Search + Archive     ·  reading-progress meter     │
 │  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
@@ -93,7 +115,8 @@ _Left to right: `/archive` heatmap + posts by year · `/search` diacritic-insens
 ## Stack
 
 - PHP 8.2+ (no framework)
-- Composer: `league/commonmark`, `symfony/yaml`, `vlucas/phpdotenv`
+- Composer: `league/commonmark`, `symfony/yaml`, `vlucas/phpdotenv`, `chillerlan/php-qrcode`
+- ext-imagick (optional — required only for series cover dither)
 - Caddy + php-fpm
 - Fonts via Google Fonts: VT323, Share Tech Mono, Play
 - Docker Compose for local dev

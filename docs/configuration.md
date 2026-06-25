@@ -77,7 +77,9 @@ readers find the feed without a URL hint.
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |
 | `GET /admin/series` | Discovered series + manifest/cover state |
 | `GET /admin/series/{slug}` · `POST /admin/series/{slug}` | Edit title, description, cover image |
-| `POST /admin/series/{slug}/preview` | Atkinson-dither preview only — writes `.preview.webp` for confirm-before-commit |
+| `POST /admin/series/{slug}/preview` | Ordered-dither preview only — writes `.preview.webp` for confirm-before-commit |
+| `POST /admin/series/{slug}/attach` | Rewrite the target post's `series:` frontmatter to {slug}; moves posts between series in one click |
+| `POST /admin/series/{slug}/rename` | Bulk-rewrite every matching post's `series:` field + rename `content/series/{old}/` → `content/series/{new}/` |
 | `POST /admin/series/{slug}/delete` | Remove manifest + cover artefacts; posts referencing the slug are untouched |
 
 ### PHP extensions

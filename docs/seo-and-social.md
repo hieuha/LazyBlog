@@ -46,6 +46,20 @@ Set automatically in `views/layout.php`:
 
 Admin editor auto-populates the `image:` field from the first body image when editing, so you usually get social previews without extra work.
 
+## `/series/{slug}` SEO
+
+Series detail pages carry their own meta:
+
+- **`og:title`** — manifest title (or slug → Title Case fallback)
+- **`og:description`** — manifest description (when set)
+- **`og:image`** — the dithered `cover.webp` when a manifest+cover exists;
+  falls through to `SITE_OG_IMAGE` otherwise. Served via the
+  `/series-assets/{slug}/cover.webp` route with a 24h `max-age` cache
+  header so platform crawlers can cache the art.
+
+Manage these on `/admin/series/{slug}` — see `docs/writing-posts.md`
+→ "Series management".
+
 Relative paths (`/uploads/foo.webp`) are auto-prefixed with `SITE_URL` so
 the URL is always absolute. Absolute `http(s)://` URLs pass through.
 

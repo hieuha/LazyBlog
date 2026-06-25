@@ -119,31 +119,52 @@ for editorial metadata (custom title, description, cover image).
 - **Title** — overrides slug-derived title on `/series` index card + detail banner.
 - **Description** — 1-2 sentences, shown on card + detail banner. Two-line clamp on cards.
 - **Cover image** — JPG/PNG/WebP up to 5 MB. Server center-crops every
-  upload to a canonical 900×900 square (no matter the source aspect ratio:
+  upload to a canonical 600×600 square (no matter the source aspect ratio:
   portrait, panorama, screenshot — all land at the same dimensions),
-  applies tonal prep (histogram normalise + ~12% brightness lift +
-  gentle contrast S-curve so dark photos don't dither into ink slabs),
-  runs Atkinson 1-bit error-diffusion dither (the buzzy Mac 1984 halftone-
-  photo aesthetic) with a slight light-bias threshold, outputs a
-  transparent-where-light WebP, and renders it via CSS
-  `mask-image: url(cover.webp)` + `currentColor`. The active theme
-  colour (phosphor green, amber, C64, LCD, …) flows through the dots
-  automatically. Same trick the QR cover uses today.
+  histogram-normalises, then runs Imagick's ordered Bayer dither
+  (`orderedDitherImage('o4x4,2')`) — the clean halftone-grid pattern
+  matching the album-cover reference aesthetic. Output is a transparent-
+  where-light WebP rendered via CSS `mask-image: url(cover.webp)` +
+  `currentColor`. The active theme colour (phosphor green, amber, C64,
+  LCD, …) flows through the dots automatically. Same trick the QR
+  cover uses today. Falls through to `o4x4` / `4x4` / `o2x2` / `checks`
+  for ImageMagick builds whose `thresholds.xml` ships a different map
+  alias set.
 
 **Preview-before-save**: clicking `[ PREVIEW DITHER ]` runs the upload through
 the dither pipeline and renders the result inline as a "PENDING PREVIEW"
 chip. The form's `[ SAVE ]` button then promotes the preview to `cover.webp`
 if you tick the "promote pending preview" checkbox (default on).
 
+**Attach posts**: under "+ Attach a post" in the right sidebar of
+`/admin/series/{slug}`, type or pick from the datalist any post slug,
+optionally set its `Part #`, and click `[ ATTACH ]`. Backend rewrites the
+post's `series:` frontmatter to the current slug atomically. A post already
+in another series gets moved (its old series silently loses that post on
+the next discovery pass; manifest at the old slug is preserved for
+re-attachment later).
+
+**Rename slug**: the `Slug` field at the top of `/admin/series/{slug}` is
+editable — typing a new kebab-case value and clicking `[ RENAME SLUG ]`
+will bulk-rewrite the `series:` frontmatter on every matching post and
+rename `content/series/{old}/` → `content/series/{new}/` so the manifest
+and cover follow. Refuses to merge into an existing series (the new slug
+must have no manifest and no posts using it).
+
 **Deletion**: `[ DEL MANIFEST ]` removes `manifest.yaml` + `cover.webp` +
-`cover-src.*`. Posts that reference the series via frontmatter are **not**
-touched — the series simply falls back to its slug-derived title and the
-QR fallback cover.
+`cover-src.webp`. Posts that reference the series via frontmatter are
+**not** touched — the series simply falls back to its slug-derived title
+and the QR fallback cover.
 
 **Discovery rule**: a manifest without any matching posts is an orphan and
-silently ignored on `/series` index. If you rename a `series:` slug on
-posts, the old manifest becomes orphan; create a new manifest at the new
-slug or delete the orphan via the admin.
+silently ignored on `/series` index. Rename via the admin (above) is the
+safe path; manually changing `series:` on individual posts works too but
+leaves orphaned metadata at the old slug.
+
+**SEO**: `/series/{slug}` carries the cover as `og:image` and the manifest
+description as `og:description`, so social shares (Telegram, X, Slack,
+Facebook, Discord) render the dithered cover instead of the site-wide
+fallback. Falls through to `SITE_OG_IMAGE` when no cover exists.
 
 **Storage layout**:
 
@@ -151,7 +172,7 @@ slug or delete the orphan via the admin.
 content/series/<slug>/
 ├── manifest.yaml        # title, description, cover_ext, updated_at
 ├── cover-src.webp       # upload re-encoded to WebP @ q=80 for compact backup
-└── cover.webp           # 900×900 1-bit transparent Atkinson dither
+└── cover.webp           # 600×600 1-bit transparent ordered Bayer dither
 ```
 
 All uploads are normalised to WebP regardless of source format (JPG / PNG /

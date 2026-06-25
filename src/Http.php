@@ -110,4 +110,18 @@ final class Http
         $version = is_file($fsPath) ? (string) filemtime($fsPath) : '0';
         return $relative . '?v=' . $version;
     }
+
+    /**
+     * Cache-busted URL for a series asset (cover image kept under
+     * content/series/{slug}/). Mirrors pluginAsset() but resolves the mtime
+     * against the content tree, since series assets are PHP-served via the
+     * /series-assets route — they don't live under /public.
+     */
+    public static function seriesAsset(string $slug, string $file): string
+    {
+        $file = ltrim($file, '/');
+        $fsPath = __DIR__ . '/../content/series/' . $slug . '/' . $file;
+        $version = is_file($fsPath) ? (string) filemtime($fsPath) : '0';
+        return "/series-assets/{$slug}/{$file}?v={$version}";
+    }
 }

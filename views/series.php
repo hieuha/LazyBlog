@@ -2,13 +2,26 @@
 /** @var string $title */
 /** @var string $seriesSlug */
 /** @var string $seriesTitle */
+/** @var ?string $description */
+/** @var ?string $coverUrl */
 /** @var list<array<string,mixed>> $posts */
 
+use App\Auth;
 use App\Http;
 ?>
 
 <section class="series-page">
+    <?php if (!empty($coverUrl)): ?>
+        <div class="series-detail-cover">
+            <span class="series-detail-cover-dot"
+                  style="--dot-mask: url('<?= Http::e((string) $coverUrl) ?>');"
+                  aria-hidden="true"></span>
+        </div>
+    <?php endif; ?>
     <h2 class="series-page-title">> SERIE: <?= Http::e($seriesTitle) ?></h2>
+    <?php if (!empty($description)): ?>
+        <p class="series-detail-desc"><?= Http::e((string) $description) ?></p>
+    <?php endif; ?>
     <p class="series-meta"><?= count($posts) ?> PART<?= count($posts) === 1 ? '' : 'S' ?></p>
 
     <ul class="series-list">
@@ -31,7 +44,10 @@ use App\Http;
         <?php endforeach; ?>
     </ul>
 
-    <p style="margin-top: 32px;">
+    <p class="series-detail-actions">
         <a class="view-source-link" href="/">← BACK TO INDEX</a>
+        <?php if (Auth::check()): ?>
+            <a class="view-source-link" href="/admin/series/<?= Http::e($seriesSlug) ?>">[ EDIT SERIES ]</a>
+        <?php endif; ?>
     </p>
 </section>

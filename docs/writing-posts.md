@@ -45,7 +45,7 @@ image: "/uploads/2026/06/antenna.webp"
 | `summary` | no | Shown in listings, RSS description, llms.txt entry, og:description |
 | `icon` | no | Emoji shown next to the title in listings |
 | `image` | no | Per-post social-card image. Used as `og:image` + `twitter:image` when shared on Telegram/Facebook/Slack/Twitter. Path (`/uploads/…webp`) gets prefixed with `SITE_URL`; absolute URLs pass through. Falls back to auto-detected first body image, then `SITE_OG_IMAGE` env when omitted. |
-| `series` | no | Slug grouping this post into a multi-part series. Add the same value to every post in the series. Shows a banner at the top of the post ("Part N of M") + prev/next nav at the bottom. The series index lives at `/series/{slug}`. |
+| `series` | no | Slug grouping this post into a multi-part series. Add the same value to every post in the series. Shows a banner at the top of the post ("Part N of M") + prev/next nav at the bottom. The series index lives at `/series/{slug}`. The editor's series field auto-suggests existing slugs via a native `<datalist>` — pick one or type a new kebab-case slug to start a series. |
 | `part` | no | Explicit numeric ordering within a series (e.g. `1`, `2`). When omitted, posts in the series are ordered by `date` ascending. |
 
 ## Body — markdown syntax
@@ -97,6 +97,70 @@ on success. Requires `php8.2-gd` extension (already installed by
 
 **Sticky toolbar**: the formatting toolbar stays pinned to the top of the
 viewport while you scroll a long post, so the buttons stay reachable.
+
+## Series management (`/admin/series`)
+
+Series are still discovered from post frontmatter — putting `series: my-slug`
+on a post is what creates the series. The admin page is an enhancement layer
+for editorial metadata (custom title, description, cover image).
+
+`/admin/series` lists every series discovered across published posts with:
+
+- Slug (link → public series page)
+- Title (manifest if set, else slug → Title Case)
+- Post count
+- Manifest badge (YES if `manifest.yaml` exists)
+- Cover thumbnail (40×22 dot preview when `cover.webp` exists)
+- Last activity date
+- Actions: EDIT · DEL MANIFEST
+
+`/admin/series/{slug}` lets you set:
+
+- **Title** — overrides slug-derived title on `/series` index card + detail banner.
+- **Description** — 1-2 sentences, shown on card + detail banner. Two-line clamp on cards.
+- **Cover image** — JPG/PNG/WebP up to 5 MB. Server center-crops every
+  upload to a canonical 600×600 square (no matter the source aspect ratio:
+  portrait, panorama, screenshot — all land at the same dimensions), runs
+  Atkinson 1-bit error-diffusion dither (the buzzy Mac 1984 halftone-photo
+  aesthetic), outputs a transparent-where-light WebP, and renders it via
+  CSS `mask-image: url(cover.webp)` + `currentColor`. The active theme
+  colour (phosphor green, amber, C64, LCD, …) flows through the dots
+  automatically. Same trick the QR cover uses today.
+
+**Preview-before-save**: clicking `[ PREVIEW DITHER ]` runs the upload through
+the dither pipeline and renders the result inline as a "PENDING PREVIEW"
+chip. The form's `[ SAVE ]` button then promotes the preview to `cover.webp`
+if you tick the "promote pending preview" checkbox (default on).
+
+**Deletion**: `[ DEL MANIFEST ]` removes `manifest.yaml` + `cover.webp` +
+`cover-src.*`. Posts that reference the series via frontmatter are **not**
+touched — the series simply falls back to its slug-derived title and the
+QR fallback cover.
+
+**Discovery rule**: a manifest without any matching posts is an orphan and
+silently ignored on `/series` index. If you rename a `series:` slug on
+posts, the old manifest becomes orphan; create a new manifest at the new
+slug or delete the orphan via the admin.
+
+**Storage layout**:
+
+```
+content/series/<slug>/
+├── manifest.yaml        # title, description, cover_ext, updated_at
+├── cover-src.webp       # upload re-encoded to WebP @ q=80 for compact backup
+└── cover.webp           # 600×600 1-bit transparent Atkinson dither
+```
+
+All uploads are normalised to WebP regardless of source format (JPG / PNG /
+WebP all land as `cover-src.webp`) — typical 5 MB JPG sources collapse to
+~200–500 KB on disk. The original is kept only to re-run the dither
+pipeline after an algorithm tweak; the public surface always serves
+`cover.webp`. All of `content/` is backed up by the existing
+`backup-content.sh` rsync.
+
+**Requirements**: cover upload requires `ext-imagick`. Without it the title
+and description fields still save fine — only the cover upload is disabled,
+and a warning shows on `/admin/series`. See `docs/configuration.md`.
 
 **Autosave** to `localStorage` keyed by slug, 1500ms delay — restored if you
 reopen the tab after an accidental close. Cleared from localStorage after successful save or delete.

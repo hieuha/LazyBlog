@@ -127,11 +127,20 @@ $isEdit = $mode === 'edit';
         <!-- Series — slug + optional part number side by side -->
         <div class="admin-form-row">
             <div class="admin-field admin-field-grow">
-                <label class="admin-label" for="series">Series <span class="admin-label-hint">(optional · slug shared across all parts)</span></label>
+                <label class="admin-label" for="series">Series <span class="admin-label-hint">(optional · pick existing or type new kebab-slug)</span></label>
                 <input type="text" name="series" id="series"
                        value="<?= Http::e($formValues['series']) ?>"
                        class="admin-input"
+                       list="series-suggestions"
+                       autocomplete="off"
                        placeholder="rtl-sdr-cho-nguoi-moi">
+                <datalist id="series-suggestions">
+                    <?php foreach (($seriesSuggestions ?? []) as $s): ?>
+                        <option value="<?= Http::e((string) $s['slug']) ?>">
+                            <?= Http::e((string) $s['title']) ?> · <?= (int) $s['count'] ?> part<?= (int) $s['count'] === 1 ? '' : 's' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </datalist>
             </div>
             <div class="admin-field" style="flex: 0 0 110px">
                 <label class="admin-label" for="part">Part # <span class="admin-label-hint">(opt)</span></label>

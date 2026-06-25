@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Http;
 use App\PostRepository;
+use App\SeriesManifest;
 
 /**
  * GET /series/{slug} — index page for a series. Lists all posts with
@@ -14,8 +15,10 @@ use App\PostRepository;
  */
 final class SeriesController
 {
-    public function __construct(private readonly PostRepository $repo)
-    {
+    public function __construct(
+        private readonly PostRepository $repo,
+        private readonly SeriesManifest $manifest,
+    ) {
     }
 
     /**
@@ -49,15 +52,26 @@ final class SeriesController
             return;
         }
 
-        // Pull a human-readable title from the first matching post — most
-        // writers don't set a separate series title, so derive from the
-        // slug as a fallback (kebab → Title Case).
-        $displayTitle = self::titleFromSlug($slug);
+        // Manifest is optional enhancement — if absent, fall back to the
+        // slug-derived title and an empty description.
+        $manifest = $this->manifest->load($slug);
+        $manifestTitle = (is_array($manifest) && is_string($manifest['title'] ?? null) && $manifest['title'] !== '')
+            ? $manifest['title']
+            : null;
+        $description = (is_array($manifest) && is_string($manifest['description'] ?? null) && $manifest['description'] !== '')
+            ? $manifest['description']
+            : null;
+        $displayTitle = $manifestTitle ?? self::titleFromSlug($slug);
+        $coverUrl = $this->manifest->hasCover($slug)
+            ? Http::seriesAsset($slug, 'cover.webp')
+            : null;
 
         Http::render('series', [
             'title' => 'Series // ' . $displayTitle,
             'seriesSlug' => $slug,
             'seriesTitle' => $displayTitle,
+            'description' => $description,
+            'coverUrl' => $coverUrl,
             'posts' => $posts,
         ]);
     }

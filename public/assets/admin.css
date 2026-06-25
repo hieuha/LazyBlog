@@ -620,3 +620,150 @@ button.admin-btn-sm { font-size: 10px; }
     0%, 100% { opacity: 1; }
     50%      { opacity: 0.35; }
 }
+
+/* ---------- Admin: Series management ---------- */
+.admin-flash-warn {
+    color: #ffce5b;
+    border-left-color: #ffce5b;
+    background: rgba(255, 200, 80, 0.08);
+}
+.admin-series-table .admin-series-cover-thumb {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    background-color: currentColor;
+    -webkit-mask-image: var(--dot-mask);
+    mask-image: var(--dot-mask);
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    color: var(--primary);
+    vertical-align: middle;
+}
+.admin-series-edit-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 24px;
+    margin-top: 16px;
+}
+@media (max-width: 900px) {
+    .admin-series-edit-grid { grid-template-columns: 1fr; }
+}
+.admin-series-edit-form .admin-label { margin-top: 14px; }
+.admin-series-edit-form input[type="text"],
+.admin-series-edit-form textarea {
+    width: 100%;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    border-radius: 2px;
+}
+.admin-series-edit-form textarea {
+    resize: vertical;
+    min-height: 96px;
+}
+.admin-series-cover-block {
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    margin-top: 18px;
+    border-radius: 2px;
+}
+.admin-series-cover-block[disabled] { opacity: 0.55; }
+.admin-series-cover-block legend {
+    padding: 0 6px;
+    color: var(--primary);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+.admin-series-cover-preview-row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.admin-series-cover-preview {
+    flex: 0 0 auto;
+}
+.admin-series-cover-thumb-big {
+    display: block;
+    width: 200px;
+    aspect-ratio: 1 / 1;
+    background-color: currentColor;
+    -webkit-mask-image: var(--dot-mask);
+    mask-image: var(--dot-mask);
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    color: var(--primary);
+    border: 1px dashed var(--border);
+}
+.admin-series-cover-preview-fresh .admin-series-cover-thumb-big {
+    border-style: solid;
+    border-color: var(--primary);
+}
+.admin-series-cover-caption {
+    margin: 6px 0 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+}
+.admin-series-cover-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.admin-series-promote-toggle {
+    color: var(--text-dim);
+    font-size: 13px;
+}
+.admin-form-actions {
+    margin-top: 22px;
+    display: flex;
+    gap: 8px;
+}
+.admin-series-edit-aside {
+    border-left: 1px solid var(--border);
+    padding-left: 18px;
+}
+@media (max-width: 900px) {
+    .admin-series-edit-aside {
+        border-left: 0;
+        border-top: 1px solid var(--border);
+        padding-left: 0;
+        padding-top: 14px;
+    }
+}
+.admin-aside-heading {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--primary);
+    margin: 0 0 10px;
+}
+.admin-series-posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+    font-size: 13px;
+}
+.admin-series-posts-list li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    align-items: baseline;
+}

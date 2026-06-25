@@ -63,7 +63,8 @@ header(
 // "headers already sent" warnings on public routes.
 App\Auth::start();
 
-$repo = new App\PostRepository();
+$seriesManifest = new App\SeriesManifest(__DIR__ . '/../content');
+$repo = new App\PostRepository(__DIR__ . '/../content', $seriesManifest);
 $renderer = new App\MarkdownRenderer();
 $llms = new App\LlmsBuilder($repo, __DIR__ . '/../content');
 $feed = new App\FeedBuilder($repo, $renderer, __DIR__ . '/../content');
@@ -77,7 +78,10 @@ $admin = new App\Controllers\AdminController($repo);
 $archive = new App\Controllers\ArchiveController($repo);
 $search = new App\Controllers\SearchController(new App\Searcher($repo));
 $upload = new App\Controllers\UploadController(__DIR__ . '/../content');
-$series = new App\Controllers\SeriesController($repo);
+$series = new App\Controllers\SeriesController($repo, $seriesManifest);
+$seriesAssetCtl = new App\Controllers\SeriesAssetController($seriesManifest);
+$seriesCoverProcessor = new App\SeriesCoverProcessor($seriesManifest);
+$adminSeries = new App\Controllers\AdminSeriesController($repo, $seriesManifest, $seriesCoverProcessor);
 $aboutRepo = new App\AboutRepository(__DIR__ . '/../content');
 $aboutCtl = new App\Controllers\AboutController($aboutRepo, $renderer, $repo);
 $adminAboutCtl = new App\Controllers\AdminAboutController($aboutRepo);
@@ -99,6 +103,7 @@ App\Http::setPluginRegistry($pluginRegistry);
 
 $pluginAssetCtl = new App\Controllers\PluginAssetController($pluginRegistry);
 $router->get('/plugin-assets/{slug}/{file}', fn (array $p) => $pluginAssetCtl->serve($p));
+$router->get('/series-assets/{slug}/{file}', fn (array $p) => $seriesAssetCtl->serve($p));
 
 // Most-specific patterns first.
 // Admin (auth-gated inside the controller).
@@ -113,6 +118,11 @@ $router->post('/admin/preview', fn () => $admin->preview());
 $router->post('/admin/upload', fn () => $upload->upload());
 $router->get('/admin/about', fn () => $adminAboutCtl->editForm());
 $router->post('/admin/about/save', fn () => $adminAboutCtl->save());
+$router->get('/admin/series', fn () => $adminSeries->index());
+$router->get('/admin/series/{slug}', fn (array $p) => $adminSeries->editForm($p));
+$router->post('/admin/series/{slug}', fn (array $p) => $adminSeries->save($p));
+$router->post('/admin/series/{slug}/preview', fn (array $p) => $adminSeries->preview($p));
+$router->post('/admin/series/{slug}/delete', fn (array $p) => $adminSeries->delete($p));
 $router->get('/admin', fn () => $admin->index());
 
 // Public.

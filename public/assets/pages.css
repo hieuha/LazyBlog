@@ -454,6 +454,30 @@ a.heatmap-cell:hover {
     border-radius: 2px;
     letter-spacing: 1px;
 }
+/* Manifest-backed cover: Atkinson dither pattern flowing the theme color
+   through CSS mask. Same currentColor trick QR uses, so the 6 themes auto-
+   tint without runtime overrides. */
+.series-card-cover-dot {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask-image: var(--dot-mask);
+    mask-image: var(--dot-mask);
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    color: var(--primary);
+}
+@supports not (mask-image: url('')) {
+    /* Old browser without mask-image — hide the dot layer so the markup
+       below it (which we don't render when cover exists) doesn't show,
+       leaving the panel background as a safe fallback. */
+    .series-card-cover-dot { display: none; }
+}
 .series-card-body {
     padding: 10px 12px 14px;
 }
@@ -468,9 +492,61 @@ a.heatmap-cell:hover {
 .series-card-link:hover .series-card-title {
     text-shadow: 0 0 8px var(--primary-glow-strong);
 }
+.series-card-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.45;
+    margin: 4px 0 6px;
+    /* Two-line clamp keeps card height predictable across descriptions. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
 .series-card-meta {
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
     color: var(--text-dim);
     letter-spacing: 1px;
+}
+/* Detail page banner. Forced 1:1 to match the cover processor's canonical
+   square output (SeriesCoverProcessor::COVER_SIZE). The card grid uses 1:1
+   already; aligning the banner avoids letterbox / pillarbox on either
+   surface no matter what aspect ratio the user uploads. */
+.series-detail-cover {
+    width: 100%;
+    max-width: 360px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto 18px;
+    color: var(--primary);
+}
+.series-detail-cover-dot {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask-image: var(--dot-mask);
+    mask-image: var(--dot-mask);
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+.series-detail-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.55;
+    max-width: 60ch;
+    margin: 8px 0 14px;
+}
+.series-detail-actions {
+    margin-top: 32px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
 }

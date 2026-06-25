@@ -124,6 +124,7 @@ final class AdminController
             'post' => null,
             'originalFilename' => '',
             'formError' => null,
+            'seriesSuggestions' => $this->repo->allSeries(),
             'formValues' => [
                 'date' => $today,
                 'time' => $nowTime,
@@ -183,6 +184,7 @@ final class AdminController
             'post' => $post,
             'originalFilename' => $originalFilename,
             'formError' => null,
+            'seriesSuggestions' => $this->repo->allSeries(),
             'formValues' => [
                 'date' => $editDate,
                 'time' => $editTime,
@@ -259,6 +261,7 @@ final class AdminController
                 'post' => null,
                 'originalFilename' => $originalFilename,
                 'formError' => $e->getMessage(),
+                'seriesSuggestions' => $this->repo->allSeries(),
                 'formValues' => $values,
             ]);
             return;

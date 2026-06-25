@@ -19,12 +19,14 @@ final class PostRepository
     private string $contentDir;
     private string $postsDir;
     private string $indexPath;
+    private SeriesManifest $seriesManifest;
 
-    public function __construct(?string $contentDir = null)
+    public function __construct(?string $contentDir = null, ?SeriesManifest $seriesManifest = null)
     {
         $this->contentDir = $contentDir ?? (__DIR__ . '/../content');
         $this->postsDir = $this->contentDir . '/posts';
         $this->indexPath = $this->contentDir . '/.index.json';
+        $this->seriesManifest = $seriesManifest ?? new SeriesManifest($this->contentDir);
     }
 
     public function postsDir(): string
@@ -93,7 +95,7 @@ final class PostRepository
      * index page. Sorted by latest activity desc (recently-updated
      * series first).
      *
-     * @return list<array{slug:string, title:string, count:int, firstDate:string, lastDate:string}>
+     * @return list<array{slug:string, title:string, count:int, firstDate:string, lastDate:string, description:?string, hasCover:bool, manifestTitle:?string}>
      */
     public function allSeries(): array
     {
@@ -113,6 +115,22 @@ final class PostRepository
             $byKey[$slug]['count']++;
             if ($entry['date'] < $byKey[$slug]['firstDate']) $byKey[$slug]['firstDate'] = $entry['date'];
             if ($entry['date'] > $byKey[$slug]['lastDate'])  $byKey[$slug]['lastDate']  = $entry['date'];
+        }
+        // Sidecar manifest enhancement — overrides derived title when set,
+        // surfaces description + hasCover for the index card. Missing manifest
+        // leaves derived fallbacks intact, preserving zero-config behavior.
+        foreach ($byKey as $slug => $entry) {
+            $m = $this->seriesManifest->load($slug);
+            $byKey[$slug]['manifestTitle'] = (is_array($m) && is_string($m['title'] ?? null) && $m['title'] !== '')
+                ? $m['title']
+                : null;
+            $byKey[$slug]['description'] = (is_array($m) && is_string($m['description'] ?? null) && $m['description'] !== '')
+                ? $m['description']
+                : null;
+            $byKey[$slug]['hasCover'] = $this->seriesManifest->hasCover($slug);
+            if ($byKey[$slug]['manifestTitle'] !== null) {
+                $byKey[$slug]['title'] = $byKey[$slug]['manifestTitle'];
+            }
         }
         $list = array_values($byKey);
         usort($list, static fn (array $a, array $b): int => strcmp($b['lastDate'], $a['lastDate']));

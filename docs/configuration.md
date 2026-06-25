@@ -52,6 +52,9 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/robots.txt` | `Disallow: /admin/` + `Disallow: /llms-full.txt` |
 | `/healthz` | Liveness probe — `text/plain` `ok`, no-store. Short-circuited before autoload/session/repo so monitor traffic costs ~nothing |
 | `/plugin-assets/{slug}/{file}` | Plugin asset (CSS/JS/image/font). Served only when the plugin is enabled. Cache-busted via `?v=<mtime>`. See [`plugin-development.md`](plugin-development.md) |
+| `/series` | Index of all multi-part series — manifest-backed dot covers when present, QR fallback otherwise |
+| `/series/{slug}` | Single series with banner cover + ordered post list |
+| `/series-assets/{slug}/{file}` | Series cover image (`cover.webp` only). Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg`), realpath jail. Cache `max-age=86400` |
 
 Each rendered post page also includes `<link rel="alternate" type="text/markdown">`
 in `<head>` so AI agents auto-discover the raw source, and
@@ -72,6 +75,17 @@ readers find the feed without a URL hint.
 | `POST /admin/preview` | Server-side markdown render for EasyMDE preview pane |
 | `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp` |
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |
+| `GET /admin/series` | Discovered series + manifest/cover state |
+| `GET /admin/series/{slug}` · `POST /admin/series/{slug}` | Edit title, description, cover image |
+| `POST /admin/series/{slug}/preview` | Atkinson-dither preview only — writes `.preview.webp` for confirm-before-commit |
+| `POST /admin/series/{slug}/delete` | Remove manifest + cover artefacts; posts referencing the slug are untouched |
+
+### PHP extensions
+
+- `ext-gd` — required. Image upload pipeline for posts (downscale + WebP encode + EXIF/GPS strip). Installed by `install-vps.sh` and the Docker images.
+- `ext-imagick` — optional. Required **only** for series cover upload (Atkinson dither). Without it, the `/admin/series` editor still saves title and description; the cover upload form is disabled with a friendly warning. Existing covers continue to render.
+  - Debian/Ubuntu: `sudo apt install php8.2-imagick && sudo systemctl restart php8.2-fpm`
+  - Docker (Alpine): `apk add imagemagick imagemagick-libs php82-pecl-imagick`
 
 ## Reading-experience flags
 

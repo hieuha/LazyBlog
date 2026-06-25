@@ -31,16 +31,18 @@ foreach ($posts as $entry) {
                                 <span class="post-title">
                                     <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                     <?= Http::e($entry['title']) ?>
-                                    <?php if (!empty($entry['protected'])):
-                                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
-                                    ?> <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span><?php endif; ?>
                                 </span>
                             </a>
                             <?php if (!empty($entry['summary'])): ?>
                                 <p class="post-summary"><?= Http::e($entry['summary']) ?></p>
                             <?php endif; ?>
-                            <?php if (!empty($entry['series']) || $entry['tags'] !== []): ?>
+                            <?php if (!empty($entry['protected']) || !empty($entry['series'])): ?>
                                 <div class="post-tags-row">
+                                    <?php if (!empty($entry['protected'])):
+                                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
+                                    ?>
+                                        <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span>
+                                    <?php endif; ?>
                                     <?php if (!empty($entry['series'])): ?>
                                         <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
                                             <?= Http::e((string) $entry['series']) ?><?php
@@ -48,9 +50,6 @@ foreach ($posts as $entry) {
                                             ?>
                                         </a>
                                     <?php endif; ?>
-                                    <?php foreach ($entry['tags'] as $t): ?>
-                                        <a class="tag-chip" href="/tags/<?= Http::e($t) ?>">#<?= Http::e($t) ?></a>
-                                    <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
                         </li>

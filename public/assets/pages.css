@@ -265,6 +265,21 @@ a.heatmap-cell:hover {
     margin-bottom: 6px;
     font-size: 12px;
 }
+/* Search result tags mirror the tag-page treatment — plain text chips
+   (no box / no border) so the page reads as one consistent typographic
+   block instead of a row of competing pills. */
+.search-result-meta .tag-chip {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--primary-dim);
+    transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+.search-result-meta .tag-chip:hover {
+    background: transparent;
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+}
 .search-date { color: var(--text-dim); letter-spacing: 1px; }
 .search-title-link { text-decoration: none; display: block; }
 .search-title {
@@ -285,6 +300,10 @@ a.heatmap-cell:hover {
     line-height: 1.5;
     font-size: 14px;
 }
+/* Same vertical rhythm as the snippet so the protected hits don't
+   collapse against the title row. The pill carries its own margins. */
+.search-lock-row { margin: 6px 0 0; }
+.search-lock-row .post-lock { margin-left: 0; }
 /* <mark> highlight — phosphor-block on matched terms, similar to the
    active-TOC item but inline. */
 .search-page mark {

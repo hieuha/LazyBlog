@@ -162,7 +162,7 @@ check(count($bodyHitsPlain) === 1 && $bodyHitsPlain[0]['slug'] === 'plain', 'pla
 
 $titleHits = $searcher->run('secret');
 check(count($titleHits) === 1, 'protected title term yields the protected post');
-check(($titleHits[0]['snippet'] ?? '') === '🔒 protected post', 'protected hit snippet is the lock placeholder, got: ' . ($titleHits[0]['snippet'] ?? '(none)'));
+check(($titleHits[0]['snippet'] ?? '') === '// protected post', 'protected hit snippet is the lock placeholder, got: ' . ($titleHits[0]['snippet'] ?? '(none)'));
 
 $tagHits = $searcher->run('private');
 check(count($tagHits) >= 1, 'protected tag term still matches by tag');

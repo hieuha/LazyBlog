@@ -392,3 +392,19 @@
     padding: 2px 5px;     /* compensate for the 1px border so total height matches */
     opacity: 0.85;
 }
+/* When the pill lives inside `.post-tags-row` next to a series chip,
+   reset the inline margin-left so flex `gap` controls the spacing. The
+   6px margin-left was meant for the case where the pill sits next to
+   running text (post title); in a flex row it would double-up the gap. */
+.post-tags-row .post-lock {
+    margin-left: 0;
+}
+/* Lock row below the date/summary on the series detail listing. The
+   pill no longer sits next to a title, so drop the default margin-left
+   and add a small gap above so it doesn't crowd the summary line. */
+.series-item-lock {
+    margin-top: 6px;
+}
+.series-item-lock .post-lock {
+    margin-left: 0;
+}

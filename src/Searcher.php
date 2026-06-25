@@ -92,7 +92,7 @@ final class Searcher
                     'tags' => $tags,
                     'icon' => $entry['icon'] ?? null,
                     'score' => $score,
-                    'snippet' => '🔒 protected post',
+                    'snippet' => '// protected post',
                 ];
                 continue;
             }

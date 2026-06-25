@@ -122,9 +122,24 @@
 .post-tags-row .tag-chip { color: var(--primary-dim); }
 .post-tags-row .post-series-tag {
     color: var(--accent);
-    /* Force series onto its own row above the tag chips. flex-wrap on
-       the parent picks up the remaining width = 0 and breaks. */
+    /* Default: stay inline with siblings (saves a row when the only
+       other badge is e.g. the LOCKED pill on the homepage). The
+       "series gets its own row" treatment for tag / archive pages
+       is opted in via the sibling-aware `:has` rule below. */
+    flex-basis: auto;
+}
+/* Force the series chip onto its own row ONLY when tag chips are
+   siblings (tag / archive page layouts). On home the row holds at most
+   the LOCKED pill + series chip, and we keep them on a single line to
+   save vertical space. */
+.post-tags-row:has(.tag-chip) .post-series-tag {
     flex-basis: 100%;
+}
+/* Tag-chip row sits directly under the pill+series row on tag pages.
+   Shrink the top margin so the two rows read as one grouped block
+   instead of two unrelated bands. */
+.post-tags-row--chips {
+    margin-top: 6px;
 }
 .post-tags-row .tag-chip:hover,
 .post-tags-row .post-series-tag:hover {

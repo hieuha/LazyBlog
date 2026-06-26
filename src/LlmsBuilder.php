@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Generates llmstxt.org-style indexes for AI agent consumption.
+ * Generates llmstxt.org-style index for AI agent consumption.
  *
- * - llms.txt: site description + one-line summary per published post + tags index
- * - llms-full.txt: every published post concatenated as raw markdown
+ * Single file: `llms.txt` = site description + per-post bullet (one-line
+ * summary) + per-series bullet (manifest-driven or derived title +
+ * description) + per-tag bullet.
  *
- * Both files are cached under content/ and invalidated by PostRepository
+ * Cached under `content/.llms.txt` and invalidated by PostRepository
  * whenever any post is saved or deleted.
  */
 final class LlmsBuilder
@@ -24,11 +25,6 @@ final class LlmsBuilder
     public function indexPath(): string
     {
         return $this->contentDir . '/.llms.txt';
-    }
-
-    public function fullPath(): string
-    {
-        return $this->contentDir . '/.llms-full.txt';
     }
 
     public function buildIndex(): string
@@ -66,6 +62,22 @@ final class LlmsBuilder
             $out .= "- [{$safeTitle}]({$url}): {$safeSummary}\n";
         }
 
+        $series = $this->repo->allSeries();
+        if ($series !== []) {
+            $out .= "\n## Series\n\n";
+            foreach ($series as $s) {
+                $title = self::escapeListField((string) $s['title']);
+                $desc  = self::escapeListField((string) ($s['description'] ?? ''));
+                $count = (int) $s['count'];
+                $url   = "{$siteUrl}/series/{$s['slug']}";
+                $line  = "- [{$title}]({$url}) ({$count} post" . ($count === 1 ? '' : 's') . ')';
+                if ($desc !== '') {
+                    $line .= ": {$desc}";
+                }
+                $out .= $line . "\n";
+            }
+        }
+
         $tags = $this->repo->allTags();
         if ($tags !== []) {
             $out .= "\n## Tags\n\n";
@@ -88,26 +100,6 @@ final class LlmsBuilder
         return str_replace([']', ')'], ['\]', '\)'], $s);
     }
 
-    public function buildFull(): string
-    {
-        $siteTitle = (string) Config::get('SITE_TITLE');
-        $out = "# {$siteTitle}\n\n";
-
-        $parts = [];
-        foreach ($this->repo->published() as $entry) {
-            if (!empty($entry['protected'])) {
-                continue;
-            }
-            $raw = $this->repo->rawMarkdownBySlug($entry['slug']);
-            if ($raw === null) {
-                continue;
-            }
-            $parts[] = $raw;
-        }
-
-        return $out . implode("\n\n---\n\n", $parts) . "\n";
-    }
-
     public function readOrBuildIndex(): string
     {
         $path = $this->indexPath();
@@ -118,20 +110,6 @@ final class LlmsBuilder
             }
         }
         $built = $this->buildIndex();
-        try { FileWriter::writeAtomic($path, $built); } catch (\Throwable) {}
-        return $built;
-    }
-
-    public function readOrBuildFull(): string
-    {
-        $path = $this->fullPath();
-        if (is_file($path)) {
-            $cached = @file_get_contents($path);
-            if ($cached !== false) {
-                return $cached;
-            }
-        }
-        $built = $this->buildFull();
         try { FileWriter::writeAtomic($path, $built); } catch (\Throwable) {}
         return $built;
     }

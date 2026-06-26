@@ -258,7 +258,6 @@ final class PostRepository
     {
         @unlink($this->indexPath);
         @unlink($this->contentDir . '/.llms.txt');
-        @unlink($this->contentDir . '/.llms-full.txt');
         @unlink($this->contentDir . '/.feed.xml');
     }
 
@@ -471,7 +470,6 @@ final class PostRepository
         // caches so /llms.txt and /feed.xml regenerate on next request instead
         // of serving stale data.
         @unlink($this->contentDir . '/.llms.txt');
-        @unlink($this->contentDir . '/.llms-full.txt');
         @unlink($this->contentDir . '/.feed.xml');
     }
 

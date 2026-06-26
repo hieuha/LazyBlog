@@ -25,12 +25,11 @@ final class PluginRegistry
 
     /**
      * Path prefixes a plugin must NOT claim. Ordered longest-first so
-     * `/llms-full.txt` matches before `/llms.txt`, etc. The `/admin`
-     * prefix gets a special exemption in matchesReserved() for the
-     * plugin's own `/admin/{slug}/...` namespace.
+     * the longer admin/asset prefixes match before shorter ones. The
+     * `/admin` prefix gets a special exemption in matchesReserved() for
+     * the plugin's own `/admin/{slug}/...` namespace.
      */
     private const RESERVED_PREFIXES = [
-        '/llms-full.txt',
         '/llms.txt',
         '/feed.xml',
         '/plugin-assets',

@@ -130,12 +130,10 @@ section('LlmsBuilder excludes protected posts');
 
 $llms = new LlmsBuilder($repo, $tmp);
 $idxTxt = $llms->buildIndex();
-$fullTxt = $llms->buildFull();
 check(!str_contains($idxTxt, 'secret'), 'llms.txt MUST NOT contain protected slug');
 check(str_contains($idxTxt, 'plain'), 'llms.txt contains plain slug');
-check(!str_contains($fullTxt, 'Secret Title'), 'llms-full.txt MUST NOT contain protected title');
-check(!str_contains($fullTxt, 'unique-token-beta'), 'llms-full.txt MUST NOT contain protected body content');
-check(str_contains($fullTxt, 'unique-token-alpha'), 'llms-full.txt contains plain body');
+check(!str_contains($idxTxt, 'Secret Title'), 'llms.txt MUST NOT contain protected title');
+check(!str_contains($idxTxt, 'unique-token-beta'), 'llms.txt MUST NOT contain protected body content');
 
 // -----------------------------------------------------------------------------
 section('FeedBuilder excludes protected posts');

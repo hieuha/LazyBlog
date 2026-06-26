@@ -10,12 +10,15 @@ use DOMElement;
 /**
  * Build a valid RSS 2.0 feed XML for the latest published posts.
  *
- * Uses DOMDocument (not string concatenation) so all titles, summaries, and
- * body HTML are properly XML-escaped or CDATA-wrapped — no risk of producing
- * malformed feeds when a post contains < > & " etc.
+ * Uses DOMDocument (not string concatenation) so all titles and summaries
+ * are properly XML-escaped — no risk of producing malformed feeds when a
+ * post contains < > & " etc.
  *
- * The rendered HTML body is included as <content:encoded> wrapped in CDATA,
- * matching the convention most readers (Feedly, NetNewsWire, Reeder) expect.
+ * Lightweight by design: only metadata + a 280-char excerpt as
+ * `<description>`. No `<content:encoded>` body — readers that want the
+ * full post should follow the `<link>`. Keeps feed.xml small (a 100-post
+ * site stays under ~100KB) and avoids the markdown render cost on every
+ * feed rebuild.
  */
 final class FeedBuilder
 {
@@ -63,7 +66,7 @@ final class FeedBuilder
 
         $rss = $dom->createElement('rss');
         $rss->setAttribute('version', '2.0');
-        $rss->setAttribute('xmlns:content', 'http://purl.org/rss/1.0/modules/content/');
+        $rss->setAttribute('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
         $rss->setAttribute('xmlns:atom', 'http://www.w3.org/2005/Atom');
         $dom->appendChild($rss);
 
@@ -81,7 +84,7 @@ final class FeedBuilder
             'lastBuildDate',
             (new \DateTimeImmutable('now', $tz))->format(\DateTimeInterface::RFC2822),
         );
-        $this->appendText($dom, $channel, 'generator', 'LazyBlog (PHP + Markdown)');
+        $this->appendText($dom, $channel, 'generator', 'LazyBlog');
 
         // <atom:link rel="self"> — convention, tells readers the canonical feed URL
         $self = $dom->createElement('atom:link');
@@ -147,19 +150,10 @@ final class FeedBuilder
             $this->appendText($dom, $item, 'category', $tag);
         }
 
-        // description = excerpt (plain-text safe, what readers preview)
+        // description = excerpt only — readers click through to the full post.
+        // We deliberately skip <content:encoded> to keep feed.xml small and
+        // avoid the per-rebuild markdown render cost.
         $this->appendText($dom, $item, 'description', $post->excerpt(280));
-
-        // content:encoded = full rendered HTML, CDATA-wrapped for safety.
-        // PHP's createCDATASection does NOT escape `]]>` sequences inside —
-        // if rendered HTML ever contains the literal string `]]>` (rare but
-        // possible via raw author HTML), the CDATA terminates early and the
-        // feed XML breaks. Split on `]]>` and re-open CDATA right after.
-        $rendered = $this->renderer->render($post->bodyMarkdown);
-        $safeHtml = str_replace(']]>', ']]]]><![CDATA[>', $rendered['html']);
-        $content = $dom->createElement('content:encoded');
-        $content->appendChild($dom->createCDATASection($safeHtml));
-        $item->appendChild($content);
     }
 
     private function appendText(DOMDocument $dom, DOMElement $parent, string $name, string $value): void

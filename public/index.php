@@ -137,7 +137,6 @@ $router->get('/tags/{tag}', fn (array $p) => $tag->show($p));
 $router->get('/series', fn () => $series->index());
 $router->get('/series/{slug}', fn (array $p) => $series->show($p));
 $router->get('/llms.txt', fn () => $llmsCtl->index());
-$router->get('/llms-full.txt', fn () => $llmsCtl->full());
 $router->get('/feed.xml', fn () => $feedCtl->show());
 $router->get('/archive', fn () => $archive->show());
 $router->get('/search', fn () => $search->show());

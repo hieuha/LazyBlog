@@ -241,8 +241,8 @@ without using the button, delete the `password_hash:` line manually.
   `summary:` is shown when present; no body excerpt.
 - `/search?q=...`: title and tag matches still surface; body terms
   return zero matches and the snippet renders as `🔒 protected post`.
-- `/llms.txt`, `/llms-full.txt`, `/feed.xml`: the post is dropped
-  entirely — title, URL, and body all stay out of the corpus.
+- `/llms.txt` and `/feed.xml`: the post is dropped entirely — title,
+  URL, and body all stay out of the corpus.
 
 **Rate limit + IP source**:
 
@@ -266,8 +266,8 @@ If you edit `.md` files directly (text editor, git pull, scp, etc.):
 
 1. The next request to any page detects the stale `.index.json` (mtime
    check) and rebuilds it automatically.
-2. The rebuild also invalidates `.llms.txt`, `.llms-full.txt`, and
-   `.feed.xml` — they regenerate lazily on the next request.
+2. The rebuild also invalidates `.llms.txt` and `.feed.xml` — they
+   regenerate lazily on the next request.
 
 So nothing extra to run. Just save the file. Make sure php-fpm can read
 it though — if you wrote it as root, `chown lazyblog:lazyblog` it back.

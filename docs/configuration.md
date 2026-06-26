@@ -48,9 +48,8 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/search?q=...` | Diacritic-insensitive search across title, tags, body |
 | `/about` | Operator profile page — 404 when `content/about.md` is missing |
 | `/feed.xml` | RSS 2.0 of the latest 20 posts (ETag + 304) |
-| `/llms.txt` | Site index per [llmstxt.org](https://llmstxt.org) |
-| `/llms-full.txt` | Every published post concatenated for LLM consumption |
-| `/robots.txt` | `Disallow: /admin/` + `Disallow: /llms-full.txt` |
+| `/llms.txt` | Site index per [llmstxt.org](https://llmstxt.org) — posts, series, tags (no body content; follow the post `/posts/{slug}.md` for raw markdown) |
+| `/robots.txt` | `Disallow: /admin/` |
 | `/healthz` | Liveness probe — `text/plain` `ok`, no-store. Short-circuited before autoload/session/repo so monitor traffic costs ~nothing |
 | `/plugin-assets/{slug}/{file}` | Plugin asset (CSS/JS/image/font). Served only when the plugin is enabled. Cache-busted via `?v=<mtime>`. See [`plugin-development.md`](plugin-development.md) |
 | `/series` | Index of all multi-part series — manifest-backed dot covers when present, QR fallback otherwise |

@@ -96,8 +96,7 @@ changes.
 - Placeholders match a single path segment (`[^/]+`). No multi-segment routes.
 - Public routes may NOT collide with reserved core prefixes: `/`, `/admin`,
   `/posts`, `/tags`, `/series`, `/archive`, `/search`, `/about`, `/feed.xml`,
-  `/llms.txt`, `/llms-full.txt`, `/plugin-assets`, `/healthz`. Collisions are
-  logged and skipped.
+  `/llms.txt`, `/plugin-assets`, `/healthz`. Collisions are logged and skipped.
 - Admin routes MUST start with `/admin/{your-slug}`. Anything else is rejected.
 
 ### Asset rules (v1)

@@ -79,16 +79,16 @@ so a post title containing `</script>` can't break out.
 
 ## AI-friendly endpoints
 
-- `/llms.txt` — site index per [llmstxt.org](https://llmstxt.org). One
-  line per published post: `- [{title}]({url}.md): {summary}`. Cached
-  on disk, `Cache-Control: public, max-age=3600`.
-- `/llms-full.txt` — every published post body concatenated, for direct
-  LLM ingestion. Same cache TTL.
+- `/llms.txt` — site index per [llmstxt.org](https://llmstxt.org).
+  Three sections: `## Posts` (one bullet per published post with summary),
+  `## Series` (one bullet per series with count + manifest description),
+  `## Tags` (one bullet per tag). No body content — agents follow the
+  per-post `/posts/{slug}.md` for raw markdown. Cached on disk,
+  `Cache-Control: public, max-age=3600`.
 - Every post HTML page includes
   `<link rel="alternate" type="text/markdown" href="…/posts/{slug}.md">`
   so agents auto-discover the raw markdown.
-- `robots.txt` disallows `/admin/` and `/llms-full.txt` (the latter for
-  scale — bots can still hit `/llms.txt`).
+- `robots.txt` disallows `/admin/` only — `/llms.txt` is open to bots.
 
 ## RSS
 

@@ -105,8 +105,8 @@ state is session-flagged, not cookie-based.
   oracle
 
 **Listings, search, and feeds**:
-- Locked posts are excluded from `/llms.txt`, `/llms-full.txt`, and
-  `/feed.xml` — title, URL, body all omitted
+- Locked posts are excluded from `/llms.txt` and `/feed.xml` — title,
+  URL, body all omitted
 - Home, tags, archive: title + `🔒 LOCKED` / `🔒 UNLOCKED` badge (unlocked
   only if visitor's session is flagged)
 - Search: title + tag matches surface; body terms return zero hits with a

@@ -39,7 +39,6 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
                           │   posts/2026-06-22-slug.md  ← source  │
                           │   .index.json               ← cache   │
                           │   .llms.txt                 ← cache   │
-                          │   .llms-full.txt            ← cache   │
                           │   .feed.xml                 ← cache   │
                           └──────────────────────────────────────┘
 ```
@@ -146,8 +145,8 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `SlugUtil` | Slug validation + Vietnamese-aware diacritic strip | `^[a-z0-9-]+$` max 80 chars |
 | `MarkdownRenderer` | Markdown → HTML with LazyBlog extensions | Admonitions go through placeholder bridge to bypass CommonMark's block parser |
 | `FileWriter` | Atomic write helper | tempnam in target dir + rename — never corrupts on crash |
-| `LlmsBuilder` | Generate llms.txt + llms-full.txt | Reads index, lazily reads bodies; skips protected entries; outputs follow llmstxt.org |
-| `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); filters protected entries BEFORE slicing limit; full HTML in content:encoded |
+| `LlmsBuilder` | Generate llms.txt (sections: Posts, Series, Tags) | Reads index; lazily reads bodies for summary excerpt; skips protected entries; output follows llmstxt.org |
+| `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); filters protected entries BEFORE slicing limit; description-only items (no `content:encoded` body — readers click through for the full post) |
 | `Searcher` | Full-text index on title + tags + body | Indexes protected post title + tags only; body never indexed; snippet placeholder for protected posts |
 | `GamificationCalculator` | Pure streak + badge evaluation logic | Takes post timestamps + arrays in, emits unlocked-badge list; memoises per-unit longest-streak |
 | `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |
@@ -161,11 +160,11 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 ## Cache pyramid
 
 ```
-       /llms.txt   /llms-full.txt   /feed.xml
-            │              │            │
-            └──────┬───────┴────────────┘
-                   │ derives from
-                   ▼
+              /llms.txt        /feed.xml
+                   │               │
+                   └───────┬───────┘
+                           │ derives from
+                           ▼
             content/.index.json         ← rebuilt when ANY post .md mtime > index mtime
                    │
                    ▼
@@ -256,7 +255,6 @@ Public visitors transparently warm the caches. No cron, no service.
     │   ├── 2026-06-22-slug.md
     │   ├── .index.json                   ← gitignored caches
     │   ├── .llms.txt
-    │   ├── .llms-full.txt
     │   └── .feed.xml
     ├── uploads/                          ← admin-uploaded images (year/month subdirs)
     ├── series/                           ← series manifests + covers

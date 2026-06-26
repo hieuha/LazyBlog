@@ -15,10 +15,12 @@ minute.
 
 **AI-friendly by design.** Every post is also served as raw `.md` at
 `/posts/{slug}.md`. The site publishes [`llms.txt`](https://llmstxt.org)
-(sectioned index) and `llms-full.txt` (concatenated corpus), so
-language models and tooling can ingest the entire blog without
-scraping HTML. Valid RSS 2.0 too — and an `article:published_time`
-that carries full ISO datetime precision when you bother to set it.
+as a three-section index — `## Posts` (each with a short summary),
+`## Series` (multi-part collections with manifest descriptions), and
+`## Tags` — so language models and tooling can ingest a sectioned
+catalogue of the entire blog without scraping HTML. Valid RSS 2.0 too
+— and an `article:published_time` that carries full ISO datetime
+precision when you bother to set it.
 
 **Operator-flex `/about` page.** A Duolingo-style streak flame tracks
 your writing cadence — day, week, month, or year, you pick. A
@@ -94,8 +96,8 @@ sliding 15-min window throttle the IP and disable the field
 `CF-Connecting-IP` header when traffic actually flows through
 Cloudflare). Listings show a small `[ LOCKED ]` / `[ UNLOCKED ]`
 phosphor pill so the operator can see at a glance which posts are
-gated. Raw `.md`, `/llms.txt`, `/llms-full.txt`, `/feed.xml` exclude
-protected posts entirely (anonymous 404 on the `.md` endpoint;
+gated. Raw `.md`, `/llms.txt`, and `/feed.xml` exclude protected posts
+entirely (anonymous 404 on the `.md` endpoint;
 unlocked-session readers and admins get the markdown back with the
 `password_hash:` line stripped). Search still surfaces title + tag
 matches with a `// protected post` snippet but never indexes the body.

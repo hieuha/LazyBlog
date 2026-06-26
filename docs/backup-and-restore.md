@@ -14,7 +14,6 @@ content/
 ├── plugins/                # plugin-private storage (PRESERVE)
 ├── .index.json             # frontmatter cache — regenerated on demand (SKIP)
 ├── .llms.txt               # derived cache — regenerated on demand (SKIP)
-├── .llms-full.txt          # derived cache — regenerated on demand (SKIP)
 └── .feed.xml               # derived cache — regenerated on demand (SKIP)
 ```
 

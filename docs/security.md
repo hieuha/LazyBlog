@@ -143,11 +143,22 @@ across all visitors and become useless.
 
 Enabled plugins (configured via `PLUGINS=` env) may make outbound HTTP
 requests. For example, the `stalk` plugin fetches remote RSS feeds to
-aggregate friend-blog posts. It includes SSRF guards: rejects loopback
-(`127.0.0.1`), private ranges (`10.0.0.0/8`, etc.), link-local addresses,
-and validates the effective URL against redirects (POST-redirect check).
+aggregate friend-blog posts. It includes SSRF guards that block requests to:
 
-Review plugin source before enabling, especially if it makes network calls.
+**IPv4 ranges:**
+- Loopback: `0.0.0.0/8`, `127.0.0.0/8`
+- Private: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+- Link-local + cloud metadata: `169.254.0.0/16`
+
+**IPv6 ranges:**
+- Loopback: `::/1`, `::1`
+- Unique Local: `fc00::/7`
+- Link-local: `fe80::/10`
+
+The blocklist is applied twice — pre-fetch (on operator-provided URL) and
+post-redirect (via `CURLINFO_EFFECTIVE_URL` to close the "innocent.example
+302 → metadata" pivot). Review plugin source before enabling, especially if
+it makes network calls.
 
 ## Response headers (set on every request)
 

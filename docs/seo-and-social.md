@@ -92,11 +92,11 @@ so a post title containing `</script>` can't break out.
 
 ## RSS
 
-`/feed.xml` — RSS 2.0 of the latest 20 published posts. Includes
-`<content:encoded>` with the fully rendered HTML wrapped in CDATA. ETag
-+ `304 Not Modified` on subsequent fetches. Auto-discoverable via
-`<link rel="alternate" type="application/rss+xml">` in every page's
-`<head>`.
+`/feed.xml` — RSS 2.0 of the latest 20 published posts. Each item includes
+`<description>` (280-char excerpt) only; no `<content:encoded>` body. Readers
+click through to the full post page. ETag + `304 Not Modified` on subsequent
+fetches. Auto-discoverable via `<link rel="alternate" type="application/rss+xml">`
+in every page's `<head>`.
 
 The `<generator>` tag emits `LazyBlog` for compatibility with feed-reader
 plugins and RSS parsers. Aggregators can use this to identify feeds

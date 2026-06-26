@@ -254,7 +254,7 @@ sudo journalctl -u php8.2-fpm --since today | grep -iE "fatal|error"
 | Cert never issues, Caddy log shows `acme:` errors | DNS hasn't propagated yet, or `:80` isn't reachable from the internet. Verify with `dig +short blog.example.com` and `curl http://blog.example.com/`. |
 | Posts visible but `/admin/login` POST returns 419/403 | Old form session expired. Reload login page (gives a new CSRF token). |
 | `Session name cannot be changed` warnings in logs | An output buffering misconfiguration ate the session_start. Make sure no `echo` happens before `index.php` enters. |
-| RSS reader shows truncated posts | `content:encoded` field is CDATA-wrapped, but some readers cap at N bytes. Check the reader's settings, not LazyBlog. |
+| RSS reader shows only excerpt, not full post | Intentional since v1.12.0 — `feed.xml` ships `<description>` only (280-char excerpt), no `<content:encoded>` body. Readers should follow `<link>` to the post page. Keeps the feed small. |
 | Editor toolbar icons are empty boxes | CSP is blocking Font Awesome. Confirm `font-src` in CSP includes `https://cdn.jsdelivr.net`. |
 | Updates land but pages don't change | OPcache hasn't refreshed. `sudo systemctl reload php8.2-fpm` |
 

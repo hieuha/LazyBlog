@@ -157,6 +157,10 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `SeriesAssetController` | Serve `content/series/{slug}/{file}` at `/series-assets/{slug}/{file}` | Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg` only — no `json`/`php`), realpath jail |
 | `AdminSeriesController` | CRUD for series manifest + cover (list / edit / preview / save / delete) | Auth + CSRF + slug regex on every endpoint; manifest-delete keeps posts untouched (discovery still works via frontmatter) |
 
+**Bundled opt-in plugins** (enabled via `PLUGINS=` env):
+
+- `stalk` — Pull-only feed aggregator for LazyBlog friend blogs. Registers `/stalk` public route + `/admin/stalk*` admin routes. Includes HostGuard SSRF blocklist (loopback, private, link-local, AWS metadata — checked pre-fetch and post-redirect). Reads/writes under `content/plugins/stalk/`. See `plugins/stalk/README.md` for full docs.
+
 ## Cache pyramid
 
 ```

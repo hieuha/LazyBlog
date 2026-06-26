@@ -1,0 +1,311 @@
+/* =========================================================================
+   Stalk plugin — route-scoped styles.
+   Loads only on /stalk and /admin/stalk*. Page-shell archive styles do NOT
+   ship to these routes (pages.css is only loaded on /archive, /search,
+   /series in core layout.php) — so the necessary archive-* rules are
+   lifted in here verbatim. admin-* rules from admin.css DO load on every
+   /admin/* route so we just reuse them by class name.
+   ========================================================================= */
+
+/* ---------- Page shell (lifted from pages.css to live on /stalk) ---------- */
+
+.archive-page  { font-family: 'Share Tech Mono', monospace; }
+.archive-title { font-family: 'VT323', monospace; color: var(--primary); margin: 8px 0 4px; }
+
+.archive-range {
+    color: var(--text-dim);
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin: 0 0 24px;
+}
+
+.archive-year { margin: 24px 0; }
+
+.archive-year-label {
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    margin: 12px 0 8px;
+}
+
+.archive-list { list-style: none; margin: 0; padding: 0; }
+
+.archive-item {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.archive-date {
+    color: var(--text-dim);
+    font-size: 12px;
+    letter-spacing: 1px;
+    min-width: 92px;
+    flex-shrink: 0;
+}
+
+.archive-link {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.archive-link:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary-dim);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+}
+
+/* Friend handle on /stalk — bare bold tag, no chip border. */
+.stalk-public-handle {
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: bold;
+    font-size: 12px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+a.stalk-public-handle:hover {
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+}
+
+/* Title link: always-visible dashed underline (LazyBlog convention) AND
+   always-single-line — long titles ellipsis-clip so the row stays tidy. */
+.stalk-public-link {
+    border-bottom-color: var(--primary-dim);
+    flex: 1 1 0;
+    min-width: 0;            /* allow shrinking below intrinsic content width */
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stalk-public-link:hover {
+    border-bottom-color: var(--primary);
+}
+
+/* Items must NOT wrap — every row is one line, title takes the remaining
+   space and clips. Otherwise titles wrap and ellipsis never engages. */
+.stalk-public-item { flex-wrap: nowrap; }
+
+.stalk-public-admin-row { margin: 12px 0 0; }
+
+/* NEW badge — yellow highlight on the latest batch's items. */
+.stalk-public-new {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 1px 6px;
+    margin-left: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+/* Mobile: tighten gaps so the single-line row still fits date + handle +
+   title without forcing too much ellipsis on the title. */
+@media (max-width: 600px) {
+    .stalk-public-item { gap: 8px; }
+    .stalk-public-item .archive-date { min-width: 72px; font-size: 11px; }
+}
+
+/* ---------- Admin /admin/stalk — deltas only (admin.css loaded by core) ---- */
+
+.stalk-admin-grid { margin-top: 16px; }
+
+/* ---------- Add Friend — single-row layout (URL | handle | cap | submit) ---- */
+
+.stalk-add-form { margin-bottom: 6px; }
+
+.stalk-add-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stalk-add-field { display: flex; flex-direction: column; gap: 4px; }
+.stalk-add-field .admin-label { margin: 0; }
+
+.stalk-add-field-url    { flex: 1 1 260px; min-width: 200px; }
+.stalk-add-field-handle { flex: 0 1 140px; }
+.stalk-add-field-cap    { flex: 0 1 90px; }
+.stalk-add-field-submit { flex: 0 0 auto; }
+
+/* Right-edge button keeps its native height; nudge so its baseline matches
+   the inputs in the same row. */
+.stalk-add-field-submit .admin-btn { margin: 0; }
+
+.stalk-add-hint {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin: 10px 0 0;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+@media (max-width: 720px) {
+    .stalk-add-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    /* When direction flips to column, the original flex-basis values
+       (260px / 140px / 90px) become MIN-HEIGHT — without resetting them
+       each field gets a huge vertical gap. Reset to auto-sized children. */
+    .stalk-add-field,
+    .stalk-add-field-url,
+    .stalk-add-field-handle,
+    .stalk-add-field-cap,
+    .stalk-add-field-submit {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+    }
+    .stalk-add-field-submit .admin-btn { width: 100%; text-align: center; }
+}
+
+/* Highlighted "marker" section heading — yellow background, dark text.
+   Use to label major sections inside admin so each block looks anchored
+   to the page like the editor's [BLOCK NAME] tags. */
+.stalk-admin-section-heading {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    text-shadow: none;
+}
+
+.stalk-admin-hr {
+    margin: 28px 0 18px;
+    border: 0;
+    border-top: 1px dashed var(--border);
+}
+
+.stalk-admin-meta {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin: 4px 0 14px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.stalk-admin-friend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Compact single-line friend row: handle | status | host-link | last+cap | remove */
+.stalk-admin-friend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    flex-wrap: wrap;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+}
+
+.stalk-admin-friend:first-child { padding-top: 0; }
+.stalk-admin-friend:last-child  { border-bottom: 0; }
+
+.stalk-admin-index {
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+.stalk-admin-handle {
+    color: var(--accent);
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.stalk-admin-url {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    min-width: 0;
+}
+
+.stalk-admin-url:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary-dim);
+}
+
+.stalk-admin-friend-meta {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-left: auto;       /* pushes meta + remove to the right edge */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stalk-admin-friend-meta code {
+    color: var(--text);
+}
+
+.stalk-admin-tag {
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+}
+
+/* Same visual weight as .stalk-admin-tag so the row reads as one strip of
+   chips, not "chip + button". cursor:help hints at the error tooltip. */
+.stalk-admin-status {
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    cursor: help;
+}
+
+/* Colorise only on error so a quiet "HTTP 200" row stays calm. */
+.stalk-admin-status-error {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-glow);
+}
+
+.stalk-admin-remove-form { margin: 0; flex-shrink: 0; }
+
+/* On narrow screens, stack remove + meta below the URL line so the URL
+   keeps its single-line layout. */
+@media (max-width: 720px) {
+    .stalk-admin-friend { font-size: 11px; gap: 6px; }
+    .stalk-admin-friend-meta { margin-left: 0; }
+}
+
+.stalk-admin-refresh-form {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}

@@ -252,10 +252,14 @@ Public visitors transparently warm the caches. No cron, no service.
 ├── .env                                  ← mode 640, owner lazyblog:www-data
 ├── composer.json + composer.lock
 └── content/                              ← writable by www-data (php-fpm group)
-    └── posts/
-        ├── 2026-06-22-slug.md
-        ├── .index.json                   ← gitignored caches
-        ├── .llms.txt
-        ├── .llms-full.txt
-        └── .feed.xml
+    ├── posts/
+    │   ├── 2026-06-22-slug.md
+    │   ├── .index.json                   ← gitignored caches
+    │   ├── .llms.txt
+    │   ├── .llms-full.txt
+    │   └── .feed.xml
+    ├── uploads/                          ← admin-uploaded images (year/month subdirs)
+    ├── series/                           ← series manifests + covers
+    └── plugins/                          ← plugin-private storage (gitignored)
+        └── {slug}/                       ← each enabled plugin has its own dir
 ```

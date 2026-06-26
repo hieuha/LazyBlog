@@ -11,6 +11,7 @@ content/
 ├── posts/                  # your authored markdown files (PRESERVE)
 ├── uploads/                # admin-UI image uploads, year/month subdirs (PRESERVE)
 ├── series/                 # series manifests + dithered covers (PRESERVE)
+├── plugins/                # plugin-private storage (PRESERVE)
 ├── .index.json             # frontmatter cache — regenerated on demand (SKIP)
 ├── .llms.txt               # derived cache — regenerated on demand (SKIP)
 ├── .llms-full.txt          # derived cache — regenerated on demand (SKIP)
@@ -19,10 +20,11 @@ content/
 
 The `.*` dotfiles are caches that rebuild automatically when posts change,
 so the only state you really need to preserve is `content/posts/`,
-`content/uploads/`, and `content/series/`. The script archives the whole
-`content/` directory which is simpler — caches add a few KB, uploads and
-series cover WebPs add whatever you've uploaded (typically a few MB per
-post with images).
+`content/uploads/`, `content/series/`, and `content/plugins/` (if any
+plugins store persistent state). The script archives the whole `content/`
+directory which is simpler — caches add a few KB, uploads and series cover
+WebPs add whatever you've uploaded (typically a few MB per post with
+images), and plugin storage varies by plugin.
 
 ## Ephemeral rate-limit files (never backed up)
 

@@ -139,6 +139,16 @@ across all visitors and become useless.
   servers to bypass the limit. Migrate rate-limit storage to a shared Redis
   or database if needed.
 
+## Plugin network surface
+
+Enabled plugins (configured via `PLUGINS=` env) may make outbound HTTP
+requests. For example, the `stalk` plugin fetches remote RSS feeds to
+aggregate friend-blog posts. It includes SSRF guards: rejects loopback
+(`127.0.0.1`), private ranges (`10.0.0.0/8`, etc.), link-local addresses,
+and validates the effective URL against redirects (POST-redirect check).
+
+Review plugin source before enabling, especially if it makes network calls.
+
 ## Response headers (set on every request)
 
 ```

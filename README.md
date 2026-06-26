@@ -69,11 +69,15 @@ type-safe `App\Plugin` interface to register public routes, nav links,
 assets, and `/admin/{slug}/*` pages (auto-wrapped with
 `Auth::requireAuth()`). Reserved core paths can't be claimed; a broken
 plugin logs + skips without taking the site down; strict CSP stays
-intact. Ships with `plugins/hello-world/` as the reference and
+intact. Ships with `plugins/hello-world/` as the reference,
 `plugins/graffiti/` for cross-blog sticker / spray-paint exchange
 between LazyBlog friends (energy ledger, federated handshake,
 magic-link cross-blog spray, symmetric revoke — see
-`plugins/graffiti/README.md`). Empty `PLUGINS=` is a no-op. See
+`plugins/graffiti/README.md`), and `plugins/stalk/` for a pull-only
+LazyBlog feed reader at `/stalk` (operator pastes friend blog URLs,
+plugin validates `<generator>LazyBlog</generator>` on `/feed.xml`, polls
+every 3h/10h/1d, shows top-N newest posts per friend — see
+`plugins/stalk/README.md`). Empty `PLUGINS=` is a no-op. See
 `docs/plugin-development.md`.
 
 **Password-protected posts.** Lock a single post behind a per-post
@@ -206,7 +210,8 @@ LazyBlog/
 ├── views/               # layout, post, home, tag, admin/*
 ├── plugins/             # opt-in plugin folders — PLUGINS=slug in .env enables them
 │   ├── hello-world/     # canonical reference plugin
-│   └── graffiti/        # cross-blog sticker exchange (federated, energy economy)
+│   ├── graffiti/        # cross-blog sticker exchange (federated, energy economy)
+│   └── stalk/           # pull-only LazyBlog feed reader at /stalk (top-N latest per friend)
 ├── content/             # markdown posts + about + badges.json (mostly gitignored)
 │   ├── posts/           # YYYY-MM-DD-slug.md
 │   ├── about.md         # /about page source
@@ -220,8 +225,10 @@ LazyBlog/
 │   ├── test-gamification.php   # streak math
 │   ├── test-plugin-system.php  # plugin registry + manifest + asset matcher
 │   ├── test-plugin-events.php  # post.save event broadcast to plugins
-│   └── test-graffiti-*.php     # graffiti plugin: boot, friends, inbox,
-│                               # energy, outbox, rate-limit, moderation, render
+│   ├── test-graffiti-*.php     # graffiti plugin: boot, friends, inbox,
+│   │                           # energy, outbox, rate-limit, moderation, render
+│   └── test-stalk-*.php        # stalk plugin: friend-store, post-cache, config,
+│                               # feed-parser, refresh-service, boot
 ├── docs/                # detailed docs (see table above)
 ├── Caddyfile.example    # production HTTPS site block
 ├── docker-compose.yml   # dev: Caddy + php-fpm bind-mount

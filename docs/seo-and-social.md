@@ -98,6 +98,11 @@ so a post title containing `</script>` can't break out.
 `<link rel="alternate" type="application/rss+xml">` in every page's
 `<head>`.
 
+The `<generator>` tag emits `LazyBlog` for compatibility with feed-reader
+plugins and RSS parsers. Aggregators can use this to identify feeds
+originating from a LazyBlog instance (e.g. via
+`str_contains($generatorText, 'LazyBlog')`).
+
 ## Testing your previews
 
 Each platform caches preview metadata for days to weeks. After updating

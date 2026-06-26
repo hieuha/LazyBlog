@@ -56,6 +56,7 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/series` | Index of all multi-part series — manifest-backed dot covers when present, QR fallback otherwise |
 | `/series/{slug}` | Single series with banner cover + ordered post list |
 | `/series-assets/{slug}/{file}` | Series cover image (`cover.webp` only). Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg`), realpath jail. Cache `max-age=86400` |
+| `/stalk` | Opt-in plugin: aggregated feed reader for LazyBlog friend blogs. Requires `PLUGINS=stalk`. See [`plugins/stalk/README.md`](../plugins/stalk/README.md) |
 
 Each rendered post page also includes `<link rel="alternate" type="text/markdown">`
 in `<head>` so AI agents auto-discover the raw source, and
@@ -84,6 +85,11 @@ readers find the feed without a URL hint.
 | `POST /admin/series/{slug}/attach` | Rewrite the target post's `series:` frontmatter to {slug}; moves posts between series in one click |
 | `POST /admin/series/{slug}/rename` | Bulk-rewrite every matching post's `series:` field + rename `content/series/{old}/` → `content/series/{new}/` |
 | `POST /admin/series/{slug}/delete` | Remove manifest + cover artefacts; posts referencing the slug are untouched |
+| `GET /admin/stalk` | Manage stalk plugin — friend list, status, add/remove UI, config (requires `PLUGINS=stalk`) |
+| `POST /admin/stalk/add` | Probe + validate + add a friend blog |
+| `POST /admin/stalk/remove/{id}` | Remove a friend and purge their cached posts |
+| `POST /admin/stalk/refresh-now` | Force refresh all friends |
+| `POST /admin/stalk/config` | Update refresh interval and post limits |
 
 ### PHP extensions
 

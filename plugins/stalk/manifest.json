@@ -1,0 +1,10 @@
+{
+    "slug": "stalk",
+    "name": "Stalk",
+    "version": "0.1.0",
+    "api_version": 1,
+    "namespace": "Plugins\\Stalk",
+    "author": "LazyBlog",
+    "description": "Follow other LazyBlog blogs by URL. See their latest posts on /stalk.",
+    "homepage": "https://github.com/hieuha/LazyBlog/tree/main/plugins/stalk"
+}

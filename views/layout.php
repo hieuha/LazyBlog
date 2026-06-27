@@ -135,10 +135,29 @@ if ($isPost) {
 // Site default theme — rendered server-side on <html data-theme>, so
 // no-JS users honour the configured choice. Inline bootstrap below only
 // overrides when localStorage holds a valid user pick.
+//
+// THEME_BG mirrors each theme palette's --bg token from base.css. Used
+// to drive the <meta name="theme-color"> tint (Safari iOS URL bar,
+// Chrome Android address bar, PWA splash) so the browser chrome blends
+// into the active theme's background instead of reading as a foreign
+// strip above the page. Single source of truth — JSON-encoded once into
+// window.LB_THEME_BG so the inline bootstrap + site.js can read it
+// without duplicating the table.
+$THEME_BG = [
+    'amber'     => '#100a04',
+    'green'     => '#0a0e0a',
+    'crypt'     => '#0a0303',
+    'brutalist' => '#08090c',
+    'p7'        => '#08081a',
+    'p11'       => '#040810',
+    'c64'       => '#4040C0',
+    'lcd'       => '#c9c5b8',
+];
 $defaultTheme = strtolower((string) Config::get('SITE_DEFAULT_THEME', 'amber'));
-if (!in_array($defaultTheme, ['amber', 'green', 'crypt', 'brutalist', 'c64', 'lcd'], true)) {
+if (!isset($THEME_BG[$defaultTheme])) {
     $defaultTheme = 'amber';
 }
+$defaultThemeColor = $THEME_BG[$defaultTheme];
 
 // Film grain / dust overlay toggle. Accepts "true"/"false"/"on"/"off"/1/0.
 // Default ON — the texture is part of the CRT aesthetic — but admins
@@ -165,8 +184,8 @@ $favicon = 'data:image/svg+xml,'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0a0e0a">
-    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="<?= Http::e($defaultThemeColor) ?>">
+    <meta name="color-scheme" content="<?= $defaultTheme === 'lcd' ? 'light' : 'dark' ?>">
 
     <title><?= Http::e($browserTitle) ?></title>
     <meta name="description" content="<?= Http::e($pageDesc) ?>">
@@ -233,13 +252,18 @@ $favicon = 'data:image/svg+xml,'
 
     <script>
     // Theme bootstrap — server already rendered the configured default on
-    // <html data-theme>. Only override here when the visitor has picked a
-    // different valid value previously. Runs sync in <head> so no FOUC.
+    // <html data-theme> and the matching theme-color meta. Only override
+    // here when the visitor has picked a different valid value previously.
+    // Runs sync in <head> so no FOUC and no flash of wrong browser-chrome
+    // tint on Safari iOS / Chrome Android.
+    window.LB_THEME_BG = <?= json_encode($THEME_BG, JSON_UNESCAPED_SLASHES) ?>;
     (function () {
         try {
             var t = localStorage.getItem('theme');
-            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist' || t === 'p7' || t === 'p11' || t === 'c64' || t === 'lcd') {
+            if (t && Object.prototype.hasOwnProperty.call(window.LB_THEME_BG, t)) {
                 document.documentElement.setAttribute('data-theme', t);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', window.LB_THEME_BG[t]);
             }
         } catch (e) {}
     })();

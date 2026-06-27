@@ -36,6 +36,15 @@
                 items[i].getAttribute('data-theme-set') === theme ? 'true' : 'false'
             );
         }
+        /* Keep the browser-chrome tint (Safari iOS URL bar, Chrome Android
+           address bar, PWA splash) in sync with the active theme's bg
+           color. window.LB_THEME_BG is seeded by the inline bootstrap in
+           layout.php so PHP owns the canonical table. */
+        var map = window.LB_THEME_BG;
+        if (map && Object.prototype.hasOwnProperty.call(map, theme)) {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', map[theme]);
+        }
     }
     function open() {
         menu.hidden = false;

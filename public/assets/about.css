@@ -268,6 +268,15 @@ a.about-contact-value:hover {
 /* BIO body inherits .post-body typography from post.css. Just tighten
    the top margin so the panel label sits close to the first heading. */
 .about-body > :first-child { margin-top: 0; }
+/* The page wrapper forces Share Tech Mono for the terminal chrome, but
+   long-form Vietnamese BIO copy needs Play (the universal body face
+   that ships full diacritic coverage) — otherwise VN tone marks fall
+   through to the system monospace fallback and the typeface visibly
+   switches mid-paragraph. Headings inside the BIO keep their own
+   VT323/Share Tech Mono rules. */
+.about-body {
+    font-family: 'Play', system-ui, sans-serif;
+}
 
 /* HUD corner-bracket frame — dashed L-marks at each corner of a panel.
    ::before + ::after draw the top-left and bottom-right corners with

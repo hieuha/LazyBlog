@@ -42,8 +42,11 @@ header(
     . "default-src 'self'; "
     // 'unsafe-inline' is required by the pre-paint theme script in layout.php
     // and the inline scrollspy/back-to-top/copy-button scripts. EasyMDE loads
-    // from jsdelivr. No external script CDNs beyond that are allowed.
-    . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    // from jsdelivr. cloudflareinsights serves Cloudflare's Web Analytics
+    // beacon when the zone has it enabled — injected automatically by the
+    // edge, so allowing it here keeps the beacon loading without weakening
+    // the rest of the policy.
+    . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; "
     . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
     . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; "
     . "img-src 'self' data: https:; "
@@ -51,7 +54,9 @@ header(
     // videos (the markdown `![](url.webm)` flow). Without it the default-src
     // fallback blocks every external video element.
     . "media-src 'self' https:; "
-    . "connect-src 'self'; "
+    // Cloudflare Web Analytics POSTs the beacon to cloudflareinsights.com —
+    // without this entry the script loads but every event is blocked.
+    . "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com; "
     . "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
     . "frame-ancestors 'self'; "
     . "base-uri 'self'; "

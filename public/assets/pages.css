@@ -380,7 +380,19 @@ a.heatmap-cell:hover {
     font-size: 12px;
     color: var(--text-dim);
 }
-.series-summary { color: var(--text); }
+/* Prose surface — opt back into Play (the universal body face that
+   ships full Vietnamese glyph coverage). The ancestor .series-page
+   forces Share Tech Mono which has no VN diacritics, so any tone
+   marks fall through to the system monospace fallback and mid-word
+   the typeface visibly switches. */
+.series-summary {
+    color: var(--text);
+    font-family: 'Play', system-ui, sans-serif;
+    /* Bump above the .series-item-meta 12px so the description reads
+       as content sitting next to the date stamp (which stays small). */
+    font-size: 14px;
+    line-height: 1.5;
+}
 .series-icon { margin-right: 4px; }
 
 /* ---------- /series index — Jukebox-style card grid ----------
@@ -551,10 +563,13 @@ a.heatmap-cell:hover {
     text-shadow: 0 0 8px var(--primary-glow-strong);
 }
 .series-card-desc {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
+    /* Play has full Vietnamese diacritic coverage; the Share Tech Mono
+       face we use for terminal chrome does not, so VN tone marks fall
+       through to the system monospace fallback mid-word otherwise. */
+    font-family: 'Play', system-ui, sans-serif;
+    font-size: 14px;
     color: var(--text);
-    line-height: 1.45;
+    line-height: 1.5;
     margin: 4px 0 6px;
     /* Two-line clamp keeps card height predictable across descriptions. */
     display: -webkit-box;

@@ -230,6 +230,14 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
         0 0 56px var(--primary-glow);
     letter-spacing: 3px;
     line-height: 1.1;
+    /* Long unbreakable tokens (snake_case identifiers, URLs, hashes)
+       must wrap mid-string on narrow viewports — without this the title
+       overflows the column and the tail gets clipped off-screen on
+       mobile. Scoped to every heading so post-page-title (h1) on
+       /posts/{slug} and section headings inside post bodies both honor
+       it, not just the home list. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 /* Reduced motion users get clean text — no chromatic split, just the glow. */
 @media (prefers-reduced-motion: reduce) {

@@ -100,6 +100,13 @@
     display: inline-block;
     line-height: 1.15;
     transition: text-shadow 0.22s ease, transform 0.22s ease;
+    /* Allow long unbreakable tokens (e.g. `STEVEN_SULLIVAN_OFFICE_WANG_CO…`,
+       URLs) to wrap mid-string on narrow viewports. Without this they
+       overflow the post-item box and the right side of the title gets
+       clipped off-screen on mobile. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 .post-icon { opacity: 0.85; }
 

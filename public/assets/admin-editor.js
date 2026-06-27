@@ -31,13 +31,100 @@
             .slice(0, 80);
     }
 
-    /* ---------- 1. EasyMDE ---------- */
+    /* ---------- 1. Body field — EasyMDE on desktop/tablet, raw textarea + mini toolbar on phones ----------
+     * `skipEasyMDE` only true when the device is BOTH touch AND has a
+     * narrow viewport. iOS Safari + CodeMirror 5 has a known IME bug
+     * that drops Vietnamese telex / Japanese kana / Chinese pinyin
+     * composition characters in both `textarea` and `contenteditable`
+     * input modes (issue is in CodeMirror 5; fixed in CM6). On phones
+     * we sidestep it entirely by mounting a plain textarea with a
+     * custom mini toolbar that operates via setRangeText() — native
+     * IME pipeline, zero JS interference. Tablets keep EasyMDE since
+     * the regression target is phone-only writing flow. */
     var bodyEl = document.getElementById('body');
     var easyMDE = null;
     var slugEl = document.getElementById('slug');
     var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    var isPhoneViewport = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    var skipEasyMDE = isTouchDevice && isPhoneViewport;
 
-    if (bodyEl && window.EasyMDE) {
+    // ----- Shared upload pipeline (used by both EasyMDE and mini toolbar) -----
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+    // Upload status overlay — a small fixed pill at the top-right that
+    // shows "Uploading {filename}…" while the request is in flight.
+    // Auto-hides on success/error so the writer always knows whether
+    // anything is happening.
+    var uploadStatusEl = null;
+    function showUploadStatus(text) {
+        if (!uploadStatusEl) {
+            uploadStatusEl = document.createElement('div');
+            uploadStatusEl.id = 'upload-status';
+            document.body.appendChild(uploadStatusEl);
+        }
+        uploadStatusEl.textContent = text;
+        uploadStatusEl.classList.add('visible');
+    }
+    function hideUploadStatus() {
+        if (uploadStatusEl) uploadStatusEl.classList.remove('visible');
+    }
+
+    // Shared upload helper used by EasyMDE's image-upload pipeline
+    // (drag/drop, paste, cloud-icon picker), the bespoke "Bayer dither"
+    // toolbar button, and the mobile mini-toolbar's upload button.
+    // `dither=true` flips the server routing to PostImageDitherer
+    // instead of ImageProcessor; the response shape is identical.
+    function runImageUpload(file, dither, onSuccess, onError) {
+        var label = dither ? 'Dithering ' : 'Uploading ';
+        showUploadStatus(label + (file.name || 'image') + '…');
+        // Re-read the meta tag each call so token rotation (e.g. on
+        // login) doesn't leave a stale value cached in closure.
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var token = meta ? meta.getAttribute('content') : '';
+
+        var form = new FormData();
+        form.append('file', file);
+        if (dither) form.append('dither', '1');
+
+        fetch('/admin/upload', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': token },
+            body: form,
+            credentials: 'same-origin',
+        }).then(function (r) {
+            // If we followed a redirect (fetch default), we landed on
+            // the login page — session expired.
+            if (r.redirected && r.url.indexOf('/admin/login') !== -1) {
+                hideUploadStatus();
+                onError('Session expired — refresh the page and log in again.');
+                return;
+            }
+            // Detect non-JSON responses (PHP error page, plain-text
+            // 403, HTML login page) and surface the actual content.
+            var ctype = r.headers.get('content-type') || '';
+            if (ctype.indexOf('application/json') === -1) {
+                return r.text().then(function (body) {
+                    hideUploadStatus();
+                    var excerpt = body.replace(/\s+/g, ' ').slice(0, 200);
+                    onError('HTTP ' + r.status + ' ' + ctype + ' — ' + (excerpt || '(empty body)'));
+                });
+            }
+            return r.json().then(function (data) {
+                hideUploadStatus();
+                if (!r.ok) {
+                    onError('Upload failed (HTTP ' + r.status + '): ' + (data.error || 'unknown'));
+                    return;
+                }
+                onSuccess(data.url);
+            });
+        }).catch(function (e) {
+            hideUploadStatus();
+            onError('Network error: ' + (e.message || e));
+        });
+    }
+
+    if (bodyEl && window.EasyMDE && !skipEasyMDE) {
         var autosaveId = 'lazyblog-' + (slugEl && slugEl.value ? slugEl.value : 'new');
 
         // Mirror fullscreen state to the body so we can hide the CRT scanline
@@ -49,85 +136,11 @@
         observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 
         // Server-side preview — POSTs raw markdown to /admin/preview and
-        // uses the real PHP MarkdownRenderer so admonitions (::: highlight,
-        // ::: story) and freq-tag chips render the same as the public page.
-        // Debounced so we don't hammer the server on every keystroke.
+        // uses the real PHP MarkdownRenderer so admonitions render the
+        // same as the public page. Debounced so we don't hammer the
+        // server on every keystroke.
         var previewCache = '';
         var previewTimer = null;
-        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
-
-        // Upload status overlay — a small fixed pill at the top-right that
-        // shows "Uploading {filename}…" while the request is in flight.
-        // Auto-hides on success/error so the writer always knows whether
-        // anything is happening.
-        var uploadStatusEl = null;
-        function showUploadStatus(text) {
-            if (!uploadStatusEl) {
-                uploadStatusEl = document.createElement('div');
-                uploadStatusEl.id = 'upload-status';
-                document.body.appendChild(uploadStatusEl);
-            }
-            uploadStatusEl.textContent = text;
-            uploadStatusEl.classList.add('visible');
-        }
-        function hideUploadStatus() {
-            if (uploadStatusEl) uploadStatusEl.classList.remove('visible');
-        }
-
-        // Shared upload helper used by both EasyMDE's image-upload pipeline
-        // (drag/drop, paste, cloud-icon picker) and the bespoke "Bayer
-        // dither" toolbar button below. `dither=true` flips the server
-        // routing to PostImageDitherer instead of ImageProcessor; the
-        // response shape is identical.
-        function runImageUpload(file, dither, onSuccess, onError) {
-            var label = dither ? 'Dithering ' : 'Uploading ';
-            showUploadStatus(label + (file.name || 'image') + '…');
-            // Re-read the meta tag each call so token rotation (e.g. on
-            // login) doesn't leave a stale value cached in closure.
-            var meta = document.querySelector('meta[name="csrf-token"]');
-            var token = meta ? meta.getAttribute('content') : '';
-
-            var form = new FormData();
-            form.append('file', file);
-            if (dither) form.append('dither', '1');
-
-            fetch('/admin/upload', {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': token },
-                body: form,
-                credentials: 'same-origin',
-            }).then(function (r) {
-                // If we followed a redirect (fetch default), we landed on
-                // the login page — session expired.
-                if (r.redirected && r.url.indexOf('/admin/login') !== -1) {
-                    hideUploadStatus();
-                    onError('Session expired — refresh the page and log in again.');
-                    return;
-                }
-                // Detect non-JSON responses (PHP error page, plain-text
-                // 403, HTML login page) and surface the actual content.
-                var ctype = r.headers.get('content-type') || '';
-                if (ctype.indexOf('application/json') === -1) {
-                    return r.text().then(function (body) {
-                        hideUploadStatus();
-                        var excerpt = body.replace(/\s+/g, ' ').slice(0, 200);
-                        onError('HTTP ' + r.status + ' ' + ctype + ' — ' + (excerpt || '(empty body)'));
-                    });
-                }
-                return r.json().then(function (data) {
-                    hideUploadStatus();
-                    if (!r.ok) {
-                        onError('Upload failed (HTTP ' + r.status + '): ' + (data.error || 'unknown'));
-                        return;
-                    }
-                    onSuccess(data.url);
-                });
-            }).catch(function (e) {
-                hideUploadStatus();
-                onError('Network error: ' + (e.message || e));
-            });
-        }
 
         function previewRender(plainText, previewEl) {
             clearTimeout(previewTimer);
@@ -153,19 +166,10 @@
             return previewCache || '<p style="opacity:0.5">Rendering…</p>';
         }
 
-        // CodeMirror 5 has a known iOS Safari bug where IME composition
-        // events get lost in the default `inputStyle: 'textarea'` path
-        // (Vietnamese telex, Japanese kana, Chinese pinyin — anything
-        // that builds final characters from sticky-key sequences).
-        // `inputStyle: 'contenteditable'` uses a real DOM contenteditable
-        // node which routes composition events through the browser's
-        // own IME pipeline. We pair it with a manual compositionend
-        // bridge below that nudges CM to re-poll after the IME finalises.
         easyMDE = new EasyMDE({
             element: bodyEl,
             spellChecker: false,
             forceSync: true,            // mirror back to the underlying textarea so form submit works
-            inputStyle: isTouchDevice ? 'contenteditable' : 'textarea',
             // Font Awesome is loaded explicitly from jsdelivr in edit.php — disabling
             // EasyMDE's auto-download keeps the request inside our CSP allow-list.
             autoDownloadFontAwesome: false,
@@ -306,36 +310,6 @@
             },
         });
 
-        // iOS IME bridge: Vietnamese telex (and any sticky-key IME) drops
-        // characters in CodeMirror's contenteditable when Safari's own
-        // autocorrect / autocapitalize layer overlaps with composition.
-        // Strip those iOS-specific attributes off both the underlying
-        // input element and the contenteditable display node. Then hook
-        // compositionend to nudge CM's poll on the next frame so the
-        // final composed character is folded into the document model
-        // even if Safari's DOM hadn't settled when CM first polled.
-        if (isTouchDevice) {
-            var cm = easyMDE.codemirror;
-            var iosAttrs = function (el) {
-                if (!el) return;
-                el.setAttribute('autocorrect', 'off');
-                el.setAttribute('autocapitalize', 'off');
-                el.setAttribute('autocomplete', 'off');
-                el.setAttribute('spellcheck', 'false');
-                el.setAttribute('inputmode', 'text');
-            };
-            iosAttrs(cm.getInputField());
-            iosAttrs(cm.getWrapperElement().querySelector('[contenteditable="true"]'));
-            cm.getWrapperElement().addEventListener('compositionend', function () {
-                requestAnimationFrame(function () {
-                    var input = cm.display && cm.display.input;
-                    if (input && typeof input.poll === 'function') {
-                        input.poll();
-                    }
-                });
-            }, true);
-        }
-
         // EasyMDE's default post-upload insertion ends with `![](url)` and
         // no trailing newline, so multi-select / drag-drop / paste of
         // several images all land on a single line glued together. The
@@ -396,6 +370,237 @@
             if (!target.classList.contains('fa')) target.classList.add('fa');
             target.classList.add('fa-cloud-upload');
         }
+    } else if (bodyEl && skipEasyMDE) {
+        buildMobileToolbar(bodyEl);
+    }
+
+    /* ---------- Mobile mini-toolbar ----------
+     * Renders only when EasyMDE is skipped (phones). Operates on the
+     * raw <textarea> via setRangeText() so iOS IME (Vietnamese telex,
+     * etc.) is never touched. Buttons: heading cycle, bold, italic,
+     * highlight (==), quote, list, code, link, image upload (multi),
+     * highlight callout admonition, story card, preview (iframe modal). */
+    function buildMobileToolbar(textarea) {
+        var bar = document.createElement('div');
+        bar.className = 'mobile-toolbar';
+        textarea.parentNode.insertBefore(bar, textarea);
+
+        // Hidden multi-file picker shared by the UPLOAD button.
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png, image/jpeg, image/webp';
+        fileInput.multiple = true;
+        fileInput.style.display = 'none';
+        bar.appendChild(fileInput);
+        fileInput.addEventListener('change', function () {
+            uploadMany(textarea, Array.prototype.slice.call(fileInput.files));
+            fileInput.value = ''; // allow re-selecting same file
+        });
+
+        // Wire drag-drop + paste on the textarea so files dropped onto
+        // the body or pasted from the clipboard run through the same
+        // sequential upload pipeline as the toolbar button.
+        textarea.addEventListener('dragover', function (e) {
+            if (e.dataTransfer && Array.prototype.some.call(e.dataTransfer.items || [], function (it) { return it.kind === 'file'; })) {
+                e.preventDefault();
+            }
+        });
+        textarea.addEventListener('drop', function (e) {
+            var files = Array.prototype.filter.call(e.dataTransfer && e.dataTransfer.files || [], function (f) {
+                return /^image\//.test(f.type);
+            });
+            if (!files.length) return;
+            e.preventDefault();
+            uploadMany(textarea, files);
+        });
+        textarea.addEventListener('paste', function (e) {
+            var items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            var files = [];
+            Array.prototype.forEach.call(items, function (it) {
+                if (it.kind === 'file' && /^image\//.test(it.type)) files.push(it.getAsFile());
+            });
+            if (!files.length) return;
+            e.preventDefault();
+            uploadMany(textarea, files);
+        });
+
+        var buttons = [
+            { label: 'H',  title: 'Heading (cycle # → ## → ### → off)', action: cycleHeading },
+            { label: 'B',  title: 'Bold',                              action: wrapInline('**') },
+            { label: 'I',  title: 'Italic',                            action: wrapInline('*') },
+            { label: '==', title: 'Highlight (==text==)',              action: wrapInline('==') },
+            { label: '"',  title: 'Quote',                             action: prefixLines('> ') },
+            { label: '•',  title: 'Bullet list',                       action: prefixLines('- ') },
+            { label: '`',  title: 'Code (inline / fence)',             action: cycleCode },
+            { label: '🔗', title: 'Link',                              action: insertLink },
+            { label: '📤', title: 'Upload image (multi)',              action: function () { fileInput.click(); } },
+            { label: '!',  title: 'Highlight callout',                 action: insertBlock('::: highlight\nKey fact or callout.\n:::') },
+            { label: '💬', title: 'Story card',                        action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
+            { label: '👁', title: 'Preview',                           action: function () { openMobilePreview(textarea); } },
+        ];
+
+        buttons.forEach(function (b) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = b.label;
+            btn.title = b.title;
+            btn.className = 'mobile-toolbar-btn';
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                b.action(textarea);
+                textarea.focus();
+            });
+            bar.appendChild(btn);
+        });
+    }
+
+    // Helpers for the mini toolbar — all operate on a textarea via
+    // setRangeText() so we never touch composition / input events
+    // (preserves iOS IME pipeline).
+    function getSel(ta) {
+        return { start: ta.selectionStart, end: ta.selectionEnd, text: ta.value.substring(ta.selectionStart, ta.selectionEnd) };
+    }
+    function wrapInline(token) {
+        return function (ta) {
+            var s = getSel(ta);
+            var snippet = token + (s.text || 'text') + token;
+            ta.setRangeText(snippet, s.start, s.end, 'end');
+        };
+    }
+    function prefixLines(prefix) {
+        return function (ta) {
+            var s = getSel(ta);
+            var lines = (s.text || '').length ? s.text.split('\n') : [''];
+            var out = lines.map(function (l) { return prefix + l; }).join('\n');
+            ta.setRangeText(out, s.start, s.end, 'end');
+        };
+    }
+    function cycleHeading(ta) {
+        var pos = ta.selectionStart;
+        var lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
+        var lineEnd = ta.value.indexOf('\n', pos);
+        if (lineEnd === -1) lineEnd = ta.value.length;
+        var line = ta.value.substring(lineStart, lineEnd);
+        var match = line.match(/^(#{1,6})\s+/);
+        var next;
+        if (!match) next = '# ' + line;
+        else if (match[1].length < 3) next = '#'.repeat(match[1].length + 1) + ' ' + line.substring(match[0].length);
+        else next = line.substring(match[0].length);
+        ta.setRangeText(next, lineStart, lineEnd, 'end');
+    }
+    function cycleCode(ta) {
+        var s = getSel(ta);
+        if (s.text && s.text.indexOf('\n') !== -1) {
+            ta.setRangeText('```\n' + s.text + '\n```', s.start, s.end, 'end');
+        } else {
+            ta.setRangeText('`' + (s.text || 'code') + '`', s.start, s.end, 'end');
+        }
+    }
+    function insertLink(ta) {
+        var url = window.prompt('Link URL:');
+        if (!url) return;
+        var s = getSel(ta);
+        var text = s.text || window.prompt('Link text:', url) || url;
+        ta.setRangeText('[' + text + '](' + url + ')', s.start, s.end, 'end');
+    }
+    function insertBlock(block) {
+        return function (ta) {
+            var s = getSel(ta);
+            var before = ta.value.substring(0, s.start);
+            var lead = before.length && before.charAt(before.length - 1) !== '\n' ? '\n' : '';
+            ta.setRangeText(lead + block + '\n', s.start, s.end, 'end');
+        };
+    }
+    // Insert ![](url) on its own line — guarantees a leading newline
+    // if the cursor isn't already at column 0 so consecutive uploads
+    // stack one image per line (MarkdownRenderer then groups adjacent
+    // image-only lines into a post-figure-gallery count-N).
+    function insertImageMd(ta, url) {
+        var start = ta.selectionStart;
+        var before = ta.value.substring(0, start);
+        var lead = before.length && before.charAt(before.length - 1) !== '\n' ? '\n' : '';
+        ta.setRangeText(lead + '![](' + url + ')\n', start, ta.selectionEnd, 'end');
+    }
+    // Sequential multi-image upload — preserves order so the gallery
+    // count matches insertion order. Parallel uploads would race the
+    // textarea cursor and shuffle the gallery.
+    function uploadMany(textarea, files) {
+        var i = 0;
+        function next() {
+            if (i >= files.length) return;
+            var f = files[i++];
+            runImageUpload(f, false, function (url) {
+                insertImageMd(textarea, url);
+                next();
+            }, function (msg) {
+                window.alert(msg);
+                next();
+            });
+        }
+        next();
+    }
+    // Open an iframe modal that POSTs the textarea content to
+    // /admin/preview, then renders the returned HTML inside an iframe
+    // that loads the same base/effects/components/post stylesheets the
+    // public post page uses — so the preview reads identical to the
+    // shipped post.
+    function openMobilePreview(textarea) {
+        var modal = document.createElement('div');
+        modal.className = 'mobile-preview-modal';
+        var header = document.createElement('div');
+        header.className = 'mobile-preview-header';
+        header.innerHTML = '<span>§ PREVIEW</span>';
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'mobile-preview-close';
+        closeBtn.textContent = '[ × CLOSE ]';
+        closeBtn.addEventListener('click', function () { modal.remove(); });
+        header.appendChild(closeBtn);
+        var iframe = document.createElement('iframe');
+        iframe.className = 'mobile-preview-iframe';
+        iframe.setAttribute('sandbox', 'allow-same-origin');
+        modal.appendChild(header);
+        modal.appendChild(iframe);
+        document.body.appendChild(modal);
+
+        fetch('/admin/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-CSRF-Token': csrfToken },
+            body: textarea.value,
+            credentials: 'same-origin',
+        })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                var titleEl = document.getElementById('title');
+                var title = titleEl ? titleEl.value || 'Untitled' : 'Preview';
+                var theme = document.documentElement.getAttribute('data-theme') || 'amber';
+                // Re-use whatever <link rel="stylesheet"> the parent page
+                // already loaded, then add post.css explicitly (admin
+                // pages don't load it). Same CSS, same render.
+                var links = Array.prototype.map.call(
+                    document.querySelectorAll('link[rel="stylesheet"]'),
+                    function (l) { return '<link rel="stylesheet" href="' + l.getAttribute('href') + '">'; }
+                ).join('\n');
+                var doc = '<!DOCTYPE html><html data-theme="' + theme + '"><head>'
+                    + '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                    + links
+                    + '<link rel="stylesheet" href="/assets/post.css">'
+                    + '<style>main { padding: 16px !important; }</style>'
+                    + '</head><body class="is-post"><main><article class="post-article">'
+                    + '<h1 class="post-page-title">' + escapeHtml(title) + '</h1>'
+                    + '<div class="post-body">' + html + '</div>'
+                    + '</article></main></body></html>';
+                iframe.srcdoc = doc;
+            })
+            .catch(function () {
+                iframe.srcdoc = '<p style="color:#ff8a8a;font-family:monospace;padding:20px">// Preview render failed.</p>';
+            });
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
     }
 
     /* ---------- 2. Tag chip input ---------- */

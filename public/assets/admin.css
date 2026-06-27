@@ -1046,3 +1046,89 @@ input[type="file"].admin-file-input::file-selector-button:hover,
     gap: 8px;
     align-items: baseline;
 }
+
+/* ---------- Mobile mini-toolbar ----------
+   Only renders on touch + viewport <= 768px, where EasyMDE is skipped
+   to keep iOS IME (Vietnamese telex etc.) working. Sits directly above
+   the raw <textarea>, sticky-scrolls with it. Each button is a square
+   tap target on the terminal-chrome aesthetic. */
+.mobile-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 0;
+    margin-bottom: 6px;
+    /* Sticky to the top of the body field so the toolbar stays
+       reachable while scrolling a long post. */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+}
+.mobile-toolbar-btn {
+    flex: 0 0 auto;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 8px;
+    background: var(--bg);
+    color: var(--primary);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    /* Strip iOS button defaults (rounded blue ring, gradient bg). */
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.mobile-toolbar-btn:active {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+}
+
+/* ---------- Mobile preview modal ----------
+   Triggered by the 👁 toolbar button. Full-viewport overlay with an
+   iframe that re-mounts the same stylesheet bundle the public post
+   page uses, so the preview reads identical to the shipped post. */
+.mobile-preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+}
+.mobile-preview-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent);
+}
+.mobile-preview-close {
+    background: transparent;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.mobile-preview-close:active { background: var(--primary-glow); }
+.mobile-preview-iframe {
+    flex: 1 1 auto;
+    width: 100%;
+    border: 0;
+    background: var(--bg);
+}

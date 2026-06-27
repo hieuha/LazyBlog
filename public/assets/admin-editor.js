@@ -434,7 +434,7 @@
             { label: 'B',  title: 'Bold',                              action: wrapInline('**') },
             { label: 'I',  title: 'Italic',                            action: wrapInline('*') },
             { label: '==', title: 'Highlight (==text==)',              action: wrapInline('==') },
-            { label: '"',  title: 'Quote',                             action: prefixLines('> ') },
+            { label: '>',  title: 'Quote',                             action: prefixLines('> ') },
             { label: '•',  title: 'Bullet list',                       action: prefixLines('- ') },
             { label: '`',   title: 'Inline code',                       action: insertInlineCode },
             { label: '```', title: 'Code fence',                        action: insertCodeFence },

@@ -418,13 +418,35 @@ header {
     text-shadow: 0 0 6px var(--primary-glow-strong);
 }
 
+/* Nav drawer — zero-JS disclosure via native <details>/<summary>.
+   Desktop renders the wrapper + list as `display: contents` so the nav
+   <a>s become direct flex children of .header-actions, identical to the
+   pre-drawer layout. The summary is hidden. Mobile flips: <details> is a
+   normal flex item, summary shows as a [ ≡ MENU ] toggle button, and the
+   list reveals below when [open]. */
+.header-nav-drawer > summary {
+    /* Strip the native disclosure marker so the [ ≡ MENU ] glyph reads as
+       the entire control. list-style covers Firefox, ::-webkit-details-marker
+       covers older WebKit/Blink. */
+    list-style: none;
+    cursor: pointer;
+}
+.header-nav-drawer > summary::-webkit-details-marker { display: none; }
+
+@media (min-width: 601px) {
+    /* Make the drawer transparent to layout — nav buttons participate in
+       .header-actions flex layout exactly like before. */
+    .header-nav-drawer { display: contents; }
+    .header-nav-drawer > summary { display: none; }
+    .header-nav-drawer > .header-nav-list { display: contents; }
+}
+
 /* Mobile header compaction. The subtitle is "first-visit" copy — returning
-   visitors don't need it on every page and it ate 2-3 lines on phones.
-   Buttons get tighter padding + letter-spacing so 8-10 plugin/core links
-   collapse from 4 rows down to 2-3. Theme toggle label drops the current
-   value ("[ THEME: CRYPT ]" → "[ THEME ]") via site.js so the row shrinks
-   by ~10 chars; the active theme is still indicated by aria-current in
-   the dropdown when the operator opens it. */
+   visitors don't need it on every page and it ate ~3 lines on phones.
+   Buttons get tighter padding + letter-spacing. Nav collapses into the
+   drawer; row 1 is just [ ≡ MENU ] + [ THEME ]. Theme toggle drops its
+   current value via site.js so the row stays under one line wide; active
+   theme is still indicated by aria-current in the dropdown. */
 @media (max-width: 600px) {
     .subtitle { display: none; }
     .header-actions { gap: 6px; }
@@ -432,6 +454,40 @@ header {
         font-size: 12px;
         padding: 4px 10px;
         letter-spacing: 1px;
+    }
+    .header-nav-drawer {
+        /* Anchor for the dropdown panel — must establish a positioning
+           context so the absolute-positioned list overlays content below
+           the toggle without pushing surrounding flex items. */
+        position: relative;
+    }
+    .header-nav-drawer > summary { display: inline-flex; }
+    /* Nav list opens as a dropdown panel anchored under the toggle —
+       mirrors the theme-picker dropdown so the two header controls feel
+       like siblings. Theme picker stays inline at row 1; pushing it down
+       (the earlier wrap approach) made the menu+theme controls feel
+       disconnected. Vertical column = easier 1-tap targets on phones. */
+    .header-nav-drawer[open] > .header-nav-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 200px;
+        background: var(--panel);
+        border: 1px solid var(--accent-dim);
+        border-radius: 2px;
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 50;
+        box-shadow: 0 0 12px var(--primary-glow);
+    }
+    /* Inside the dropdown, buttons fill the panel width — gives a calm
+       vertical stack instead of jagged auto-widths. */
+    .header-nav-drawer[open] > .header-nav-list > .header-btn {
+        justify-content: flex-start;
+        text-align: left;
     }
 }
 

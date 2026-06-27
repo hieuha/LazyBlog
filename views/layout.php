@@ -333,40 +333,51 @@ $favicon = 'data:image/svg+xml,'
         <div class="subtitle">// PHOSPHOR TERMINAL // ASIA/SAIGON</div>
     <?php endif; ?>
     <div class="header-actions">
-        <a class="header-btn" href="/" aria-label="Back to home"<?= $isHome ? ' aria-current="page"' : '' ?>>[ HOME ]</a>
-        <?php if ($hasSeries): ?>
-            <a class="header-btn" href="/series" aria-label="Series"<?= str_starts_with($path, '/series') ? ' aria-current="page"' : '' ?>>[ SERIES ]</a>
-        <?php endif; ?>
-        <a class="header-btn" href="/search" aria-label="Search"<?= $path === '/search' ? ' aria-current="page"' : '' ?>>[ SEARCH ]</a>
-        <a class="header-btn" href="/archive" aria-label="Archive"<?= $path === '/archive' ? ' aria-current="page"' : '' ?>>[ ARCHIVE ]</a>
-        <?php if ($hasAbout): ?>
-            <a class="header-btn" href="/about" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
-        <?php endif; ?>
-        <?php
-        // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href, $placement, $auth)
-        // during register(); registry exposes the merged list here. Admin-only
-        // items are filtered when there is no admin session so anonymous
-        // visitors never see admin-quick-access links.
-        if ($plugins !== null):
-            $isAdmin = App\Auth::check();
-            foreach ($plugins->nav()->header() as $navItem):
-                if (($navItem['auth'] ?? 'public') === 'admin' && !$isAdmin) {
-                    continue;
-                }
-                $navCurrent = $path === $navItem['href']
-                    || str_starts_with($path, rtrim($navItem['href'], '/') . '/');
-                ?>
-                <a class="header-btn"
-                   href="<?= Http::e($navItem['href']) ?>"
-                   aria-label="<?= Http::e($navItem['label']) ?>"
-                   <?= $navCurrent ? 'aria-current="page"' : '' ?>>[ <?= Http::e(strtoupper($navItem['label'])) ?> ]</a>
+        <?php /* Nav links live inside <details> so mobile gets a native, zero-JS
+             disclosure drawer. Desktop CSS sets the wrapper + list to
+             `display: contents` and hides the summary, so the buttons render
+             inline like before with zero layout impact. Theme picker stays
+             OUTSIDE the drawer — it owns its own dropdown and operators want
+             1-tap theme swap without expanding a menu. */ ?>
+        <details class="header-nav-drawer">
+            <summary class="header-btn header-nav-toggle" aria-label="Toggle navigation menu">[ ≡ MENU ]</summary>
+            <div class="header-nav-list">
+                <a class="header-btn" href="/" aria-label="Back to home"<?= $isHome ? ' aria-current="page"' : '' ?>>[ HOME ]</a>
+                <?php if ($hasSeries): ?>
+                    <a class="header-btn" href="/series" aria-label="Series"<?= str_starts_with($path, '/series') ? ' aria-current="page"' : '' ?>>[ SERIES ]</a>
+                <?php endif; ?>
+                <a class="header-btn" href="/search" aria-label="Search"<?= $path === '/search' ? ' aria-current="page"' : '' ?>>[ SEARCH ]</a>
+                <a class="header-btn" href="/archive" aria-label="Archive"<?= $path === '/archive' ? ' aria-current="page"' : '' ?>>[ ARCHIVE ]</a>
+                <?php if ($hasAbout): ?>
+                    <a class="header-btn" href="/about" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
+                <?php endif; ?>
                 <?php
-            endforeach;
-        endif;
-        ?>
-        <?php if (App\Auth::check()): ?>
-            <a class="header-btn" href="/admin" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
-        <?php endif; ?>
+                // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href, $placement, $auth)
+                // during register(); registry exposes the merged list here. Admin-only
+                // items are filtered when there is no admin session so anonymous
+                // visitors never see admin-quick-access links.
+                if ($plugins !== null):
+                    $isAdmin = App\Auth::check();
+                    foreach ($plugins->nav()->header() as $navItem):
+                        if (($navItem['auth'] ?? 'public') === 'admin' && !$isAdmin) {
+                            continue;
+                        }
+                        $navCurrent = $path === $navItem['href']
+                            || str_starts_with($path, rtrim($navItem['href'], '/') . '/');
+                        ?>
+                        <a class="header-btn"
+                           href="<?= Http::e($navItem['href']) ?>"
+                           aria-label="<?= Http::e($navItem['label']) ?>"
+                           <?= $navCurrent ? 'aria-current="page"' : '' ?>>[ <?= Http::e(strtoupper($navItem['label'])) ?> ]</a>
+                        <?php
+                    endforeach;
+                endif;
+                ?>
+                <?php if (App\Auth::check()): ?>
+                    <a class="header-btn" href="/admin" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
+                <?php endif; ?>
+            </div>
+        </details>
         <div class="theme-picker" id="theme-picker">
             <button class="header-btn theme-picker-toggle" type="button"
                     aria-haspopup="menu" aria-expanded="false" aria-label="Switch theme">

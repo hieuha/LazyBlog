@@ -13,6 +13,24 @@
     var form = document.querySelector('.admin-form');
     if (!form) return;
 
+    /* ---------- 0. Shared slugify helper ----------
+     * Mirrors `SlugUtil::fromTitle` (PHP): NFD-decompose to strip diacritics,
+     * fold `đ`/`Đ` (which don't decompose), lowercase, replace any run of
+     * non-[a-z0-9] with `-`, trim leading/trailing dashes, cap to 80 chars.
+     * Used by the auto-slug-from-title logic (#slug) and the series-input
+     * normaliser (#series). */
+    function slugify(s) {
+        return (s || '')
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 80);
+    }
+
     /* ---------- 1. EasyMDE ---------- */
     var bodyEl = document.getElementById('body');
     var easyMDE = null;
@@ -170,7 +188,7 @@
                 sizeUnits: ' B, KB, MB',
             },
             toolbar: [
-                'bold', 'italic', 'strikethrough', 'heading', '|',
+                'heading', 'bold', 'italic', 'strikethrough', '|',
                 'quote', 'unordered-list', 'ordered-list',
                 {
                     name: 'task-list',
@@ -210,7 +228,7 @@
                     title: 'Highlight (==text==)',
                 },
                 '|',
-                'code', 'link', 'image', 'upload-image',
+                'code', 'link', '|', 'image', 'upload-image',
                 {
                     name: 'upload-image-dither',
                     action: function (editor) {
@@ -246,7 +264,7 @@
                     className: 'fa fa-th',
                     title: 'Upload + Bayer dither',
                 },
-                'table', '|',
+                '|', 'table', '|',
                 {
                     name: 'highlight',
                     action: function (editor) {
@@ -445,35 +463,21 @@
     }
 
     /* ---------- 3. Auto-slug from title ----------
-     * Mirrors `SlugUtil::fromTitle` (PHP) so the preview matches the
-     * server's filename-derivation. Auto-fill stays on until the user
-     * manually edits the slug field, or until the page loads with a
-     * slug that doesn't match the current title's derived value
-     * (existing post with a hand-picked slug — leave it alone).
+     * Auto-fill stays on until the user manually edits the slug field,
+     * or until the page loads with a slug that doesn't match the current
+     * title's derived value (existing post with a hand-picked slug —
+     * leave it alone). The shared `slugify` helper at the top of the
+     * file is the single source of truth for the transform.
      */
     var titleEl = document.getElementById('title');
     var slugInputEl = document.getElementById('slug');
     if (titleEl && slugInputEl) {
-        // NFD splits combined glyphs (e.g. `ế` → `e` + combining mark);
-        // drop the marks, then handle `đ`/`Đ` which don't decompose.
-        function slugifyTitle(s) {
-            return (s || '')
-                .normalize('NFD')
-                .replace(/[̀-ͯ]/g, '')
-                .replace(/đ/g, 'd')
-                .replace(/Đ/g, 'D')
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+|-+$/g, '')
-                .slice(0, 80);
-        }
-
         var slugAuto = slugInputEl.value === ''
-            || slugInputEl.value === slugifyTitle(titleEl.value);
+            || slugInputEl.value === slugify(titleEl.value);
 
         titleEl.addEventListener('input', function () {
             if (!slugAuto) return;
-            slugInputEl.value = slugifyTitle(titleEl.value);
+            slugInputEl.value = slugify(titleEl.value);
         });
 
         // Programmatic `value =` doesn't fire `input`, so this listener
@@ -482,6 +486,37 @@
         // takes manual control of the URL.
         slugInputEl.addEventListener('input', function () {
             slugAuto = false;
+        });
+    }
+
+    /* ---------- 3b. Series input normaliser ----------
+     * Series slugs must be kebab-case with no diacritics so they map
+     * cleanly to `/series/<slug>` URLs. Auto-transform on input — spaces
+     * become `-` and Vietnamese diacritics get stripped — but keep
+     * trailing dashes mid-edit so the next keystroke can still extend
+     * the slug naturally (otherwise typing `"ma "` then `"v"` would
+     * produce `"mav"` because the trailing dash was already trimmed).
+     * On blur we run the full slugify pass to finalise. */
+    var seriesInputEl = document.getElementById('series');
+    if (seriesInputEl) {
+        function partialSlugify(s) {
+            return (s || '')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D')
+                .toLowerCase()
+                .replace(/[^a-z0-9-]+/g, '-')
+                .replace(/-{2,}/g, '-');
+        }
+        seriesInputEl.addEventListener('input', function () {
+            var cleaned = partialSlugify(seriesInputEl.value);
+            if (cleaned !== seriesInputEl.value) {
+                seriesInputEl.value = cleaned;
+            }
+        });
+        seriesInputEl.addEventListener('blur', function () {
+            seriesInputEl.value = slugify(seriesInputEl.value);
         });
     }
 

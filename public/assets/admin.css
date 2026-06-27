@@ -340,6 +340,73 @@ body.editor-fullscreen-active.is-home { animation: none; }
 .admin-checkbox-pill input { accent-color: var(--primary); margin: 0; }
 .admin-checkbox-pill:hover { background: var(--primary-glow); border-color: var(--primary); }
 
+/* ---------- META collapse (post editor) ----------
+   Secondary fields (date, slug, tags, author, icon, social image, series,
+   password) live inside a native <details> block so the writing surface
+   stays focused. Closed by default; the <summary> reads as a small terminal
+   header chip. The `[ + ]` glyph flips to `[ - ]` while the body is open. */
+.admin-meta-collapse {
+    margin: 4px 0 6px;
+}
+.admin-meta-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--primary-dim);
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    padding: 6px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    user-select: none;
+    /* Strip the default disclosure triangle — we render our own glyph. */
+    list-style: none;
+}
+.admin-meta-toggle::-webkit-details-marker { display: none; }
+.admin-meta-toggle:hover {
+    color: var(--primary);
+    background: var(--primary-glow);
+    border-color: var(--primary-dim);
+}
+.admin-meta-toggle:focus-visible {
+    outline: 1px solid var(--primary);
+    outline-offset: 2px;
+}
+.admin-meta-toggle-glyph {
+    color: var(--accent);
+    /* Keep `[ + ]` on a single visual line — without nowrap the three
+       characters wrap onto separate rows on narrow viewports because the
+       parent flex container shrinks the span below its content width. */
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.admin-meta-toggle-glyph::before { content: '[ + ]'; }
+.admin-meta-collapse[open] > .admin-meta-toggle .admin-meta-toggle-glyph::before { content: '[ - ]'; }
+.admin-meta-toggle-label-fields { color: var(--text-dim); }
+.admin-meta-collapse-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 2px;
+    background: var(--panel);
+}
+@media (max-width: 600px) {
+    /* On phones the long dot-separated field list (`· DATE · SLUG · …`)
+       makes the toggle balloon into a multi-line block. Hide the field
+       list, keep just `[ + ] META`, and stretch the chip across the row
+       so it reads as an obvious tap target. */
+    .admin-meta-toggle { display: flex; width: 100%; justify-content: flex-start; }
+    .admin-meta-toggle-label-fields { display: none; }
+    .admin-meta-collapse-body { padding: 10px 10px; }
+}
+
 /* ---------- Admin buttons ---------- */
 /* Unified to the dominant theme color (--primary). Reset native <button>
    user-agent styles so <a class="admin-btn"> and <button class="admin-btn">

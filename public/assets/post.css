@@ -260,8 +260,9 @@ body.is-post main {
 
 /* ---------- Post figures (auto-wrapped images) ----------
    Standalone `![alt](url)` in markdown becomes <figure class="post-figure">
-   with the caption pulled from alt. The figure breaks out of the post
-   reading column to full viewport width; the caption stays narrow + centered.
+   with the caption pulled from alt. The figure stays inside the post
+   reading column so images don't bleed past the article width; the
+   caption sits underneath, narrower + centered.
    A theme-color overlay (mix-blend-mode: multiply) tints the image so photos
    feel native to the CRT terminal aesthetic.
 
@@ -269,11 +270,7 @@ body.is-post main {
    <figure class="post-figure post-figure-gallery count-N"> and laid out
    as a CSS Grid — 2 columns, 3 columns, or auto-fit for 4+. */
 .post-figure {
-    /* Break out of the article column to viewport width while text stays
-       in its container. transform centers on viewport regardless of parent. */
-    width: 100vw;
-    margin-left: 50%;
-    transform: translateX(-50%);
+    width: 100%;
     margin-top: 36px;
     margin-bottom: 36px;
     position: relative;
@@ -336,14 +333,12 @@ body.is-post main {
        don't get veiled and alpha channels stay clean. */
     display: none;
 }
-/* Pull video figures back into the article column instead of the
-   full-bleed photo treatment. Standalone videos tend to be portrait
-   orbs or decorative loops; viewport-wide they read as oversized. */
+/* Standalone videos tend to be portrait orbs or decorative loops, so
+   shrink the figure to the video's intrinsic width instead of filling
+   the whole reading column. */
 .post-figure-video {
     width: auto;
     max-width: 100%;
-    margin-left: 0;
-    transform: none;
 }
 /* The theme-color tint overlay — multiply blend so dark areas of the photo
    stay dark and the highlights take on the phosphor color. Opacity is high
@@ -382,16 +377,6 @@ body.is-post main {
     letter-spacing: 1.5px;
     line-height: 1.5;
 }
-/* On narrow screens stop trying to break out — full-viewport tint on
-   a phone often clips weirdly with body overflow-x:hidden. */
-@media (max-width: 600px) {
-    .post-figure {
-        width: 100%;
-        margin-left: 0;
-        transform: none;
-    }
-}
-
 /* ---------- Multi-image gallery (post-figure-gallery) ----------
    Triggered when N>=2 consecutive image-only lines are grouped into a
    single figure by MarkdownRenderer. Each (image + caption) pair lives

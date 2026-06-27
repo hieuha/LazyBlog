@@ -55,6 +55,30 @@ foreach ($valid as $row) {
     $year = $ts > 0 ? date('Y', $ts) : '—';
     $byYear[$year][] = $row;
 }
+
+// Short relative-time label for the "LAST REFRESH" line. Feed readers care
+// about "how fresh is this" more than the exact timestamp, so we surface
+// "2H AGO" / "3D AGO" inline and keep the absolute string in <time title>
+// for hover/long-press. Caps + short suffix matches the surrounding
+// monospaced status-bar style. Past 30 days falls back to "YYYY-MM-DD" so
+// the row still tells the truth on a stale install instead of "120D AGO".
+$lastRefreshRel = '';
+if ($last_refresh_at > 0) {
+    $diff = time() - $last_refresh_at;
+    if ($diff < 0) {
+        $lastRefreshRel = 'JUST NOW';                              // clock skew safety
+    } elseif ($diff < 60) {
+        $lastRefreshRel = 'JUST NOW';
+    } elseif ($diff < 3600) {
+        $lastRefreshRel = ((int) floor($diff / 60))    . 'M AGO';
+    } elseif ($diff < 86400) {
+        $lastRefreshRel = ((int) floor($diff / 3600))  . 'H AGO';
+    } elseif ($diff < 86400 * 30) {
+        $lastRefreshRel = ((int) floor($diff / 86400)) . 'D AGO';
+    } else {
+        $lastRefreshRel = date('Y-m-d', $last_refresh_at);
+    }
+}
 ?>
 
 <section class="archive-page stalk-public">
@@ -71,7 +95,10 @@ foreach ($valid as $row) {
             <?php endif; ?>
             <?php if ($last_refresh_at > 0): ?>
                 &nbsp;·&nbsp; LAST REFRESH
-                <?= Http::e(date('Y-m-d H:i T', $last_refresh_at)) ?>
+                <time datetime="<?= Http::e(date('c', $last_refresh_at)) ?>"
+                      title="<?= Http::e(date('Y-m-d H:i T', $last_refresh_at)) ?>">
+                    <?= Http::e($lastRefreshRel) ?>
+                </time>
             <?php endif; ?>
         <?php endif; ?>
     </p>

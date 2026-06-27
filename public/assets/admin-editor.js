@@ -152,10 +152,21 @@
             return previewCache || '<p style="opacity:0.5">Rendering…</p>';
         }
 
+        // Vietnamese (and other IME-driven) input on touch devices: CodeMirror
+        // 5's default `inputStyle: 'textarea'` swallows compositionend events
+        // on a lot of Android / iOS keyboard combos, so typed characters
+        // never reach the document. Switching to `inputStyle: 'contenteditable'`
+        // uses a real DOM contenteditable element which forwards IME events
+        // correctly. EasyMDE has its own UA-based mobile detection but it
+        // misses modern Chrome-on-Android and in-app webviews; relying on
+        // `ontouchstart` instead catches every touch device we care about.
+        var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
         easyMDE = new EasyMDE({
             element: bodyEl,
             spellChecker: false,
             forceSync: true,            // mirror back to the underlying textarea so form submit works
+            inputStyle: isTouchDevice ? 'contenteditable' : 'textarea',
             // Font Awesome is loaded explicitly from jsdelivr in edit.php — disabling
             // EasyMDE's auto-download keeps the request inside our CSP allow-list.
             autoDownloadFontAwesome: false,

@@ -139,6 +139,22 @@ body.is-admin main { max-width: 1180px; }
     box-shadow: 0 0 8px var(--primary-glow);
 }
 .admin-mono { font-family: 'Share Tech Mono', monospace; font-size: 13px; }
+
+/* iOS Safari renders native <input type="date"> and <input type="time">
+   with their value text centred (and a system font), which throws the
+   Date / Time fields off the left-aligned column the rest of the form
+   uses. `-webkit-appearance: none` strips the native widget chrome so
+   `text-align: left` and the .admin-mono font actually stick. The
+   browser-supplied calendar / clock picker still opens on focus. */
+.admin-input[type="date"],
+.admin-input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: left;
+    /* Match the height of plain text inputs — iOS otherwise sizes these
+       slightly taller because of the (now-hidden) native indicator. */
+    min-height: 34px;
+}
 .admin-textarea-body {
     /* Compact default — drag handle (resize:vertical) is always there if
        the writer wants more. */

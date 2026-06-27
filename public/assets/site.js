@@ -40,11 +40,19 @@
     function open() {
         menu.hidden = false;
         toggle.setAttribute('aria-expanded', 'true');
+        /* Tell sibling disclosures (e.g. nav drawer) to close. stopPropagation
+           on the toggle click suppresses the document-level close handlers, so
+           we explicitly notify via a custom event instead. */
+        document.dispatchEvent(new CustomEvent('header-disclosure-open',
+            { detail: { id: 'theme-picker' } }));
     }
     function close() {
         menu.hidden = true;
         toggle.setAttribute('aria-expanded', 'false');
     }
+    document.addEventListener('header-disclosure-open', function (e) {
+        if (e.detail && e.detail.id !== 'theme-picker') close();
+    });
 
     syncUI(document.documentElement.getAttribute('data-theme') || 'amber');
     /* Re-sync when the viewport crosses the mobile breakpoint so the label
@@ -90,7 +98,13 @@
     if (!toggle) return;
 
     function close() { toggle.setAttribute('aria-expanded', 'false'); }
-    function open()  { toggle.setAttribute('aria-expanded', 'true'); }
+    function open()  {
+        toggle.setAttribute('aria-expanded', 'true');
+        /* Notify sibling disclosures (e.g. theme picker) so only one
+           dropdown is visible at a time. */
+        document.dispatchEvent(new CustomEvent('header-disclosure-open',
+            { detail: { id: 'header-nav-drawer' } }));
+    }
 
     toggle.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -104,6 +118,9 @@
             close();
             toggle.focus();
         }
+    });
+    document.addEventListener('header-disclosure-open', function (e) {
+        if (e.detail && e.detail.id !== 'header-nav-drawer') close();
     });
 })();
 

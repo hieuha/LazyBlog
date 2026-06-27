@@ -250,6 +250,23 @@
 .post-meta-tags + .post-footer {
     margin-top: 28px;
 }
+/* On phones the three-button row (VIEW SOURCE / EDIT / BACK TO INDEX,
+   for admins) wraps onto two lines because the default padding +
+   letter-spacing on .view-source-link pushes total width past the
+   viewport. Compact the row so all three sit on one line — drop the
+   wrap, shrink horizontal padding, halve the tracking, and let buttons
+   shrink instead of overflowing. */
+@media (max-width: 600px) {
+    .post-footer { flex-wrap: nowrap; gap: 6px; }
+    .post-footer .view-source-link {
+        flex: 0 1 auto;
+        min-width: 0;
+        padding: 7px 8px;
+        font-size: 10px;
+        letter-spacing: 1px;
+        white-space: nowrap;
+    }
+}
 
 /* Balance the empty space below post-footer buttons with the 24px
    padding-top inside post-footer — so the buttons sit between two

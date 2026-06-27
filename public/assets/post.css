@@ -150,9 +150,16 @@
 
 /* Hover state — entire item reacts as a unit. Title glow intensifies,
    date lifts from dim to primary, summary text lifts from dim to full.
-   No layout shift so list stays calm during scroll-hover. */
+   Dashed underline matches the global `a` link affordance so the title
+   still signals "clickable" on themes (p7, p11) where the site-wide
+   text-shadow strip removes the glow cue. No layout shift so list stays
+   calm during scroll-hover. */
 .post-item:hover .post-title {
     text-shadow: 0 0 14px var(--primary), 0 0 24px var(--primary-glow-strong);
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
 }
 .post-item:hover .post-date {
     color: var(--primary);

@@ -201,12 +201,16 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
 
 /* Crypt theme: primary is already red, so the chromatic-aberration red
    shift stacks on top of itself and reads as a jagged outline instead of
-   a subtle CRT misalignment. Drop the split, keep the phosphor glow. */
+   a subtle CRT misalignment. Drop the split, keep the phosphor glow.
+   Scope is limited to hero-scale headings (h1/h2/h3 + site-brand) on
+   purpose. `.post-title` and `.story-title` are list-item titles whose
+   at-rest shadow is tuned softer in post.css / components.css; pulling
+   them into this override re-imposes the 22/56px halo via attribute+class
+   specificity and they read as always-hovered. Same reason brutalist
+   below is scoped to the same set. */
 [data-theme="crypt"] h1,
 [data-theme="crypt"] h2,
 [data-theme="crypt"] h3,
-[data-theme="crypt"] .story-title,
-[data-theme="crypt"] .post-title,
 [data-theme="crypt"] .site-brand {
     text-shadow:
         0 0 6px var(--primary),
@@ -222,8 +226,6 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
 [data-theme="brutalist"] h1,
 [data-theme="brutalist"] h2,
 [data-theme="brutalist"] h3,
-[data-theme="brutalist"] .story-title,
-[data-theme="brutalist"] .post-title,
 [data-theme="brutalist"] .site-brand {
     text-shadow:
         0 0 6px var(--primary),

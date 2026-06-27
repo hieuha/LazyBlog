@@ -57,6 +57,7 @@ $src = dirname(__DIR__) . '/src';
 require_once $src . '/FriendStore.php';
 require_once $src . '/PostCache.php';
 require_once $src . '/Config.php';
+require_once $src . '/HostGuard.php';
 require_once $src . '/FeedFetcher.php';
 require_once $src . '/FeedParser.php';
 require_once $src . '/RefreshService.php';

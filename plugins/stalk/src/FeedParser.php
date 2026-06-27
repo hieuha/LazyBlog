@@ -74,10 +74,29 @@ final class FeedParser
                     continue;
                 }
                 $scheme = parse_url($link, PHP_URL_SCHEME);
+                // Defensive recovery for LazyBlog instances whose SITE_URL
+                // env was set without an `https://` prefix — FeedBuilder
+                // then emits `<link>host/path</link>` and the receiver
+                // would otherwise skip every item. Promote the link to
+                // https when the value still looks like a `host.tld/...`
+                // (i.e. a dotted bareword before the first slash), and
+                // re-parse for downstream checks. Truly malformed links
+                // (`/path`, `path`, `mailto:`, …) still drop out below.
+                if ($scheme === null && preg_match('#^[^/]+\.[^/]+#', $link) === 1) {
+                    $link = 'https://' . $link;
+                    $scheme = 'https';
+                }
                 if (!in_array($scheme, ['http', 'https'], true)) {
                     continue;
                 }
                 $guidRaw = trim((string) $node->guid);
+                // Same posture for the guid when it's an isPermaLink — the
+                // identifier round-trips through posts.json so a schemeless
+                // version would also fail any future "click guid" feature.
+                if ($guidRaw !== '' && parse_url($guidRaw, PHP_URL_SCHEME) === null
+                    && preg_match('#^[^/]+\.[^/]+#', $guidRaw) === 1) {
+                    $guidRaw = 'https://' . $guidRaw;
+                }
                 $pubRaw  = trim((string) $node->pubDate);
                 $pubTs   = $pubRaw !== '' ? (int) (strtotime($pubRaw) ?: 0) : 0;
 

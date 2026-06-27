@@ -53,7 +53,12 @@
 }
 .post-date-group .post-item:last-child { padding-bottom: 14px; }
 .post-date-group .post-item:hover {
-    border-left-color: var(--primary-dim);
+    /* Step from dim --border → full --primary on hover. Earlier
+       --primary-dim mid-tone was too close to rest state and disappeared
+       on flat themes (p7, p11) where the title's text-shadow lift is
+       stripped. Full primary makes the left rail the hover affordance
+       across every theme without adding extra ornaments. */
+    border-left-color: var(--primary);
 }
 
 /* Top meta line — date (anchor) + optional series tag. Bigger letter

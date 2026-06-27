@@ -212,6 +212,15 @@
         white-space: nowrap;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        /* Hide the horizontal scrollbar visually — Chrome/Safari paint
+           a thin bar when overflow-x:auto kicks in, which reads as a
+           UI artifact on the meta line. Touch-scroll still works on
+           iOS, and the operator can swipe to see the truncated tail. */
+        scrollbar-width: none;
+    }
+    .section-tag::-webkit-scrollbar,
+    [class*="section"] > .callsign::-webkit-scrollbar {
+        display: none;
     }
 }
 

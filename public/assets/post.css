@@ -45,13 +45,22 @@
 }
 .post-date-group:first-child .post-date-header { margin-top: 8px; }
 .post-date-group .post-item {
-    border-bottom: none;
+    /* Dashed bottom rule between siblings inside one date group — the
+       18+18 padding gap alone read as "one continuous list" against the
+       left rail, so a thin divider sits inside the gap to break each
+       row apart without crowding (left rail stays the dominant visual).
+       Suppressed on :last-child so the next date-group's header acts as
+       the next separator instead. */
+    border-bottom: 1px dashed var(--border);
     border-left: 1px dashed var(--border);
     padding: 18px 0 18px 28px;
     margin-left: 14px;
     transition: border-left-color 0.22s ease;
 }
-.post-date-group .post-item:last-child { padding-bottom: 14px; }
+.post-date-group .post-item:last-child {
+    border-bottom: none;
+    padding-bottom: 14px;
+}
 .post-date-group .post-item:hover {
     /* Step from dim --border → full --primary on hover. Earlier
        --primary-dim mid-tone was too close to rest state and disappeared

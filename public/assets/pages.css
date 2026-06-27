@@ -364,6 +364,13 @@ a.heatmap-cell:hover {
 }
 .series-item-title:hover {
     text-shadow: 0 0 6px var(--primary), 0 0 14px var(--primary-glow-strong);
+    /* Dashed underline matches the global `a` link affordance, so series
+       part titles still signal "clickable" on themes (p7, p11) where the
+       site-wide text-shadow strip removes the glow cue. */
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
 }
 .series-item-meta {
     margin-top: 4px;

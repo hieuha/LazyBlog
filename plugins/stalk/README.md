@@ -24,7 +24,7 @@ visitor /stalk  ─►  gate fresh?  ─►  read cache              (fast path)
 # .env
 PLUGINS=stalk                       # or comma-list, e.g. graffiti,stalk
 SITE_URL=https://your-blog.example  # used in the friend-fetch UA string
-TIMEZONE=Asia/Saigon                # display TZ for "last refresh" lines
+TIMEZONE=Asia/Saigon                # display TZ for per-item dates + "last refresh" tooltip (visible refresh label is relative — "2H AGO")
 ```
 
 Restart PHP-FPM. A `[ STALK ]` link appears in the public header.

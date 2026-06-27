@@ -55,7 +55,7 @@ final class HttpSender
             CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Accept: application/json',
-                'User-Agent: ' . ($userAgent ?? 'LazyBlog-Graffiti/0.1'),
+                'User-Agent: ' . ($userAgent ?? self::defaultUserAgent()),
             ],
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_MAXREDIRS      => 0,
@@ -91,7 +91,7 @@ final class HttpSender
             CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
             CURLOPT_HTTPHEADER     => [
                 'Accept: application/json',
-                'User-Agent: ' . ($userAgent ?? 'LazyBlog-Graffiti/0.1'),
+                'User-Agent: ' . ($userAgent ?? self::defaultUserAgent()),
             ],
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_MAXREDIRS      => 0,
@@ -133,6 +133,19 @@ final class HttpSender
             $url,
             1
         );
+    }
+
+    /**
+     * Default outbound User-Agent — distinct prefix `LazyBlog-` so a
+     * sysadmin can allowlist every LazyBlog cross-blog request with a
+     * single regex (`^LazyBlog-`). Mirrors the Stalk feed fetcher's
+     * RFC-style `name/version (+identifier)` shape so the receiving
+     * blog can both filter and contact the source if needed.
+     */
+    private static function defaultUserAgent(): string
+    {
+        $siteUrl = (string) (\App\Config::get('SITE_URL') ?: 'unknown');
+        return 'LazyBlog-Graffiti/0.1 (+' . $siteUrl . ')';
     }
 
     private static function isHttpsOrDev(string $url): bool

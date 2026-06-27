@@ -31,12 +31,26 @@
             .slice(0, 80);
     }
 
-    /* ---------- 1. EasyMDE ---------- */
+    /* ---------- 1. EasyMDE ----------
+     * On phones we deliberately SKIP mounting EasyMDE. CodeMirror 5 wraps
+     * the body in either a hidden textarea or a contenteditable; both
+     * paths swallow iOS / Android IME composition events for sticky-key
+     * input methods (Vietnamese telex is the canonical failure mode —
+     * typed diacritics never reach the document). The raw <textarea>
+     * has native IME support with zero JS interference, which is the
+     * only reliable mobile fix as of CodeMirror 5.65. We lose toolbar /
+     * preview / autosave on phones, but typing in the right language
+     * matters more than chrome. Tablets and desktops keep the full
+     * EasyMDE editor — the touch+viewport gate only catches phones.
+     */
     var bodyEl = document.getElementById('body');
     var easyMDE = null;
     var slugEl = document.getElementById('slug');
+    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    var isPhoneViewport = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    var skipEasyMDE = isTouchDevice && isPhoneViewport;
 
-    if (bodyEl && window.EasyMDE) {
+    if (bodyEl && window.EasyMDE && !skipEasyMDE) {
         var autosaveId = 'lazyblog-' + (slugEl && slugEl.value ? slugEl.value : 'new');
 
         // Mirror fullscreen state to the body so we can hide the CRT scanline
@@ -152,16 +166,11 @@
             return previewCache || '<p style="opacity:0.5">Rendering…</p>';
         }
 
-        // Vietnamese (and other IME-driven) input on touch devices: CodeMirror
-        // 5's default `inputStyle: 'textarea'` swallows compositionend events
-        // on a lot of Android / iOS keyboard combos, so typed characters
-        // never reach the document. Switching to `inputStyle: 'contenteditable'`
-        // uses a real DOM contenteditable element which forwards IME events
-        // correctly. EasyMDE has its own UA-based mobile detection but it
-        // misses modern Chrome-on-Android and in-app webviews; relying on
-        // `ontouchstart` instead catches every touch device we care about.
-        var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
+        // Tablets (touch + viewport ≥ 768px) still mount EasyMDE — phones
+        // already short-circuited above. Use `inputStyle: 'contenteditable'`
+        // on those touch tablets so iPad's on-screen IME keyboards forward
+        // composition events correctly (CodeMirror's default `textarea`
+        // path loses sticky-key composition on Safari for iPad too).
         easyMDE = new EasyMDE({
             element: bodyEl,
             spellChecker: false,

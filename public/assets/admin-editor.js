@@ -31,26 +31,13 @@
             .slice(0, 80);
     }
 
-    /* ---------- 1. EasyMDE ----------
-     * On phones we deliberately SKIP mounting EasyMDE. CodeMirror 5 wraps
-     * the body in either a hidden textarea or a contenteditable; both
-     * paths swallow iOS / Android IME composition events for sticky-key
-     * input methods (Vietnamese telex is the canonical failure mode —
-     * typed diacritics never reach the document). The raw <textarea>
-     * has native IME support with zero JS interference, which is the
-     * only reliable mobile fix as of CodeMirror 5.65. We lose toolbar /
-     * preview / autosave on phones, but typing in the right language
-     * matters more than chrome. Tablets and desktops keep the full
-     * EasyMDE editor — the touch+viewport gate only catches phones.
-     */
+    /* ---------- 1. EasyMDE ---------- */
     var bodyEl = document.getElementById('body');
     var easyMDE = null;
     var slugEl = document.getElementById('slug');
     var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    var isPhoneViewport = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
-    var skipEasyMDE = isTouchDevice && isPhoneViewport;
 
-    if (bodyEl && window.EasyMDE && !skipEasyMDE) {
+    if (bodyEl && window.EasyMDE) {
         var autosaveId = 'lazyblog-' + (slugEl && slugEl.value ? slugEl.value : 'new');
 
         // Mirror fullscreen state to the body so we can hide the CRT scanline
@@ -166,11 +153,14 @@
             return previewCache || '<p style="opacity:0.5">Rendering…</p>';
         }
 
-        // Tablets (touch + viewport ≥ 768px) still mount EasyMDE — phones
-        // already short-circuited above. Use `inputStyle: 'contenteditable'`
-        // on those touch tablets so iPad's on-screen IME keyboards forward
-        // composition events correctly (CodeMirror's default `textarea`
-        // path loses sticky-key composition on Safari for iPad too).
+        // CodeMirror 5 has a known iOS Safari bug where IME composition
+        // events get lost in the default `inputStyle: 'textarea'` path
+        // (Vietnamese telex, Japanese kana, Chinese pinyin — anything
+        // that builds final characters from sticky-key sequences).
+        // `inputStyle: 'contenteditable'` uses a real DOM contenteditable
+        // node which routes composition events through the browser's
+        // own IME pipeline. We pair it with a manual compositionend
+        // bridge below that nudges CM to re-poll after the IME finalises.
         easyMDE = new EasyMDE({
             element: bodyEl,
             spellChecker: false,
@@ -315,6 +305,29 @@
                 toggleFullScreen: 'F11',
             },
         });
+
+        // iOS IME bridge: when the user finishes a Vietnamese telex
+        // sequence ("a + s" → "á"), iOS Safari fires compositionend with
+        // the final character, but CodeMirror's contenteditable poll can
+        // run before the DOM settles and drop the character. Listen at
+        // the wrapper level and force CM to re-poll its input on the
+        // next animation frame so any final composed text gets folded
+        // into the document model. Gated to touch devices so desktop
+        // IME (which works fine) isn't double-polled.
+        if (isTouchDevice) {
+            easyMDE.codemirror.getWrapperElement().addEventListener(
+                'compositionend',
+                function () {
+                    requestAnimationFrame(function () {
+                        var input = easyMDE.codemirror.display && easyMDE.codemirror.display.input;
+                        if (input && typeof input.poll === 'function') {
+                            input.poll();
+                        }
+                    });
+                },
+                true
+            );
+        }
 
         // EasyMDE's default post-upload insertion ends with `![](url)` and
         // no trailing newline, so multi-select / drag-drop / paste of

@@ -129,6 +129,57 @@ line so the markdown source stays readable. Requires `php8.2-gd` extension
 **Sticky toolbar**: the formatting toolbar stays pinned to the top of the
 viewport while you scroll a long post, so the buttons stay reachable.
 
+### Phone editor — raw textarea + mini-toolbar
+
+On touch devices with viewport ≤ 768px (iPhone, Android phones,
+narrow touch browsers) **EasyMDE is deliberately skipped**. CodeMirror 5
+swallows IME composition events on iOS Safari — Vietnamese telex,
+Japanese kana, Chinese pinyin — so any sticky-key keyboard would
+drop diacritics inside the editor. The phone path instead mounts the
+raw `<textarea>` (native IME, zero JS interference) and renders a
+custom mini-toolbar above it. Tablets (touch + viewport ≥ 768px)
+and desktops keep the full EasyMDE editor.
+
+Mini-toolbar buttons:
+
+| Button | Action |
+|--------|--------|
+| `H` | Cycle heading (`#` → `##` → `###` → off, scoped to the current line) |
+| `B` | Bold (`**text**`) |
+| `I` | Italic (`*text*`) |
+| `==` | Highlight (`==text==`) |
+| `>` | Quote — prefixes every selected line with `> ` |
+| `•` | Bullet list — prefixes every selected line with `- ` |
+| `` ` `` | Inline code (`` `code` ``) |
+| `` ``` `` | Code fence (`` ```...``` ``) with leading-newline guard |
+| 🔗 (`fa-link`) | Link — prompts for URL + text |
+| 📤 (`fa-cloud-upload`) | Upload image — opens native file picker (multi-select) |
+| `!` | Insert `::: highlight` callout admonition |
+| 💬 (`fa-comment`) | Insert `::: story` card |
+| 👁 (`fa-eye`) | Preview — opens iframe modal that loads the post page stylesheet bundle |
+
+Every button operates on the textarea via `setRangeText()` so it
+**never** touches composition / input events — the native IME stays
+intact regardless of what the toolbar does.
+
+**Multi-image upload** runs sequentially (preserves order so adjacent
+images collapse into a `post-figure-gallery count-N` figure), with
+three entry points: the 📤 button (multi-select file picker),
+drag-drop of files onto the textarea, and clipboard paste of one or
+more images. Each `![](url)` lands on its own line with a leading
+newline guard.
+
+**Preview** posts the textarea content to `/admin/preview` and
+injects the returned HTML inside an iframe that copies the parent
+page's stylesheet `<link>` tags **plus** `post.css` (which the admin
+chrome doesn't load), so the rendered output is visually identical
+to the public post page. Sandbox grants `allow-same-origin
+allow-scripts` so YouTube embeds and plugin scripts run in preview
+the same way they will on the published page.
+
+Viewport detection runs once at page load — rotating the phone or
+resizing the browser doesn't auto-swap editors. Reload to switch.
+
 ## Series management (`/admin/series`)
 
 Series are still discovered from post frontmatter — putting `series: my-slug`

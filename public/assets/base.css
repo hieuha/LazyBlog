@@ -248,20 +248,17 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
             0 0 56px var(--primary-glow);
     }
 }
-/* Mobile: drop the chromatic RGB split AND shrink the phosphor halo.
-   The 1px shift reads as oversized colored fringes once the title font
-   shrinks below ~32px, making the brand and post titles look
-   glitchy-bad instead of CRT. The original 22+56px blur stack was tuned
-   for desktop title scale; at mobile font sizes that halo blooms past
-   the letterform and the title burns instead of reading as a CRT cue.
-   Pull radii down (6→4, 22→12, 56→28) so the glow stays as a hint
-   without overwhelming the type. */
+/* Mobile: drop the chromatic RGB split AND collapse the phosphor halo
+   to a single tight bloom. The desktop 6+22+56px stack was tuned for
+   the larger title scale and a relaxed viewing distance; on a phone the
+   22+56 outer halos overlap with neighbouring letters and burn the
+   whole word. A tight 3px + soft 10px stack reads as "the type has a
+   slight CRT bloom" instead of "the type is on fire". */
 @media (max-width: 600px) {
     h1, h2, h3, .story-title, .post-title, .site-brand {
         text-shadow:
-            0 0 4px var(--primary),
-            0 0 12px var(--primary-glow-strong),
-            0 0 28px var(--primary-glow);
+            0 0 3px var(--primary),
+            0 0 10px var(--primary-glow-strong);
     }
 }
 

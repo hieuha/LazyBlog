@@ -238,7 +238,7 @@ $favicon = 'data:image/svg+xml,'
     (function () {
         try {
             var t = localStorage.getItem('theme');
-            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist' || t === 'c64' || t === 'lcd') {
+            if (t === 'green' || t === 'amber' || t === 'crypt' || t === 'brutalist' || t === 'p7' || t === 'p11' || t === 'c64' || t === 'lcd') {
                 document.documentElement.setAttribute('data-theme', t);
             }
         } catch (e) {}

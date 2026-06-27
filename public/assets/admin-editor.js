@@ -230,7 +230,9 @@
                             runImageUpload(f, true, function (url) {
                                 // Same insertion shape EasyMDE's image
                                 // button uses — `![](url)` at the cursor.
-                                editor.codemirror.replaceSelection('![](' + url + ')');
+                                // Trailing newline so consecutive uploads
+                                // land on their own lines.
+                                editor.codemirror.replaceSelection('![](' + url + ')\n');
                             }, function (msg) {
                                 // Match EasyMDE's onError convention — a
                                 // browser-native alert is loud enough that
@@ -275,6 +277,23 @@
                 toggleFullScreen: 'F11',
             },
         });
+
+        // EasyMDE's default `afterImageUploaded` inserts `![](url)` with
+        // no trailing newline, so multi-select / drag-drop of several
+        // images all land on a single line glued together. Override at
+        // the instance level: same image-extension check as upstream
+        // (fall back to a link for non-images), but append `\n` so each
+        // upload lands on its own line.
+        var IMG_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'apng', 'avif', 'webp'];
+        easyMDE.afterImageUploaded = function (url) {
+            var cm = easyMDE.codemirror;
+            var name = url.substr(url.lastIndexOf('/') + 1);
+            var ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
+            var snippet = IMG_EXTS.indexOf(ext) !== -1
+                ? '![](' + url + ')\n'
+                : '[' + name + '](' + url + ')\n';
+            cm.replaceSelection(snippet);
+        };
 
         // EasyMDE ships both `image` (insert by URL) and `upload-image`
         // (file picker) with picture-frame icons by default, so the two
@@ -402,7 +421,48 @@
         entry.addEventListener('blur', addFromEntry);
     }
 
-    /* ---------- 3. Unsaved-changes guard ---------- */
+    /* ---------- 3. Auto-slug from title ----------
+     * Mirrors `SlugUtil::fromTitle` (PHP) so the preview matches the
+     * server's filename-derivation. Auto-fill stays on until the user
+     * manually edits the slug field, or until the page loads with a
+     * slug that doesn't match the current title's derived value
+     * (existing post with a hand-picked slug — leave it alone).
+     */
+    var titleEl = document.getElementById('title');
+    var slugInputEl = document.getElementById('slug');
+    if (titleEl && slugInputEl) {
+        // NFD splits combined glyphs (e.g. `ế` → `e` + combining mark);
+        // drop the marks, then handle `đ`/`Đ` which don't decompose.
+        function slugifyTitle(s) {
+            return (s || '')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 80);
+        }
+
+        var slugAuto = slugInputEl.value === ''
+            || slugInputEl.value === slugifyTitle(titleEl.value);
+
+        titleEl.addEventListener('input', function () {
+            if (!slugAuto) return;
+            slugInputEl.value = slugifyTitle(titleEl.value);
+        });
+
+        // Programmatic `value =` doesn't fire `input`, so this listener
+        // only catches real user keystrokes / paste / cut on the slug
+        // field — flipping the auto-sync off the moment the writer
+        // takes manual control of the URL.
+        slugInputEl.addEventListener('input', function () {
+            slugAuto = false;
+        });
+    }
+
+    /* ---------- 4. Unsaved-changes guard ---------- */
     var dirty = false;
 
     function markDirty() {
@@ -457,11 +517,36 @@
         fileInput.addEventListener('change', function () {
             var file = fileInput.files && fileInput.files[0];
             if (!file) return;
+
+            // The OS file picker treats `accept` as a hint only — a user
+            // who flips it to "All Files" could otherwise sneak through
+            // any image type. Enforce the MIME list ourselves before
+            // hitting the network so the constraint actually holds.
+            var accept = (fileInput.accept || '')
+                .split(',')
+                .map(function (s) { return s.trim(); })
+                .filter(Boolean);
+            if (accept.length && accept.indexOf(file.type) === -1) {
+                setStatus(
+                    'Type not allowed (' + (file.type || 'unknown')
+                    + '). Accept: ' + accept.join(', '),
+                    true
+                );
+                fileInput.value = '';
+                return;
+            }
+
             setStatus('Uploading ' + file.name + '…', false);
             var meta = document.querySelector('meta[name="csrf-token"]');
             var token = meta ? meta.getAttribute('content') : '';
             var fd = new FormData();
             fd.append('file', file);
+            // Per-button context flag — `kind=social` makes the server
+            // narrow accepted MIME for the social-card field. Absent for
+            // the avatar uploader where the full set still applies.
+            if (btn.dataset.uploadKind) {
+                fd.append('kind', btn.dataset.uploadKind);
+            }
             fetch('/admin/upload', {
                 method: 'POST',
                 headers: { 'X-CSRF-Token': token },

@@ -60,8 +60,22 @@ final class UploadController
         // Use finfo to read the magic bytes; don't trust the client-sent type.
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = (string) $finfo->file((string) $file['tmp_name']);
-        if (!isset(self::ACCEPTED_MIME[$mime])) {
-            $this->fail(415, "Unsupported image type: {$mime}. Allowed: jpeg, png, webp.");
+
+        // `kind=social` narrows the accept-set to jpeg/png only — the
+        // social card field deliberately excludes webp source uploads.
+        // Any other value (including absent) keeps the full set so body
+        // editor + dither + avatar uploads still take webp.
+        $kind = (string) ($_POST['kind'] ?? '');
+        $accepted = self::ACCEPTED_MIME;
+        if ($kind === 'social') {
+            unset($accepted['image/webp']);
+        }
+        if (!isset($accepted[$mime])) {
+            $allowed = implode(', ', array_map(
+                static fn(string $m): string => explode('/', $m)[1],
+                array_keys($accepted),
+            ));
+            $this->fail(415, "Unsupported image type: {$mime}. Allowed: {$allowed}.");
         }
 
         $relDir = '/uploads/' . date('Y/m');

@@ -62,7 +62,10 @@ use App\Http;
                        class="admin-input admin-field-grow"
                        placeholder="/uploads/2026/06/avatar.webp">
                 <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" hidden>
-                <button type="button" id="avatar-upload-btn" class="admin-btn" style="flex: 0 0 auto">[ UPLOAD ]</button>
+                <button type="button" id="avatar-upload-btn" class="admin-btn"
+                        style="flex: 0 0 auto"
+                        data-target="avatar"
+                        data-file-input="avatar-file">[ UPLOAD ]</button>
             </div>
             <div id="avatar-upload-status" class="admin-label-hint" style="margin-top: 6px"></div>
         </div>
@@ -117,4 +120,3 @@ code blocks, freq-tags, story-cards, etc."><?= Http::e($formValues['body']) ?></
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script defer src="<?= Http::e(\App\Http::asset('assets/admin-editor.js')) ?>"></script>
-<script defer src="<?= Http::e(\App\Http::asset('assets/admin-about-editor.js')) ?>"></script>

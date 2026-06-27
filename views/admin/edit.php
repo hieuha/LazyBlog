@@ -102,7 +102,7 @@ $isEdit = $mode === 'edit';
              back into the input. Drop-in to keep the field useful for
              externally-hosted images too. -->
         <div class="admin-field">
-            <label class="admin-label" for="image">Social image <span class="admin-label-hint">(optional · og:image · falls back to first body image)</span></label>
+            <label class="admin-label" for="image">Social image <span class="admin-label-hint">(optional · jpg/png · og:image · falls back to first body image)</span></label>
             <div class="admin-input-with-upload">
                 <input type="text" name="image" id="image"
                        value="<?= Http::e($formValues['image']) ?>"
@@ -114,12 +114,13 @@ $isEdit = $mode === 'edit';
                      from the form serialization. -->
                 <input type="hidden" name="image_mirror" id="image-mirror"
                        value="<?= Http::e($formValues['image']) ?>">
-                <input type="file" id="image-upload" accept="image/*" hidden>
+                <input type="file" id="image-upload" accept="image/jpeg,image/png" hidden>
                 <button type="button" id="image-upload-btn"
                         class="admin-btn admin-btn-sm"
                         data-target="image"
                         data-mirror="image-mirror"
-                        data-file-input="image-upload">UPLOAD</button>
+                        data-file-input="image-upload"
+                        data-upload-kind="social">UPLOAD</button>
             </div>
             <div id="image-upload-status" class="admin-label-hint" hidden></div>
         </div>

@@ -696,6 +696,22 @@ body.is-post main {
     color: var(--primary);
     font-size: 14px;
     letter-spacing: 1px;
+    /* Single-line contract — the label + title are a one-row badge. If
+       the series name doesn't fit, truncate with ellipsis rather than
+       wrap onto a second line that visually doubles the banner height.
+       min-width: 0 is required because the flex parent's default
+       min-width: auto would refuse to shrink the title below its
+       content width and the truncation would never engage. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+}
+@media (max-width: 600px) {
+    .series-banner { gap: 8px; padding: 10px 12px; }
+    .series-banner-label { letter-spacing: 1.5px; }
+    .series-banner-title { font-size: 13px; letter-spacing: 0.5px; }
 }
 
 .series-nav {

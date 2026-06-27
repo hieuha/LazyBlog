@@ -411,13 +411,18 @@ a.heatmap-cell:hover {
     overflow: hidden;
     background: var(--bg);
     transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    /* Flex column so the inner link can stretch and pin the date to the
+       bottom regardless of how short the description is. */
+    display: flex;
 }
 .series-card:hover {
     border-color: var(--primary-dim);
     box-shadow: 0 0 18px var(--primary-glow);
 }
 .series-card-link {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     text-decoration: none;
     color: inherit;
 }
@@ -527,6 +532,12 @@ a.heatmap-cell:hover {
 }
 .series-card-body {
     padding: 10px 12px 14px;
+    /* Fill remaining height so margin-top:auto on the meta row pins the
+       date to the bottom of every card, keeping the grid baseline aligned
+       even when descriptions wrap to different line counts. */
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 .series-card-title {
     font-family: 'VT323', monospace;
@@ -542,7 +553,7 @@ a.heatmap-cell:hover {
 .series-card-desc {
     font-family: 'Share Tech Mono', monospace;
     font-size: 12px;
-    color: var(--text-dim);
+    color: var(--text);
     line-height: 1.45;
     margin: 4px 0 6px;
     /* Two-line clamp keeps card height predictable across descriptions. */
@@ -556,6 +567,10 @@ a.heatmap-cell:hover {
     font-size: 11px;
     color: var(--text-dim);
     letter-spacing: 1px;
+    /* Pin to bottom of the flex column so every card's date sits on
+       the same baseline regardless of description length. */
+    margin-top: auto;
+    padding-top: 6px;
 }
 /* Detail header — cover inline-left, title/desc/meta stack to the right.
    Two-column grid collapses to single-column on narrow viewports so the

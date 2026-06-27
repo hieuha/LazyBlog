@@ -127,6 +127,31 @@
     --scan: transparent;
 }
 
+[data-theme="p7"] {
+    /* P7 phosphor — blue-violet emission used on Cold War radar A-scopes
+       and navigation displays. Pairs the operational/tradecraft mood from
+       reference covert-ops infographics with the same phosphor-color
+       naming axis as amber (P3) and green (P1). Bg leans cool navy so the
+       primary violet reads as glow, not as a flat fill. */
+    --bg: #08081a;
+    --panel: #15102a;
+    --primary: #a060ff;
+    --primary-dim: #5a3a7a;
+    --primary-glow: rgba(160, 96, 255, 0.15);
+    --primary-glow-strong: rgba(160, 96, 255, 0.30);
+    /* Accent is a paler lavender — reads as a lifted/desaturated sibling
+       of the violet primary instead of a contrasting hue, so hierarchy
+       stays inside one color family. */
+    --accent: #d4a8ff;
+    --accent-dim: #7a5e9a;
+    /* Cool off-white with a violet undertone — pure white halates against
+       saturated violet and reads as glare. */
+    --text: #e6daf5;
+    --text-dim: #8a7fa5;
+    --border: #2a1f4a;
+    --scan: rgba(160, 96, 255, 0.03);
+}
+
 /* ---------- Reset ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -227,6 +252,20 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
 [data-theme="brutalist"] h2,
 [data-theme="brutalist"] h3,
 [data-theme="brutalist"] .site-brand {
+    text-shadow:
+        0 0 6px var(--primary),
+        0 0 22px var(--primary-glow-strong),
+        0 0 56px var(--primary-glow);
+}
+
+/* P7 theme: cool violet primary. The red half of the chromatic split
+   reads as warm fringe against a cool palette — clashes the same way
+   crypt's red-on-red did. Drop split, keep phosphor halo so radar-scope
+   identity holds. */
+[data-theme="p7"] h1,
+[data-theme="p7"] h2,
+[data-theme="p7"] h3,
+[data-theme="p7"] .site-brand {
     text-shadow:
         0 0 6px var(--primary),
         0 0 22px var(--primary-glow-strong),

@@ -393,6 +393,7 @@ $favicon = 'data:image/svg+xml,'
                 <button type="button" role="menuitem" data-theme-set="green">GREEN</button>
                 <button type="button" role="menuitem" data-theme-set="crypt">CRYPT</button>
                 <button type="button" role="menuitem" data-theme-set="brutalist">BRUTALIST</button>
+                <button type="button" role="menuitem" data-theme-set="p7">P7</button>
                 <button type="button" role="menuitem" data-theme-set="c64">C64</button>
                 <button type="button" role="menuitem" data-theme-set="lcd">LCD</button>
             </div>

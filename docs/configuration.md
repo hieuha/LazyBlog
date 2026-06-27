@@ -103,9 +103,9 @@ These are styling defaults baked into the CSS files under `public/assets/`
 (`base.css`, `effects.css`, `components.css`, `post.css`, `pages.css`), not
 env vars — editing them means tweaking the CSS:
 
-- **Theme**: six presets — amber (default), green, crypt, brutalist, c64, lcd. Picker dropdown in the header, persists in `localStorage`. Server-side initial value comes from `SITE_DEFAULT_THEME` so first paint matches.
+- **Theme**: seven presets — amber (default), green, crypt, brutalist, p7, c64, lcd. Picker dropdown in the header, persists in `localStorage`. Server-side initial value comes from `SITE_DEFAULT_THEME` so first paint matches.
 - **CRT scanlines + vignette + bezel**: layered fixed overlays at z-index 998–1000. c64 + lcd flatten via a `*` `!important` rule (no glow, no shadow, no filter) so the boot-screen / dot-matrix aesthetic holds.
-- **Heading glow + chromatic-aberration RGB split**: respects `prefers-reduced-motion`. Split active only on amber + green; crypt + brutalist drop the RGB shift but keep the phosphor halo; c64 + lcd strip both.
+- **Heading glow + chromatic-aberration RGB split**: respects `prefers-reduced-motion`. Split active only on amber + green; crypt + brutalist + p7 drop the RGB shift but keep the phosphor halo; c64 + lcd strip both.
 - **Mobile header drawer** (<600px): nav links collapse behind a `[ ≡ MENU ]` button (button + `aria-expanded` + CSS overlay panel, same shape as the theme picker). Theme picker stays on row 1 for 1-tap swap. Subtitle hidden, button padding shrunk, theme button drops its current-value readout.
 - **Auto TOC** on posts with ≥3 headings — inline on mobile, floats to left rail on desktop
 - **Reading progress bar** on `/posts/*` — fixed top, fills with theme accent as you scroll

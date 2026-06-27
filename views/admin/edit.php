@@ -119,12 +119,25 @@ $flashIsError = is_string($flash ?? null) && (
                     </div>
                 </div>
 
-                <!-- Compact meta row: Author · Icon · Date · Time · Tags · Social image.
-                     Six fields share one flex row; on viewports < 600px the
+                <!-- Tags — pulled onto its own row because the chip UI grows
+                     taller than the thin date/time/icon inputs in the row
+                     below, so packing it inline left the row looking uneven. -->
+                <div class="admin-form-row">
+                    <div class="admin-field admin-field-grow">
+                        <label class="admin-label" for="tags">Tags</label>
+                        <input type="text" name="tags" id="tags"
+                               value="<?= Http::e($formValues['tags']) ?>"
+                               class="admin-input admin-mono"
+                               placeholder="ham-radio, sstv, history">
+                    </div>
+                </div>
+
+                <!-- Compact meta row: Author · Icon · Date · Time · Social image.
+                     Five fields share one flex row; on viewports < 600px the
                      .admin-form-row rule makes each field span 100% so they
                      stack cleanly on mobile. -->
                 <div class="admin-form-row">
-                    <div class="admin-field" style="flex: 0 1 140px">
+                    <div class="admin-field" style="flex: 0 1 160px">
                         <label class="admin-label" for="author">Author</label>
                         <input type="text" name="author" id="author"
                                value="<?= Http::e($formValues['author']) ?>"
@@ -138,24 +151,17 @@ $flashIsError = is_string($flash ?? null) && (
                                class="admin-input"
                                placeholder="📺">
                     </div>
-                    <div class="admin-field" style="flex: 0 0 140px">
+                    <div class="admin-field" style="flex: 0 0 150px">
                         <label class="admin-label" for="date">Date</label>
                         <input type="date" name="date" id="date" required
                                value="<?= Http::e($formValues['date']) ?>"
                                class="admin-input admin-mono">
                     </div>
-                    <div class="admin-field" style="flex: 0 0 110px">
+                    <div class="admin-field" style="flex: 0 0 120px">
                         <label class="admin-label" for="time">Time <span class="admin-label-hint">(opt)</span></label>
                         <input type="time" name="time" id="time" step="1"
                                value="<?= Http::e($formValues['time']) ?>"
                                class="admin-input admin-mono">
-                    </div>
-                    <div class="admin-field" style="flex: 1 1 160px">
-                        <label class="admin-label" for="tags">Tags</label>
-                        <input type="text" name="tags" id="tags"
-                               value="<?= Http::e($formValues['tags']) ?>"
-                               class="admin-input admin-mono"
-                               placeholder="ham-radio, sstv, history">
                     </div>
                     <!-- Social-card image (per-post og:image override). The input
                          accepts a path or absolute URL; the upload button POSTs the

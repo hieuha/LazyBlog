@@ -132,13 +132,17 @@
        and navigation displays. Pairs the operational/tradecraft mood from
        reference covert-ops infographics with the same phosphor-color
        naming axis as amber (P3) and green (P1). Bg leans cool navy so the
-       primary violet reads as glow, not as a flat fill. */
+       primary violet reads as a sharp signal, not a flat fill.
+       Text-shadow is fully stripped on this theme (see the rule below
+       the per-theme heading overrides), so --primary-glow tokens here
+       drive dropdown-panel box-shadow only — kept low-alpha for a
+       barely-there violet aura that fits the flat clinical look. */
     --bg: #08081a;
     --panel: #15102a;
     --primary: #a060ff;
     --primary-dim: #5a3a7a;
-    --primary-glow: rgba(160, 96, 255, 0.15);
-    --primary-glow-strong: rgba(160, 96, 255, 0.30);
+    --primary-glow: rgba(160, 96, 255, 0.10);
+    --primary-glow-strong: rgba(160, 96, 255, 0.20);
     /* Accent is a paler lavender — reads as a lifted/desaturated sibling
        of the violet primary instead of a contrasting hue, so hierarchy
        stays inside one color family. */
@@ -150,6 +154,30 @@
     --text-dim: #8a7fa5;
     --border: #2a1f4a;
     --scan: rgba(160, 96, 255, 0.03);
+}
+
+[data-theme="p11"] {
+    /* P11 phosphor — pure blue emission (peak ~460nm), historically used
+       on oscilloscope CRTs for photographic recording and early B&W TV.
+       Sits next to p7 on the phosphor naming axis but cooler and more
+       saturated — reference is the "medical-ops / clinical telemetry"
+       infographic look (electric cyan-blue on near-black). */
+    --bg: #040810;
+    --panel: #0e1722;
+    --primary: #1ac8ff;
+    --primary-dim: #0a5478;
+    --primary-glow: rgba(26, 200, 255, 0.15);
+    --primary-glow-strong: rgba(26, 200, 255, 0.30);
+    /* Paler cyan sibling for accent — keeps hierarchy in one cool-blue
+       family so callouts/series tags don't introduce a warm contrast. */
+    --accent: #7ddcff;
+    --accent-dim: #5a829a;
+    /* Cool off-white with a blue undertone — pure white halates against
+       saturated cyan. */
+    --text: #d4e6f5;
+    --text-dim: #7f95ad;
+    --border: #1a3050;
+    --scan: rgba(26, 200, 255, 0.03);
 }
 
 /* ---------- Reset ---------- */
@@ -258,18 +286,21 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
         0 0 56px var(--primary-glow);
 }
 
-/* P7 theme: cool violet primary. The red half of the chromatic split
-   reads as warm fringe against a cool palette — clashes the same way
-   crypt's red-on-red did. Drop split, keep phosphor halo so radar-scope
-   identity holds. */
-[data-theme="p7"] h1,
-[data-theme="p7"] h2,
-[data-theme="p7"] h3,
-[data-theme="p7"] .site-brand {
-    text-shadow:
-        0 0 6px var(--primary),
-        0 0 22px var(--primary-glow-strong),
-        0 0 56px var(--primary-glow);
+/* P7 + P11 themes: flat tradecraft / clinical-telemetry look —
+   saturated colored text on near-black bg, no phosphor bloom. Reference
+   infographics (covert ops + medical ops) use crisp colored type without
+   halation; phosphor glow at the saturation level of violet (p7) and
+   electric blue (p11) burns the whole page instead of reading as a
+   subtle CRT cue. Strip text-shadow site-wide. Box-shadow and filter
+   stay so card edges + vignette + flicker still play — that's what
+   separates p7/p11 from the full-flatten c64/lcd boot-screen aesthetic. */
+[data-theme="p7"] *,
+[data-theme="p7"] *::before,
+[data-theme="p7"] *::after,
+[data-theme="p11"] *,
+[data-theme="p11"] *::before,
+[data-theme="p11"] *::after {
+    text-shadow: none !important;
 }
 
 /* Flat-pixel themes (C64 + LCD): catch-all flatten. Boot-screen + LCD

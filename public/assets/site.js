@@ -17,7 +17,7 @@
     var menu = picker.querySelector('.theme-picker-menu');
     var label = picker.querySelector('[data-theme-label]');
     var items = picker.querySelectorAll('[data-theme-set]');
-    var VALID = ['amber', 'green', 'crypt', 'brutalist', 'p7', 'c64', 'lcd'];
+    var VALID = ['amber', 'green', 'crypt', 'brutalist', 'p7', 'p11', 'c64', 'lcd'];
     /* Same breakpoint as the mobile header rules in base.css — keep these
        two in sync so the label collapses at the exact width the row gets
        tight. matchMedia stays cheap and updates when the viewport changes

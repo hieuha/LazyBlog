@@ -450,8 +450,15 @@ header {
     .header-nav-drawer {
         /* Anchor for the dropdown panel — must establish a positioning
            context so the absolute-positioned list overlays content below
-           the toggle without pushing surrounding flex items. */
+           the toggle without pushing surrounding flex items.
+           inline-flex + align-items:stretch mirrors .theme-picker so the
+           wrapper sizes to the toggle button exactly. A default block
+           wrapper introduces line-box leading from body's line-height
+           and renders ~4px taller than the button — causes a visible
+           baseline mismatch against the theme picker sibling. */
         position: relative;
+        display: inline-flex;
+        align-items: stretch;
     }
     .header-nav-toggle { display: inline-flex; }
     /* List hidden by default on mobile; shown when toggle is expanded. */

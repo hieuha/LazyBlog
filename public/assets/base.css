@@ -418,26 +418,18 @@ header {
     text-shadow: 0 0 6px var(--primary-glow-strong);
 }
 
-/* Nav drawer — zero-JS disclosure via native <details>/<summary>.
-   Desktop renders the wrapper + list as `display: contents` so the nav
-   <a>s become direct flex children of .header-actions, identical to the
-   pre-drawer layout. The summary is hidden. Mobile flips: <details> is a
-   normal flex item, summary shows as a [ ≡ MENU ] toggle button, and the
-   list reveals below when [open]. */
-.header-nav-drawer > summary {
-    /* Strip the native disclosure marker so the [ ≡ MENU ] glyph reads as
-       the entire control. list-style covers Firefox, ::-webkit-details-marker
-       covers older WebKit/Blink. */
-    list-style: none;
-    cursor: pointer;
-}
-.header-nav-drawer > summary::-webkit-details-marker { display: none; }
+/* Nav drawer — button + dropdown panel, mirrors .theme-picker shape.
+   Tried <details>/<summary> first but Chromium's UA stylesheet for
+   <details> hides non-summary children through a path that `display:
+   contents` doesn't reliably override on desktop. A plain button +
+   aria-expanded toggle is robust across browsers and reuses the same
+   click-outside / Escape JS that .theme-picker already ships. */
+.header-nav-toggle { display: none; }
 
 @media (min-width: 601px) {
     /* Make the drawer transparent to layout — nav buttons participate in
-       .header-actions flex layout exactly like before. */
+       .header-actions flex layout exactly like before the drawer existed. */
     .header-nav-drawer { display: contents; }
-    .header-nav-drawer > summary { display: none; }
     .header-nav-drawer > .header-nav-list { display: contents; }
 }
 
@@ -461,13 +453,15 @@ header {
            the toggle without pushing surrounding flex items. */
         position: relative;
     }
-    .header-nav-drawer > summary { display: inline-flex; }
+    .header-nav-toggle { display: inline-flex; }
+    /* List hidden by default on mobile; shown when toggle is expanded. */
+    .header-nav-drawer .header-nav-list { display: none; }
     /* Nav list opens as a dropdown panel anchored under the toggle —
        mirrors the theme-picker dropdown so the two header controls feel
        like siblings. Theme picker stays inline at row 1; pushing it down
        (the earlier wrap approach) made the menu+theme controls feel
        disconnected. Vertical column = easier 1-tap targets on phones. */
-    .header-nav-drawer[open] > .header-nav-list {
+    .header-nav-toggle[aria-expanded="true"] + .header-nav-list {
         position: absolute;
         top: calc(100% + 4px);
         left: 50%;
@@ -485,7 +479,7 @@ header {
     }
     /* Inside the dropdown, buttons fill the panel width — gives a calm
        vertical stack instead of jagged auto-widths. */
-    .header-nav-drawer[open] > .header-nav-list > .header-btn {
+    .header-nav-toggle[aria-expanded="true"] + .header-nav-list > .header-btn {
         justify-content: flex-start;
         text-align: left;
     }

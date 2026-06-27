@@ -333,23 +333,27 @@ $favicon = 'data:image/svg+xml,'
         <div class="subtitle">// PHOSPHOR TERMINAL // ASIA/SAIGON</div>
     <?php endif; ?>
     <div class="header-actions">
-        <?php /* Nav links live inside <details> so mobile gets a native, zero-JS
-             disclosure drawer. Desktop CSS sets the wrapper + list to
-             `display: contents` and hides the summary, so the buttons render
-             inline like before with zero layout impact. Theme picker stays
-             OUTSIDE the drawer — it owns its own dropdown and operators want
-             1-tap theme swap without expanding a menu. */ ?>
-        <details class="header-nav-drawer">
-            <summary class="header-btn header-nav-toggle" aria-label="Toggle navigation menu">[ ≡ MENU ]</summary>
-            <div class="header-nav-list">
-                <a class="header-btn" href="/" aria-label="Back to home"<?= $isHome ? ' aria-current="page"' : '' ?>>[ HOME ]</a>
+        <?php /* Mobile drawer toggle. The button is hidden on desktop via CSS;
+             nav list shows inline. On mobile, the button reveals the list as
+             an overlay panel (mirrors .theme-picker pattern — same JS shape,
+             same dropdown styling). Theme picker stays OUTSIDE the drawer —
+             it owns its own dropdown and operators want 1-tap theme swap
+             without expanding a menu. */ ?>
+        <div class="header-nav-drawer" id="header-nav-drawer">
+            <button class="header-btn header-nav-toggle" type="button"
+                    aria-haspopup="menu" aria-expanded="false"
+                    aria-controls="header-nav-list" aria-label="Toggle navigation menu">
+                [ ≡ MENU ]
+            </button>
+            <div class="header-nav-list" id="header-nav-list" role="menu">
+                <a class="header-btn" href="/" role="menuitem" aria-label="Back to home"<?= $isHome ? ' aria-current="page"' : '' ?>>[ HOME ]</a>
                 <?php if ($hasSeries): ?>
-                    <a class="header-btn" href="/series" aria-label="Series"<?= str_starts_with($path, '/series') ? ' aria-current="page"' : '' ?>>[ SERIES ]</a>
+                    <a class="header-btn" href="/series" role="menuitem" aria-label="Series"<?= str_starts_with($path, '/series') ? ' aria-current="page"' : '' ?>>[ SERIES ]</a>
                 <?php endif; ?>
-                <a class="header-btn" href="/search" aria-label="Search"<?= $path === '/search' ? ' aria-current="page"' : '' ?>>[ SEARCH ]</a>
-                <a class="header-btn" href="/archive" aria-label="Archive"<?= $path === '/archive' ? ' aria-current="page"' : '' ?>>[ ARCHIVE ]</a>
+                <a class="header-btn" href="/search" role="menuitem" aria-label="Search"<?= $path === '/search' ? ' aria-current="page"' : '' ?>>[ SEARCH ]</a>
+                <a class="header-btn" href="/archive" role="menuitem" aria-label="Archive"<?= $path === '/archive' ? ' aria-current="page"' : '' ?>>[ ARCHIVE ]</a>
                 <?php if ($hasAbout): ?>
-                    <a class="header-btn" href="/about" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
+                    <a class="header-btn" href="/about" role="menuitem" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
                 <?php endif; ?>
                 <?php
                 // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href, $placement, $auth)
@@ -367,6 +371,7 @@ $favicon = 'data:image/svg+xml,'
                         ?>
                         <a class="header-btn"
                            href="<?= Http::e($navItem['href']) ?>"
+                           role="menuitem"
                            aria-label="<?= Http::e($navItem['label']) ?>"
                            <?= $navCurrent ? 'aria-current="page"' : '' ?>>[ <?= Http::e(strtoupper($navItem['label'])) ?> ]</a>
                         <?php
@@ -374,10 +379,10 @@ $favicon = 'data:image/svg+xml,'
                 endif;
                 ?>
                 <?php if (App\Auth::check()): ?>
-                    <a class="header-btn" href="/admin" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
+                    <a class="header-btn" href="/admin" role="menuitem" aria-label="Admin"<?= str_starts_with($path, '/admin') ? ' aria-current="page"' : '' ?>>[ ADMIN ]</a>
                 <?php endif; ?>
             </div>
-        </details>
+        </div>
         <div class="theme-picker" id="theme-picker">
             <button class="header-btn theme-picker-toggle" type="button"
                     aria-haspopup="menu" aria-expanded="false" aria-label="Switch theme">

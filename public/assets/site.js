@@ -78,6 +78,35 @@
     });
 })();
 
+/* ---------- Mobile nav drawer ----------
+   Same shape as the theme picker: toggle button + dropdown panel,
+   click-outside + Escape to close, aria-expanded reflects state. The
+   button is `display: none` on desktop via base.css, so this code is
+   effectively idle there; it doesn't fight the inline nav layout. */
+(function () {
+    var drawer = document.getElementById('header-nav-drawer');
+    if (!drawer) return;
+    var toggle = drawer.querySelector('.header-nav-toggle');
+    if (!toggle) return;
+
+    function close() { toggle.setAttribute('aria-expanded', 'false'); }
+    function open()  { toggle.setAttribute('aria-expanded', 'true'); }
+
+    toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (toggle.getAttribute('aria-expanded') === 'true') close(); else open();
+    });
+    document.addEventListener('click', function (e) {
+        if (!drawer.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+            close();
+            toggle.focus();
+        }
+    });
+})();
+
 /* ---------- Back-to-top floating button ----------
    Fades in after scrolling past a threshold; smooth-scrolls to top on click.
    Uses a passive scroll listener + rAF batching so it never blocks scroll

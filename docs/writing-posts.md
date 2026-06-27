@@ -53,7 +53,7 @@ image: "/uploads/2026/06/antenna.webp"
 
 See `markdown-syntax.md` for the full reference. Quick reminders:
 
-- Standalone `![alt](url)` line → full-width figure with caption + theme tint
+- Standalone `![alt](url)` line → column-width figure with caption + theme tint
 - Standalone YouTube URL line → 16:9 embed
 - `::: highlight ... :::` → callout box
 - `::: story icon="X" title="Y" ... :::` → narrative card
@@ -67,12 +67,31 @@ Login at `/admin/login` with the password set via `scripts/hash-password.php`.
 `/admin` lists every post with server-side pagination (`POSTS_PER_PAGE` env).
 Click a row to edit; the form opens at `/admin/edit/{slug}` or `/admin/new`.
 
+**Write-focused layout**: Title + Draft sit at the top, Summary just
+below, then a collapsible **META** block (`[ + ] META`, closed by default)
+hides Slug · Series · Part · Tags · Author · Icon · Date · Time ·
+Social-image · Password until you actually need them. Body editor takes
+the rest of the page. The toggle uses a native `<details>` element, so
+keyboard, screen-reader, and mobile support come for free. On phones the
+toggle compresses to just `[ + ] META` and stretches to full-width.
+
 The editor (EasyMDE pinned to 2.18.0) includes:
 
-- Standard toolbar: bold, italic, heading, quote, list, code, link, image, table
+- Toolbar groups (separated by `|`):
+  - heading · bold · italic · strikethrough
+  - quote · unordered-list · ordered-list · task-list · highlight-mark
+  - code · link
+  - image · upload-image · upload-dither
+  - table
+  - highlight-callout · story
+  - preview · side-by-side · fullscreen
+  - guide
 - Custom buttons: `!` inserts `::: highlight`, `💬` inserts `::: story icon="..." title="..."`
 - `Cmd-P` toggle preview, `F9` side-by-side, `F11` fullscreen
 - Tag chip input — type a tag + Enter/comma to add, click `×` or Backspace to remove
+- Series input auto-slugifies as you type — Vietnamese diacritics get
+  stripped, spaces become `-`. Full normalization (strip trailing dashes,
+  cap at 80 chars) runs on blur so the value matches `/series/<slug>`.
 
 **Date and Time fields**: Date picker (always required, e.g. 2026-06-22) + optional Time picker
 (HH:MM:SS). When Time is filled, the post's frontmatter `date` becomes ISO datetime 

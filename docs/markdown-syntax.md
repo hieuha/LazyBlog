@@ -13,8 +13,9 @@ TableExtension, plus a handful of LazyBlog-specific pre/post processors.
 
 Everything in the CommonMark 0.31 spec works:
 
-- Headings (`#` … `######`) — H2 and H3 also get auto-injected IDs and
-  appear in the post's TOC
+- Headings (`#` … `######`) — H1, H2, and H3 get auto-injected IDs and
+  appear in the post's TOC (h1 entries marked with `§`, h2 with `›`,
+  h3 with `—` and a left-indent so the visual hierarchy is obvious)
 - Bold (`**x**`), italic (`*x*`)
 - Inline code (`` `x` ``) and fenced code blocks (``` ```lang … ``` ```)
 - Lists: unordered (`-`/`*`) and ordered (`1.`)
@@ -171,12 +172,13 @@ renders as a normal code span.
 
 ---
 
-## Standalone images → full-width figure
+## Standalone images → in-column figure
 
 A line containing **only** `![alt](url)` gets wrapped in
-`<figure class="post-figure">`. The figure breaks out of the article
-column to viewport width on desktop; the caption stays narrow + centered.
-A theme-color tint (`mix-blend-mode: multiply`) gives the photo a CRT-phosphor feel.
+`<figure class="post-figure">`. The figure stays inside the article
+reading column so images don't bleed past the post width; the caption
+sits underneath, narrower and centered. A theme-color tint
+(`mix-blend-mode: multiply`) gives the photo a CRT-phosphor feel.
 
 ```markdown
 ![Hai chiếc dish array nhìn từ rooftop, hoàng hôn cam](https://example.com/photo.jpg)

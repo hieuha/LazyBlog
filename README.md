@@ -121,7 +121,7 @@ Backup with `rsync`. Restore in seconds.
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
 │  TOC + scrollspy      ·  code-block copy buttons    │
 │  Browser admin UI     ·  EasyMDE + server-side prev │
-│  Image full-bleed     ·  duotone tint + hover-orig │
+│  Image column-width   ·  duotone tint + hover-orig │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │

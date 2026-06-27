@@ -94,9 +94,14 @@ state shakes the panel red and shows attempts-left; 10 failures in a
 sliding 15-min window throttle the IP and disable the field
 (`TRUST_CF_CONNECTING_IP=true` switches the IP source to the
 `CF-Connecting-IP` header when traffic actually flows through
-Cloudflare). Listings show a small `[ LOCKED ]` / `[ UNLOCKED ]`
-phosphor pill so the operator can see at a glance which posts are
-gated. Raw `.md`, `/llms.txt`, and `/feed.xml` exclude protected posts
+Cloudflare). Listings prefix the title with a bare Font Awesome
+padlock (`fa-lock` locked, `fa-unlock-alt` once the visitor has unlocked
+this session) that tints with the active theme via `currentColor`, so
+the operator can see at a glance which posts are gated. Set / Update
+/ Remove all flash inline feedback above the form (`// Password set.`,
+`// Password updated.`, `// Password removed.`); the password field
+validates `>= 4` chars in the browser before any round trip. Raw `.md`,
+`/llms.txt`, and `/feed.xml` exclude protected posts
 entirely (anonymous 404 on the `.md` endpoint;
 unlocked-session readers and admins get the markdown back with the
 `password_hash:` line stripped). Search still surfaces title + tag

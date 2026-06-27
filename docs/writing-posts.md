@@ -79,8 +79,17 @@ The editor (EasyMDE pinned to 2.18.0) includes:
 (e.g. `2026-06-22T14:30:00+TZ`). When empty, only the date is stored (e.g. `2026-06-22`).
 On `/admin/new`, the Time field pre-fills with the current wall-clock time.
 
-**Social image**: Explicit `image:` frontmatter field or UPLOAD button for quick image selection.
-Auto-populated from the first body image when editing existing posts (fallback if no `image:` set).
+**Slug field**: auto-derives from the title as you type — strips Vietnamese
+diacritics, lowercases, kebab-cases. Mirrors `SlugUtil::fromTitle` server-side.
+The auto-sync turns off the moment you edit the slug field by hand (so a
+hand-picked slug on an existing post won't be clobbered by title edits).
+
+**Social image**: Explicit `image:` frontmatter field or UPLOAD button for
+quick image selection. **Upload restricted to JPG / PNG** at three layers:
+the file picker's `accept`, a JS guard, and a `kind=social` flag the server
+uses to narrow the accept-set just for this field. Body editor uploads still
+take WebP. Auto-populated from the first body image when editing existing
+posts (fallback if no `image:` set).
 
 **Server-side preview**: the preview pane POSTs to `/admin/preview` and renders
 through the same MarkdownRenderer used for public pages — so `::: highlight`,
@@ -93,8 +102,10 @@ downscales to ≤1600px wide, converts to WebP @ q=82, and saves under
 `content/uploads/YYYY/MM/{rand}.webp`. The original (potentially carrying GPS
 coords or device info) is never persisted — only the cleaned WebP. Accepts
 PNG, JPEG, WebP up to 10 MB. EasyMDE auto-inserts `![alt](url)` at the cursor
-on success. Requires `php8.2-gd` extension (already installed by
-`install-vps.sh` and the Docker images).
+on success. **Multi-file uploads** (multi-select picker, drag-drop of several
+images, paste of multiple clipboard images) drop each `![](url)` on its own
+line so the markdown source stays readable. Requires `php8.2-gd` extension
+(already installed by `install-vps.sh` and the Docker images).
 
 **Sticky toolbar**: the formatting toolbar stays pinned to the top of the
 viewport while you scroll a long post, so the buttons stay reachable.
@@ -208,6 +219,15 @@ admin flow.
 - `[ Remove Password ]` (only visible when the post is locked) →
   confirm dialog, then the hash is dropped from the frontmatter and
   the post is public again.
+- **Frontend length guard**: the password field validates `>= 4` chars
+  in the browser before posting — empty or short input shows an inline
+  `.admin-error` chip under the field and blocks the round trip. Set
+  Password additionally requires a non-empty value.
+- **Flash feedback**: after Set / Update / Remove the editor reloads
+  with `// Password set.` / `// Password updated.` / `// Password
+  removed.` rendered as a banner above the form. Failed attempts
+  (short, hash error, "no password to remove") render as an
+  `.admin-error` banner instead.
 
 **On disk**, the frontmatter gains a single line:
 
@@ -237,10 +257,15 @@ without using the button, delete the `password_hash:` line manually.
 
 **Listings & feeds** for locked posts:
 
-- Home, `/tags/{tag}`, `/archive`, admin list: title and 🔒 badge.
-  `summary:` is shown when present; no body excerpt.
+- Home, `/tags/{tag}`, `/archive`, `/series/{slug}`, `/search`, admin
+  list, and the post-page meta line: a bare Font Awesome lock glyph
+  (`fa-lock` when locked, `fa-unlock-alt` when the visitor has unlocked
+  this session) sits at the head of the title element. Tints with the
+  active theme via `currentColor`. `summary:` is shown when present;
+  no body excerpt.
 - `/search?q=...`: title and tag matches still surface; body terms
-  return zero matches and the snippet renders as `🔒 protected post`.
+  return zero matches and the snippet is replaced by the lock glyph
+  inline with the title.
 - `/llms.txt` and `/feed.xml`: the post is dropped entirely — title,
   URL, and body all stay out of the corpus.
 

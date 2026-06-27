@@ -278,21 +278,44 @@
             },
         });
 
-        // EasyMDE's default `afterImageUploaded` inserts `![](url)` with
-        // no trailing newline, so multi-select / drag-drop of several
-        // images all land on a single line glued together. Override at
-        // the instance level: same image-extension check as upstream
-        // (fall back to a link for non-images), but append `\n` so each
-        // upload lands on its own line.
+        // EasyMDE's default post-upload insertion ends with `![](url)` and
+        // no trailing newline, so multi-select / drag-drop / paste of
+        // several images all land on a single line glued together. The
+        // real insertion happens inside a free `afterImageUploaded` fn
+        // captured in EasyMDE's module closure — overriding it on the
+        // instance is a no-op. The earliest hook we *can* replace per
+        // file is `uploadImageUsingCustomFunction` (called by every
+        // multi-file dispatcher path on EasyMDE 2.18.0: drag/drop,
+        // paste, cloud picker). Re-implement it: invoke our upload fn,
+        // then on success write `![](url)\n` straight to CodeMirror so
+        // the cursor sits on a fresh line for the next iteration.
         var IMG_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'apng', 'avif', 'webp'];
-        easyMDE.afterImageUploaded = function (url) {
-            var cm = easyMDE.codemirror;
-            var name = url.substr(url.lastIndexOf('/') + 1);
-            var ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
-            var snippet = IMG_EXTS.indexOf(ext) !== -1
-                ? '![](' + url + ')\n'
-                : '[' + name + '](' + url + ')\n';
-            cm.replaceSelection(snippet);
+        easyMDE.uploadImageUsingCustomFunction = function (uploadFn, file) {
+            var self = easyMDE;
+            uploadFn.apply(self, [file, function onSuccess(url) {
+                var cm = self.codemirror;
+                var name = url.substr(url.lastIndexOf('/') + 1);
+                var ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
+                var snippet = IMG_EXTS.indexOf(ext) !== -1
+                    ? '![](' + url + ')\n'
+                    : '[' + name + '](' + url + ')\n';
+                cm.replaceSelection(snippet);
+                // Mirror EasyMDE's own status-bar handshake so the
+                // "Uploaded {name}" pill in the editor footer still
+                // animates the same way it does on the default path.
+                try {
+                    self.updateStatusBar(
+                        'upload-image',
+                        self.options.imageTexts.sbOnUploaded.replace('#image_name#', name)
+                    );
+                } catch (_) { /* status bar disabled — non-fatal */ }
+            }, function onError(msg) {
+                if (typeof self.options.errorCallback === 'function') {
+                    self.options.errorCallback(msg);
+                } else {
+                    window.alert(msg);
+                }
+            }]);
         };
 
         // EasyMDE ships both `image` (insert by URL) and `upload-image`

@@ -425,6 +425,10 @@
             uploadMany(textarea, files);
         });
 
+        // `icon: 'fa fa-X'` renders a Font Awesome glyph instead of the
+        // plain text label — keeps insert / preview / link / upload
+        // buttons visually consistent with the EasyMDE toolbar on
+        // desktop (link, cloud-upload, eye, comment glyphs).
         var buttons = [
             { label: 'H',  title: 'Heading (cycle # → ## → ### → off)', action: cycleHeading },
             { label: 'B',  title: 'Bold',                              action: wrapInline('**') },
@@ -432,20 +436,28 @@
             { label: '==', title: 'Highlight (==text==)',              action: wrapInline('==') },
             { label: '"',  title: 'Quote',                             action: prefixLines('> ') },
             { label: '•',  title: 'Bullet list',                       action: prefixLines('- ') },
-            { label: '`',  title: 'Code (inline / fence)',             action: cycleCode },
-            { label: '🔗', title: 'Link',                              action: insertLink },
-            { label: '📤', title: 'Upload image (multi)',              action: function () { fileInput.click(); } },
+            { label: '`',   title: 'Inline code',                       action: insertInlineCode },
+            { label: '```', title: 'Code fence',                        action: insertCodeFence },
+            { icon: 'fa fa-link',          title: 'Link',                action: insertLink },
+            { icon: 'fa fa-cloud-upload',  title: 'Upload image (multi)', action: function () { fileInput.click(); } },
             { label: '!',  title: 'Highlight callout',                 action: insertBlock('::: highlight\nKey fact or callout.\n:::') },
-            { label: '💬', title: 'Story card',                        action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
-            { label: '👁', title: 'Preview',                           action: function () { openMobilePreview(textarea); } },
+            { icon: 'fa fa-comment',       title: 'Story card',          action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
+            { icon: 'fa fa-eye',           title: 'Preview',             action: function () { openMobilePreview(textarea); } },
         ];
 
         buttons.forEach(function (b) {
             var btn = document.createElement('button');
             btn.type = 'button';
-            btn.textContent = b.label;
             btn.title = b.title;
             btn.className = 'mobile-toolbar-btn';
+            if (b.icon) {
+                var i = document.createElement('i');
+                i.className = b.icon;
+                i.setAttribute('aria-hidden', 'true');
+                btn.appendChild(i);
+            } else {
+                btn.textContent = b.label;
+            }
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 b.action(textarea);
@@ -489,13 +501,19 @@
         else next = line.substring(match[0].length);
         ta.setRangeText(next, lineStart, lineEnd, 'end');
     }
-    function cycleCode(ta) {
+    function insertInlineCode(ta) {
         var s = getSel(ta);
-        if (s.text && s.text.indexOf('\n') !== -1) {
-            ta.setRangeText('```\n' + s.text + '\n```', s.start, s.end, 'end');
-        } else {
-            ta.setRangeText('`' + (s.text || 'code') + '`', s.start, s.end, 'end');
-        }
+        ta.setRangeText('`' + (s.text || 'code') + '`', s.start, s.end, 'end');
+    }
+    // Always inserts a triple-backtick fence with a leading newline if
+    // the cursor isn't already at column 0 — selected text becomes the
+    // fence body, otherwise an empty fence so the cursor can drop in.
+    function insertCodeFence(ta) {
+        var s = getSel(ta);
+        var before = ta.value.substring(0, s.start);
+        var lead = before.length && before.charAt(before.length - 1) !== '\n' ? '\n' : '';
+        var body = s.text || '';
+        ta.setRangeText(lead + '```\n' + body + '\n```\n', s.start, s.end, 'end');
     }
     function insertLink(ta) {
         var url = window.prompt('Link URL:');
@@ -559,7 +577,11 @@
         header.appendChild(closeBtn);
         var iframe = document.createElement('iframe');
         iframe.className = 'mobile-preview-iframe';
-        iframe.setAttribute('sandbox', 'allow-same-origin');
+        // `allow-scripts` lets YouTube embeds, plugin scripts, and any
+        // inline <script> in the rendered body run — mirroring the
+        // public post page behaviour. `allow-same-origin` keeps the
+        // iframe on the parent's origin so its stylesheet links resolve.
+        iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
         modal.appendChild(header);
         modal.appendChild(iframe);
         document.body.appendChild(modal);

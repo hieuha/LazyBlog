@@ -225,7 +225,12 @@
 }
 
 .post-body { font-size: 1em; line-height: 1.85; }
-.post-body h2, .post-body h3 { margin-top: 28px; margin-bottom: 14px; }
+/* In-body `# Heading` becomes <h1>, which would otherwise inherit the
+   global h1 scale used by the post-page title and compete with it.
+   Pin it above h2 but well below the page title so the hierarchy
+   reads page-title > body-h1 > h2 > h3. */
+.post-body h1 { font-size: clamp(30px, 6vw, 42px); }
+.post-body h1, .post-body h2, .post-body h3 { margin-top: 28px; margin-bottom: 14px; }
 .post-body p { margin: 14px 0; }
 .post-body ul, .post-body ol { margin: 14px 0 14px 24px; }
 .post-body li { margin: 8px 0; }

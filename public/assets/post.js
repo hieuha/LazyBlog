@@ -49,12 +49,13 @@
     update();
 })();
 
-/* ---------- Scrollspy: highlight the TOC link for the current h2 ----------
+/* ---------- Scrollspy: highlight the TOC link for the current heading ----------
    Uses IntersectionObserver — no scroll listener, no rAF needed. Heading
-   is "active" while it sits inside the top 10–35% of the viewport band. */
+   is "active" while it sits inside the top 10–35% of the viewport band.
+   Watches h1/h2/h3 so `#`-level headings in markdown still spy. */
 (function () {
     if (!('IntersectionObserver' in window)) return;
-    var headings = document.querySelectorAll('.post-body h2[id]');
+    var headings = document.querySelectorAll('.post-body h1[id], .post-body h2[id], .post-body h3[id]');
     if (!headings.length) return;
 
     var tocLinks = document.querySelectorAll('.toc-list a');

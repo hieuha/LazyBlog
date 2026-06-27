@@ -641,4 +641,4 @@ footer > .footer-copyright:first-child {
 
 /* Smooth scroll for anchor jumps */
 html { scroll-behavior: smooth; }
-.post-body h2, .post-body h3 { scroll-margin-top: 24px; }
+.post-body h1, .post-body h2, .post-body h3 { scroll-margin-top: 24px; }

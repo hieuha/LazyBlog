@@ -56,7 +56,7 @@ $renderTocList = function () use ($toc): void {
 
     <?php if ($showToc): ?>
         <nav class="toc toc-inline" aria-label="Table of contents">
-            <div class="toc-label">§ TOC — NAVIGATION</div>
+            <div class="toc-label">§ NAVIGATION</div>
             <ul class="toc-list"><?php $renderTocList(); ?></ul>
         </nav>
     <?php endif; ?>
@@ -116,7 +116,7 @@ $renderTocList = function () use ($toc): void {
 <?php if ($showToc): ?>
     <aside class="post-toc-wrap" aria-hidden="true">
         <nav class="toc" aria-label="Floating table of contents">
-            <div class="toc-label">§ TOC — NAVIGATION</div>
+            <div class="toc-label">§ NAVIGATION</div>
             <ul class="toc-list"><?php $renderTocList(); ?></ul>
         </nav>
     </aside>

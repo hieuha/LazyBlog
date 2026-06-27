@@ -311,6 +311,10 @@
     content: '› ';
     color: var(--primary-dim);
 }
+/* In-body `# Heading` becomes <h1>; mark it with the same `§` glyph the
+   site uses for section/transmission tags so it reads as the strongest
+   entry in the TOC, sitting flush at the left edge. */
+.toc-list li.level-1::before { content: '§ '; color: var(--accent); }
 .toc-list li.level-3 { padding-left: 18px; }
 .toc-list li.level-3::before { content: '— '; }
 .toc-list a {

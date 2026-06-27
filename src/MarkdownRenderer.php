@@ -23,7 +23,7 @@ use League\CommonMark\Extension\TaskList\TaskListExtension;
  *   3. Re-inject stashed HTML in place of each placeholder.
  *   4. Post-process `<code>` tags matching unit patterns (e.g. `2.3 kHz`) into
  *      `<span class="freq-tag">` chips.
- *   5. Inject stable `id` attributes on h2/h3 so the TOC can deep-link.
+ *   5. Inject stable `id` attributes on h1/h2/h3 so the TOC can deep-link.
  *   6. Extract the TOC.
  */
 final class MarkdownRenderer
@@ -289,14 +289,14 @@ final class MarkdownRenderer
     }
 
     /**
-     * Add stable `id` slugs to h2 and h3 elements so the TOC can deep-link.
+     * Add stable `id` slugs to h1/h2/h3 elements so the TOC can deep-link.
      * Duplicates get -2, -3 suffixes via the seen-counter.
      */
     private function injectHeadingIds(string $html): string
     {
         $seen = [];
         return (string) preg_replace_callback(
-            '/<(h[2-3])>(.*?)<\/\1>/u',
+            '/<(h[1-3])>(.*?)<\/\1>/u',
             static function (array $m) use (&$seen): string {
                 $base = SlugUtil::fromTitle(strip_tags($m[2]));
                 if ($base === '') {
@@ -321,7 +321,7 @@ final class MarkdownRenderer
     private function extractToc(string $html): array
     {
         $toc = [];
-        if (preg_match_all('/<(h[2-3]) id="([^"]+)">(.*?)<\/\1>/u', $html, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/<(h[1-3]) id="([^"]+)">(.*?)<\/\1>/u', $html, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $m) {
                 $toc[] = [
                     'level' => (int) substr($m[1], 1),

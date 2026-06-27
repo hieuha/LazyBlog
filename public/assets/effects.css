@@ -91,21 +91,6 @@ html::before {
 body.editor-fullscreen-active::after { display: none; }
 html:has(body.editor-fullscreen-active)::before { display: none; }
 
-/* Flat-pixel themes (C64 + LCD): kill every CRT layer — vignette, bezel,
-   noise, scanlines already off via transparent --scan. C64 = crisp
-   lavender pixels on solid blue. LCD = sharp ink segments on sage
-   reflective panel. Neither has curved glass / dust / phosphor. */
-html[data-theme="c64"]::after,
-html[data-theme="c64"]::before,
-html[data-theme="lcd"]::after,
-html[data-theme="lcd"]::before {
-    display: none;
-}
-[data-theme="c64"] body::after,
-[data-theme="lcd"] body::after {
-    display: none;
-}
-
 /* Mobile: drop the corner vignette + bezel. They eat valuable screen space
    on small viewports and the curve illusion doesn't read on a phone. */
 @media (max-width: 600px) {

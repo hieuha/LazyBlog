@@ -48,8 +48,8 @@ primitive Imagick composite + threshold ops so the output is bit-identical
 across IM6/IM7/Alpine/brew, sidestepping the `thresholds.xml` lookup that
 Ubuntu's apt build silently no-ops on), and saved as a
 transparent-where-light WebP that CSS `mask-image` + `currentColor`
-tints with the active theme — phosphor amber, green, C64 lavender,
-LCD sage, whichever. No cover yet? `/series` cards still fall back
+tints with the active theme — phosphor amber, green, crypt red,
+violet p7, electric p11, whichever. No cover yet? `/series` cards still fall back
 to the QR + greek-glyph stamp. The admin canvas at `/admin/series`
 lists every discovered series with manifest + cover state and supports
 editing metadata, **renaming the slug** (bulk-rewrites every matching
@@ -111,7 +111,7 @@ Backup with `rsync`. Restore in seconds.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  CRT terminal layout  ·  6 themes incl. C64 + LCD   │
+│  CRT terminal layout  ·  6 phosphor themes          │
 │  Phosphor vignette    ·  chromatic-aberration heads │
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
 │  TOC + scrollspy      ·  code-block copy buttons    │
@@ -132,9 +132,9 @@ Backup with `rsync`. Restore in seconds.
 
 ## Screenshots
 
-![Six theme variants: amber, green, C64, crypt, brutalist, LCD](docs/screenshot/themes-showcase.webp)
+![Six theme variants: amber, green, crypt, brutalist, p7, p11](docs/screenshot/themes-showcase.webp)
 
-_Left to right: amber (default) · green · C64 lavender · crypt red · brutalist mono · LCD paper — all swappable from the in-page theme picker._
+_amber (default) · green · crypt red · brutalist mono · p7 violet · p11 electric blue — all swappable from the in-page theme picker._
 
 ## Stack
 

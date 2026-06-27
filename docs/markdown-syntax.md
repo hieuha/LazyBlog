@@ -131,7 +131,7 @@ picks: `php`, `js`, `ts`, `python`, `bash`, `json`, `yaml`, `sql`,
 `html`, `css`, `markdown`, `nginx`, `rust`, `go`, `c`, `cpp`.
 
 Token colors map to the active phosphor palette — switch themes (amber,
-green, crypt, brutalist, c64, lcd) and syntax recolors with the rest of
+green, crypt, brutalist, p7, p11) and syntax recolors with the rest of
 the page. Code blocks without a language tag stay literal (no
 highlighting), with the dashed HUD frame and `COPY` button still active.
 

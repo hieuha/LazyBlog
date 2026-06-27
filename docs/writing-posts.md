@@ -126,8 +126,8 @@ for editorial metadata (custom title, description, cover image).
   (`orderedDitherImage('o4x4,2')`) — the clean halftone-grid pattern
   matching the album-cover reference aesthetic. Output is a transparent-
   where-light WebP rendered via CSS `mask-image: url(cover.webp)` +
-  `currentColor`. The active theme colour (phosphor green, amber, C64,
-  LCD, …) flows through the dots automatically. Same trick the QR
+  `currentColor`. The active theme colour (phosphor green, amber, p7,
+  p11, …) flows through the dots automatically. Same trick the QR
   cover uses today. Falls through to `o4x4` / `4x4` / `o2x2` / `checks`
   for ImageMagick builds whose `thresholds.xml` ships a different map
   alias set.

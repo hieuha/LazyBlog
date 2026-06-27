@@ -20,7 +20,7 @@
 | `SITE_OG_IMAGE` | no | Default social-card image (path or absolute URL). Used when a post doesn't define `image:` in frontmatter. Recommended 1200×630 px |
 | `SITE_TWITTER_HANDLE` | no | Site's Twitter handle with `@`. Emitted as `twitter:site` so the rich card credits your account |
 | `SITE_GITHUB_URL` | no | Project source link in footer "§ SOURCE" block. Defaults to the upstream LazyBlog repo. Empty hides the line |
-| `SITE_DEFAULT_THEME` | no | Initial theme — `amber` (default), `green`, `crypt` (blood-red), `brutalist` (flat monochrome, no CRT effects), `c64` (Commodore 64 lavender on saturated blue, all CRT layers killed), or `lcd` (Game Boy DMG sage-on-pea LCD panel with pixel-grid scanlines, no glow). Rendered server-side on `<html data-theme>` so no-JS visitors see it. Visitor's header picker still overrides via `localStorage` |
+| `SITE_DEFAULT_THEME` | no | Initial theme — `amber` (default), `green`, `crypt` (blood-red), `brutalist` (flat monochrome, no CRT effects), `p7` (violet tradecraft), or `p11` (electric-blue clinical). Rendered server-side on `<html data-theme>` so no-JS visitors see it. Visitor's header picker still overrides via `localStorage` |
 | `SITE_NOISE` | no | Film-grain / dust overlay on every page. `true` (default) / `false`. Off leaves scanlines + vignette intact |
 | `PLUGINS` | no | Comma-separated plugin slugs to enable. Each must be a folder under `plugins/{slug}/` with a valid `manifest.json`. Empty = no plugins loaded, zero boot cost. See [`plugin-development.md`](plugin-development.md) for the author guide |
 
@@ -103,9 +103,9 @@ These are styling defaults baked into the CSS files under `public/assets/`
 (`base.css`, `effects.css`, `components.css`, `post.css`, `pages.css`), not
 env vars — editing them means tweaking the CSS:
 
-- **Theme**: eight presets — amber (default), green, crypt, brutalist, p7, p11, c64, lcd. Picker dropdown in the header, persists in `localStorage`. Server-side initial value comes from `SITE_DEFAULT_THEME` so first paint matches.
-- **CRT scanlines + vignette + bezel**: layered fixed overlays at z-index 998–1000. c64 + lcd flatten everything via a `*` `!important` rule (no glow, no shadow, no filter); p7 + p11 strip text-shadow only (keep box-shadow + vignette so cards still have depth — a flat tradecraft / clinical-telemetry look against c64/lcd's full pixel-flatten).
-- **Heading glow + chromatic-aberration RGB split**: respects `prefers-reduced-motion`. Split active only on amber + green; crypt + brutalist drop the RGB shift but keep the phosphor halo; p7 + p11 strip all text glow; c64 + lcd strip everything.
+- **Theme**: six presets — amber (default), green, crypt, brutalist, p7, p11. Picker dropdown in the header, persists in `localStorage`. Server-side initial value comes from `SITE_DEFAULT_THEME` so first paint matches.
+- **CRT scanlines + vignette + bezel**: layered fixed overlays at z-index 998–1000. p7 + p11 strip text-shadow only (keep box-shadow + vignette so cards still have depth — a flat tradecraft / clinical-telemetry look).
+- **Heading glow + chromatic-aberration RGB split**: respects `prefers-reduced-motion`. Split active only on amber + green; crypt + brutalist drop the RGB shift but keep the phosphor halo; p7 + p11 strip all text glow.
 - **Mobile header drawer** (<600px): nav links collapse behind a `[ ≡ MENU ]` button (button + `aria-expanded` + CSS overlay panel, same shape as the theme picker). Theme picker stays on row 1 for 1-tap swap. Subtitle hidden, button padding shrunk, theme button drops its current-value readout.
 - **Auto TOC** on posts with ≥3 headings — inline on mobile, floats to left rail on desktop
 - **Reading progress bar** on `/posts/*` — fixed top, fills with theme accent as you scroll

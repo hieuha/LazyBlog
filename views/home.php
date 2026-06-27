@@ -16,8 +16,6 @@ foreach ($posts as $entry) {
 ?>
 
 <section>
-    <h2>> LATEST BROADCASTS</h2>
-
     <?php if ($posts === []): ?>
         <p style="color: var(--text-dim);">// NO POSTS YET. AIRWAVES QUIET.</p>
     <?php else: ?>

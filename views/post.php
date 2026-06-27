@@ -31,7 +31,7 @@ $renderTocList = function () use ($toc): void {
     $metaSlots = Http::plugins()?->slotPostMeta(['slug' => $post->slug]) ?? [];
     ?>
     <div class="section-tag">
-        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ UNLOCKED ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($post->displayDate()) ?><?php
+        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ <i class="fa fa-unlock-alt" aria-hidden="true"></i> ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($post->displayDate()) ?><?php
             if ($post->author !== null && $post->author !== '') {
                 echo ' — ' . Http::e($post->author);
             }

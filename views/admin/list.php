@@ -118,7 +118,7 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                                         <span class="admin-status admin-status-live" title="Live" aria-label="Live">Live</span>
                                     <?php endif; ?>
                                     <?php if (!empty($entry['protected'])): ?>
-                                        <span class="post-lock" title="Password protected" aria-label="Password protected">[ LOCKED ]</span>
+                                        <span class="post-lock" title="Password protected" aria-label="Password protected">[ <i class="fa fa-lock" aria-hidden="true"></i> ]</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="admin-row-actions">

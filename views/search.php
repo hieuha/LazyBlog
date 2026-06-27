@@ -96,17 +96,14 @@ $highlight = static function (string $text, string $q) use ($fold): string {
                     </div>
                     <a class="search-title-link" href="/posts/<?= Http::e($hit['slug']) ?>">
                         <span class="search-title">
+                            <?php if (($hit['snippet'] ?? '') === '// protected post'):
+                                $unlocked = Auth::isPostUnlocked((string) $hit['slug']);
+                            ?><i class="fa fa-<?= $unlocked ? 'unlock-alt' : 'lock' ?> post-title-lock" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>"></i> <?php endif; ?>
                             <?php if (!empty($hit['icon'])): ?><span class="search-icon"><?= Http::e($hit['icon']) ?></span> <?php endif; ?>
                             <?= $highlight($hit['title'], $q) ?>
                         </span>
                     </a>
-                    <?php if (($hit['snippet'] ?? '') === '// protected post'):
-                        $unlocked = Auth::isPostUnlocked((string) $hit['slug']);
-                    ?>
-                        <p class="search-lock-row">
-                            <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span>
-                        </p>
-                    <?php else: ?>
+                    <?php if (($hit['snippet'] ?? '') !== '// protected post'): ?>
                         <p class="search-snippet"><?= $highlight($hit['snippet'], $q) ?></p>
                     <?php endif; ?>
                 </li>

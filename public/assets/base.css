@@ -58,54 +58,6 @@
     --scan: rgba(255, 36, 24, 0.03);
 }
 
-[data-theme="lcd"] {
-    /* E-ink / dot-matrix LCD — warm off-white "paper" panel with pure
-       black segment ink. Page bg is a slightly dustier cream so the
-       lighter card panels read as raised paper inserts sitting on top
-       (Kindle / newspaper / dot-matrix terminal aesthetic). All-black
-       text holds maximum contrast for reading long-form. Inverted from
-       every other theme (dark text on light bg). */
-    --bg: #c9c5b8;
-    --panel: #e6e2d4;
-    --primary: #1a1a1a;
-    --primary-dim: #4a4640;
-    --primary-glow: rgba(0, 0, 0, 0.05);
-    --primary-glow-strong: rgba(0, 0, 0, 0.12);
-    --accent: #000000;
-    --accent-dim: #4a4640;
-    --text: #1a1a1a;
-    --text-dim: #5a5550;
-    --border: #1a1a1a;
-    /* Faint horizontal pixel-grid hatching — keeps the "this is a
-       display, not pure paper" cue without competing with the text. */
-    --scan: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="c64"] {
-    /* Commodore 64 boot screen palette — saturated periwinkle blue background,
-       lighter lavender text, all flat (no CRT glow / no scanline overlay).
-       Numbers ripped from the iconic VICE default + the user's reference
-       screenshot, biased slightly bluer than the original 0x4040C0 so the
-       primary text contrast clears WCAG AA at 16px. */
-    --bg: #4040C0;
-    --panel: #3636AB;
-    --primary: #A8A8FC;
-    --primary-dim: #6868D8;
-    --primary-glow: rgba(168, 168, 252, 0.10);
-    --primary-glow-strong: rgba(168, 168, 252, 0.20);
-    /* White accent for chips / CTAs reads as the "READY." prompt cursor
-       against the lavender body text. */
-    --accent: #FFFFFF;
-    --accent-dim: #C8C8FC;
-    --text: #C8C8FC;
-    --text-dim: #7878D8;
-    --border: #6868D8;
-    /* Flat — C64's identity is pixel blocks on solid blue, not CRT phosphor
-       wash. Transparent scan token kills the repeating-gradient overlay
-       without needing to disable body::before. */
-    --scan: transparent;
-}
-
 [data-theme="brutalist"] {
     /* Cool-tinted near-black + bluish whites — not pure #000/#fff, which
        would read as flat OLED test pattern. The slight blue undertone
@@ -296,8 +248,7 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
    halation; phosphor glow at the saturation level of violet (p7) and
    electric blue (p11) burns the whole page instead of reading as a
    subtle CRT cue. Strip text-shadow site-wide. Box-shadow and filter
-   stay so card edges + vignette + flicker still play — that's what
-   separates p7/p11 from the full-flatten c64/lcd boot-screen aesthetic. */
+   stay so card edges + vignette + flicker still play. */
 [data-theme="p7"] *,
 [data-theme="p7"] *::before,
 [data-theme="p7"] *::after,
@@ -305,21 +256,6 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
 [data-theme="p11"] *::before,
 [data-theme="p11"] *::after {
     text-shadow: none !important;
-}
-
-/* Flat-pixel themes (C64 + LCD): catch-all flatten. Boot-screen + LCD
-   panel aesthetics are crisp pixel blocks — any glow / chromatic smear /
-   drop shadow reads as VHS rot, not Commodore / DMG. Scoped so the
-   other phosphor themes keep their identity. */
-[data-theme="c64"] *,
-[data-theme="c64"] *::before,
-[data-theme="c64"] *::after,
-[data-theme="lcd"] *,
-[data-theme="lcd"] *::before,
-[data-theme="lcd"] *::after {
-    text-shadow: none !important;
-    box-shadow: none !important;
-    filter: none !important;
 }
 
 h1, .site-brand { font-size: clamp(38px, 9vw, 68px); }
@@ -545,8 +481,10 @@ header {
     .header-nav-toggle[aria-expanded="true"] + .header-nav-list {
         position: absolute;
         top: calc(100% + 4px);
-        left: 50%;
-        transform: translateX(-50%);
+        /* Left-align the panel's left edge with the toggle's left edge
+           so the dropdown drops straight down beneath [ ≡ MENU ] instead
+           of centering under it and overflowing to the right. */
+        left: 0;
         min-width: 200px;
         background: var(--panel);
         border: 1px solid var(--accent-dim);
@@ -557,6 +495,31 @@ header {
         gap: 4px;
         z-index: 50;
         box-shadow: 0 0 12px var(--primary-glow);
+    }
+    /* Theme picker dropdown on mobile: match the nav dropdown anchor —
+       drop down from the [ THEME ] button's left edge. The desktop rule
+       above keeps right:0 so the menu stays clear of the viewport edge
+       on wide layouts. */
+    .theme-picker-menu {
+        left: 0;
+        right: auto;
+        min-width: 200px;
+        padding: 6px;
+        gap: 4px;
+    }
+    /* Theme buttons on mobile: borrow the bordered chip language from
+       .header-btn so the [ THEME ] dropdown stops reading as a different
+       widget family than the sibling [ ≡ MENU ] dropdown. Brackets in
+       the markup (`[ AMBER ]`) carry the same chip glyph as nav items. */
+    .theme-picker-menu button {
+        border: 1px solid var(--accent-dim);
+        border-radius: 2px;
+        padding: 6px 14px;
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    .theme-picker-menu button[aria-current="true"] {
+        border-color: var(--primary);
     }
     /* Inside the dropdown, buttons fill the panel width — gives a calm
        vertical stack instead of jagged auto-widths. */

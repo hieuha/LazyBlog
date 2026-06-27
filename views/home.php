@@ -27,6 +27,9 @@ foreach ($posts as $entry) {
                         <li class="post-item">
                             <a class="post-title-link" href="/posts/<?= Http::e($entry['slug']) ?>">
                                 <span class="post-title">
+                                    <?php if (!empty($entry['protected'])):
+                                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
+                                    ?><i class="fa fa-<?= $unlocked ? 'unlock-alt' : 'lock' ?> post-title-lock" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>"></i> <?php endif; ?>
                                     <?php if (!empty($entry['icon'])): ?><span class="post-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                                     <?= Http::e($entry['title']) ?>
                                 </span>
@@ -34,20 +37,13 @@ foreach ($posts as $entry) {
                             <?php if (!empty($entry['summary'])): ?>
                                 <p class="post-summary"><?= Http::e($entry['summary']) ?></p>
                             <?php endif; ?>
-                            <?php if (!empty($entry['protected']) || !empty($entry['series'])): ?>
+                            <?php if (!empty($entry['series'])): ?>
                                 <div class="post-tags-row">
-                                    <?php if (!empty($entry['protected'])):
-                                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
-                                    ?>
-                                        <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($entry['series'])): ?>
-                                        <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
-                                            <?= Http::e((string) $entry['series']) ?><?php
-                                                if (isset($entry['part']) && $entry['part'] !== null) echo ' · PART ' . (int) $entry['part'];
-                                            ?>
-                                        </a>
-                                    <?php endif; ?>
+                                    <a class="post-series-tag" href="/series/<?= Http::e((string) $entry['series']) ?>">
+                                        <?= Http::e((string) $entry['series']) ?><?php
+                                            if (isset($entry['part']) && $entry['part'] !== null) echo ' · PART ' . (int) $entry['part'];
+                                        ?>
+                                    </a>
                                 </div>
                             <?php endif; ?>
                         </li>

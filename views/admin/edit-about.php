@@ -117,6 +117,6 @@ code blocks, freq-tags, story-cards, etc."><?= Http::e($formValues['body']) ?></
 
 <!-- EasyMDE: same editor as the post form, scoped to #body -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<!-- Font Awesome 4 loaded universally from layout.php. -->
 <script defer src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script defer src="<?= Http::e(\App\Http::asset('assets/admin-editor.js')) ?>"></script>

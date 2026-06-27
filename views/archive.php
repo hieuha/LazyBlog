@@ -103,11 +103,11 @@ $intensity = static function (int $count, bool $inRange): string {
                                 </a>
                             <?php endif; ?>
                             <a class="archive-link" href="/posts/<?= Http::e($entry['slug']) ?>">
-                                <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
-                                <?= Http::e($entry['title']) ?>
                                 <?php if (!empty($entry['protected'])):
                                     $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
-                                ?> <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span><?php endif; ?>
+                                ?><i class="fa fa-<?= $unlocked ? 'unlock-alt' : 'lock' ?> post-title-lock" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>"></i> <?php endif; ?>
+                                <?php if (!empty($entry['icon'])): ?><span class="archive-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
+                                <?= Http::e($entry['title']) ?>
                             </a>
                         </li>
                     <?php endforeach; ?>

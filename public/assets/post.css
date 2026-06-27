@@ -109,6 +109,17 @@
     max-width: 100%;
 }
 .post-icon { opacity: 0.85; }
+/* Bare lock glyph inline with the post title — no brackets, no chip
+   border, no second wrapper. Sized to ~0.6× the title for hierarchy
+   (title still dominates), inherits color so it tints with the active
+   phosphor palette, dim opacity to read as a state marker rather than
+   the main mark. */
+.post-title-lock {
+    font-size: 0.55em;
+    margin-right: 0.35em;
+    opacity: 0.7;
+    vertical-align: 0.18em;
+}
 
 /* Summary reads as an editorial preview, no `//` prefix — the dim text
    tone alone signals secondary information. */
@@ -458,16 +469,6 @@ body.is-post main {
     [data-theme="amber"] .post-toc-wrap {
         background: rgba(26, 18, 8, 0.92);
     }
-    /* Light-bg themes — TOC needs a panel-tinted background that sits
-       DARKER than bg, not the dark-green default that was tuned for
-       phosphor themes. Without this override the floating TOC reads as
-       a hole punched in the page. */
-    [data-theme="lcd"] .post-toc-wrap {
-        background: rgba(230, 226, 212, 0.94); /* #e6e2d4 (e-ink card) @ 94% */
-    }
-    [data-theme="c64"] .post-toc-wrap {
-        background: rgba(54, 54, 171, 0.92);
-    }
 
     .post-toc-wrap.floating-visible {
         opacity: 0.96;
@@ -533,7 +534,7 @@ body.is-post main {
 /* ---------- Prism syntax highlighting (phosphor token theme) ----------
    Prism loads grammars on demand via the autoloader (see layout.php).
    Token colors map to existing palette vars so every theme (amber, green,
-   crypt, brutalist, c64, lcd) recolors syntax highlighting for free.
+   crypt, brutalist, p7, p11) recolors syntax highlighting for free.
    Keep buckets coarse — three colors plus dim comment is enough to read
    without competing with the CRT phosphor aesthetic. */
 .post-body pre[class*="language-"] code,
@@ -866,7 +867,15 @@ body.is-post main {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin: 8px 0 4px;
+    margin: 8px auto 4px;
+    /* Shared max-width keeps the input and the [ AUTHENTICATE ][ ABORT ]
+       grid below it at the same width — input no longer overshoots the
+       button row when the panel is wide. Children stretch via their own
+       width:100% (input + alert-actions). 440px so each half (215px after
+       the 10px gap) fits the longer `[ AUTHENTICATE ]` chip with its
+       3px letter-spacing + side padding without wrapping. */
+    width: 100%;
+    max-width: 440px;
 }
 .alert-input-label {
     font-family: 'Share Tech Mono', monospace;
@@ -887,7 +896,9 @@ body.is-post main {
 }
 .alert-input {
     width: 100%;
-    max-width: 380px;
+    /* Stretch to the panel's inner width so the input baseline matches
+       the [ AUTHENTICATE ] [ ABORT ] grid below it instead of floating
+       narrower than the action row. */
     background: var(--bg);
     border: 1px solid var(--primary-dim);
     color: var(--primary);
@@ -957,11 +968,15 @@ body.is-post main {
     box-shadow: none;
 }
 
+/* Two equal-width columns so the [ AUTHENTICATE ] + [ ABORT ] pair
+   spans the same width as the access-key input above them. The parent
+   .alert-form caps that width (max-width 380px) so this grid inherits
+   the same envelope and the two buttons stay paired with the input. */
 .alert-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
+    width: 100%;
     margin-top: 6px;
 }
 .alert-btn {
@@ -969,6 +984,7 @@ body.is-post main {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
     height: 36px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 12px;
@@ -984,6 +1000,10 @@ body.is-post main {
     cursor: pointer;
     text-transform: uppercase;
     line-height: 1;
+    /* Belt-and-braces against wrap — even with the 440px form envelope
+       above, sub-pixel rounding on long labels (`AUTHENTICATE` w/ 3px
+       tracking) can break to a second line on some renderers. */
+    white-space: nowrap;
     -webkit-appearance: none;
     appearance: none;
     transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
@@ -993,13 +1013,22 @@ body.is-post main {
     border-color: var(--primary);
     box-shadow: 0 0 10px var(--primary-glow-strong);
 }
-.alert-btn-primary {
-    background: var(--primary-glow-strong);
-    border-color: var(--primary);
-}
-.alert-btn-primary:hover {
-    background: var(--primary);
-    color: var(--bg);
+/* `.alert-btn-primary` kept in markup for semantic intent but visually
+   identical to `.alert-btn` — the original filled-pill treatment made
+   the submit button shout while ABORT whispered, inconsistent with the
+   sibling pairing. Hover/focus still inherit the base alert-btn cue. */
+
+/* Mobile: tighten letter-spacing + padding + nowrap so the longer
+   `[ AUTHENTICATE ]` label stays on one line inside its half of the
+   1fr 1fr grid. Default 3px tracking + 18px side padding overflows the
+   ~140-150px slot a phone column hands the button, wrapping the chip
+   into two lines while [ ABORT ] sits beside it on one. */
+@media (max-width: 600px) {
+    .alert-btn {
+        letter-spacing: 1px;
+        padding: 0 8px;
+        white-space: nowrap;
+    }
 }
 
 /* ── Footer label ──

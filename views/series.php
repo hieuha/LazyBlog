@@ -52,6 +52,9 @@ $hasArt = !empty($coverUrl) || !empty($qrSvg);
                 <span class="series-part-no"><?= str_pad((string) ($entry['part'] ?? ($i + 1)), 2, '0', STR_PAD_LEFT) ?></span>
                 <div class="series-item-body">
                     <a class="series-item-title" href="/posts/<?= Http::e($entry['slug']) ?>">
+                        <?php if (!empty($entry['protected'])):
+                            $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
+                        ?><i class="fa fa-<?= $unlocked ? 'unlock-alt' : 'lock' ?> post-title-lock" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>"></i> <?php endif; ?>
                         <?php if (!empty($entry['icon'])): ?><span class="series-icon"><?= Http::e($entry['icon']) ?></span> <?php endif; ?>
                         <?= Http::e($entry['title']) ?>
                     </a>
@@ -61,13 +64,6 @@ $hasArt = !empty($coverUrl) || !empty($qrSvg);
                             · <span class="series-summary"><?= Http::e($entry['summary']) ?></span>
                         <?php endif; ?>
                     </div>
-                    <?php if (!empty($entry['protected'])):
-                        $unlocked = Auth::isPostUnlocked((string) $entry['slug']);
-                    ?>
-                        <div class="series-item-lock">
-                            <span class="post-lock<?= $unlocked ? ' post-lock--unlocked' : '' ?>" title="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>" aria-label="<?= $unlocked ? 'Unlocked this session' : 'Password protected' ?>">[ <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?> ]</span>
-                        </div>
-                    <?php endif; ?>
                 </div>
             </li>
         <?php endforeach; ?>

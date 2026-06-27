@@ -228,8 +228,7 @@ Body of the story card.
 
 <!-- EasyMDE: markdown editor with live preview, autosave, fullscreen, etc. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
-<!-- Font Awesome 4 — explicit load from jsdelivr (instead of EasyMDE's
-     autoDownload, which points at maxcdn.bootstrapcdn.com that isn't in CSP) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<!-- Font Awesome 4 is loaded universally from layout.php (drives the
+     EasyMDE toolbar glyphs + the .post-lock fa-lock badge). -->
 <script defer src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <script defer src="<?= App\Http::e(App\Http::asset('assets/admin-editor.js')) ?>"></script>

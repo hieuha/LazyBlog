@@ -380,7 +380,7 @@ a.heatmap-cell:hover {
     font-size: 12px;
     color: var(--text-dim);
 }
-.series-summary { color: var(--text-dim); }
+.series-summary { color: var(--text); }
 .series-icon { margin-right: 4px; }
 
 /* ---------- /series index — Jukebox-style card grid ----------

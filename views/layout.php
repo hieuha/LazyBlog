@@ -150,8 +150,6 @@ $THEME_BG = [
     'brutalist' => '#08090c',
     'p7'        => '#08081a',
     'p11'       => '#040810',
-    'c64'       => '#4040C0',
-    'lcd'       => '#c9c5b8',
 ];
 $defaultTheme = strtolower((string) Config::get('SITE_DEFAULT_THEME', 'amber'));
 if (!isset($THEME_BG[$defaultTheme])) {
@@ -185,7 +183,7 @@ $favicon = 'data:image/svg+xml,'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="<?= Http::e($defaultThemeColor) ?>">
-    <meta name="color-scheme" content="<?= $defaultTheme === 'lcd' ? 'light' : 'dark' ?>">
+    <meta name="color-scheme" content="dark">
 
     <title><?= Http::e($browserTitle) ?></title>
     <meta name="description" content="<?= Http::e($pageDesc) ?>">
@@ -272,6 +270,12 @@ $favicon = 'data:image/svg+xml,'
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome 4 — used by the .post-lock badge across listings
+         (fa-lock / fa-unlock-alt) and by the EasyMDE toolbar in the
+         admin editor. Loaded once here so admin views don't duplicate
+         the request and so cache hits carry across public ↔ admin. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
 
     <?php
     // Stylesheets split by concern, each with its own ?v= cache-bust.
@@ -413,14 +417,12 @@ $favicon = 'data:image/svg+xml,'
                 <span data-theme-label>[ THEME ]</span>
             </button>
             <div class="theme-picker-menu" role="menu" hidden>
-                <button type="button" role="menuitem" data-theme-set="amber">AMBER</button>
-                <button type="button" role="menuitem" data-theme-set="green">GREEN</button>
-                <button type="button" role="menuitem" data-theme-set="crypt">CRYPT</button>
-                <button type="button" role="menuitem" data-theme-set="brutalist">BRUTALIST</button>
-                <button type="button" role="menuitem" data-theme-set="p7">P7</button>
-                <button type="button" role="menuitem" data-theme-set="p11">P11</button>
-                <button type="button" role="menuitem" data-theme-set="c64">C64</button>
-                <button type="button" role="menuitem" data-theme-set="lcd">LCD</button>
+                <button type="button" role="menuitem" data-theme-set="amber">[ AMBER ]</button>
+                <button type="button" role="menuitem" data-theme-set="green">[ GREEN ]</button>
+                <button type="button" role="menuitem" data-theme-set="crypt">[ CRYPT ]</button>
+                <button type="button" role="menuitem" data-theme-set="brutalist">[ BRUTALIST ]</button>
+                <button type="button" role="menuitem" data-theme-set="p7">[ P7 ]</button>
+                <button type="button" role="menuitem" data-theme-set="p11">[ P11 ]</button>
             </div>
         </div>
     </div>

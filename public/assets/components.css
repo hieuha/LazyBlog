@@ -379,35 +379,39 @@
     .page-indicator { flex-basis: 100%; order: -1; }
 }
 
-/* Password-protected post badge — used in title lines on home/tag/archive/search
-   listings to flag posts that gate body content behind a password form.
-   Rendered as a small knockout pill (theme color background, --bg text)
-   so it sits visually consistent with the date pill used on listing
-   timelines, rather than a colourful emoji that clashes with the
-   phosphor/CRT aesthetic.
-   `.post-lock--unlocked` is the same pill outlined instead of filled —
-   reader has already entered the password this session, so the badge
-   stays present (it's still protected) but reads less alarming. */
+/* Password-protected post badge — used in title lines on home/tag/archive/
+   search listings to flag posts that gate body content behind a password
+   form. Outlined chip (transparent background, theme-color text, dim
+   border) so it pairs cleanly with the rest of the chip/tag language on
+   the page instead of shouting as a solid knockout pill. Same shape for
+   locked and unlocked — the word inside ("LOCKED" vs "UNLOCKED") carries
+   the state difference, no extra visual stratification needed. */
 .post-lock {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
+    font-size: 10px;
     line-height: 1;
     letter-spacing: 1.5px;
-    color: var(--bg);
-    background: var(--primary);
-    padding: 3px 6px;
+    color: var(--primary);
+    background: transparent;
+    border: 1px solid var(--primary-dim);
+    padding: 2px 6px;
     margin-left: 6px;
     vertical-align: 1px;
     text-transform: uppercase;
     border-radius: 1px;
-}
-.post-lock--unlocked {
-    color: var(--primary);
-    background: transparent;
-    border: 1px solid var(--primary-dim);
-    padding: 2px 5px;     /* compensate for the 1px border so total height matches */
     opacity: 0.85;
+}
+/* Bump the FA glyph one notch above the bracket text so the lock body
+   reads as the primary mark rather than punctuation between brackets.
+   `inherit` color keeps the icon tinted by --primary like the chip
+   text — no per-theme override needed. */
+.post-lock .fa {
+    font-size: 11px;
+    line-height: 1;
+    color: inherit;
 }
 /* When the pill lives inside `.post-tags-row` next to a series chip,
    reset the inline margin-left so flex `gap` controls the spacing. The

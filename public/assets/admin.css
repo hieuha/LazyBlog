@@ -213,6 +213,12 @@ body.is-admin main { max-width: 1180px; }
 .tag-chip-entry:focus { outline: none; }
 .tag-chip-entry::placeholder { color: var(--text-dim); }
 
+/* Default Chrome / Safari paint input placeholders at ~42% opacity of
+   the inherited color. On the CRT themes the partial alpha kills the
+   phosphor cue. Pin the placeholder colour to the theme's --text-dim
+   token so every theme owns its placeholder hue explicitly. */
+.admin-input::placeholder { color: var(--text-dim); opacity: 1; }
+
 /* ---------- EasyMDE theme integration ---------- */
 .EasyMDEContainer .editor-toolbar {
     background: var(--panel);

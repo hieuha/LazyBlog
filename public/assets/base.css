@@ -240,50 +240,49 @@ h1, h2, h3, .story-title, .post-title, .site-brand {
             0 0 56px var(--primary-glow);
     }
 }
-/* Mobile: drop the chromatic RGB split. The 1px shift reads as
-   oversized colored fringes once the title font shrinks below ~32px,
-   making the brand and post titles look glitchy-bad instead of CRT. */
+/* Mobile: drop the chromatic RGB split AND shrink the phosphor halo.
+   The 1px shift reads as oversized colored fringes once the title font
+   shrinks below ~32px, making the brand and post titles look
+   glitchy-bad instead of CRT. The original 22+56px blur stack was tuned
+   for desktop title scale; at mobile font sizes that halo blooms past
+   the letterform and the title burns instead of reading as a CRT cue.
+   Pull radii down (6→4, 22→12, 56→28) so the glow stays as a hint
+   without overwhelming the type. */
 @media (max-width: 600px) {
     h1, h2, h3, .story-title, .post-title, .site-brand {
+        text-shadow:
+            0 0 4px var(--primary),
+            0 0 12px var(--primary-glow-strong),
+            0 0 28px var(--primary-glow);
+    }
+}
+
+/* Crypt + Brutalist heading overrides — drop the chromatic RGB split
+   while keeping the phosphor halo. Crypt's primary is already red so
+   the red shift stacks into a jagged outline; brutalist's flat palette
+   clashes with colored fringes. Scope is limited to hero-scale headings
+   (h1/h2/h3 + site-brand) on purpose. `.post-title` and `.story-title`
+   are list-item titles whose at-rest shadow is tuned softer in post.css
+   / components.css; pulling them into this override re-imposes the
+   22/56px halo via attribute+class specificity and they read as
+   always-hovered.
+   Wrapped in min-width:601px so the universal mobile heading rule
+   below (smaller blur stack) takes over on phones — otherwise these
+   higher-specificity overrides win on mobile and the title burns. */
+@media (min-width: 601px) {
+    [data-theme="crypt"] h1,
+    [data-theme="crypt"] h2,
+    [data-theme="crypt"] h3,
+    [data-theme="crypt"] .site-brand,
+    [data-theme="brutalist"] h1,
+    [data-theme="brutalist"] h2,
+    [data-theme="brutalist"] h3,
+    [data-theme="brutalist"] .site-brand {
         text-shadow:
             0 0 6px var(--primary),
             0 0 22px var(--primary-glow-strong),
             0 0 56px var(--primary-glow);
     }
-}
-
-/* Crypt theme: primary is already red, so the chromatic-aberration red
-   shift stacks on top of itself and reads as a jagged outline instead of
-   a subtle CRT misalignment. Drop the split, keep the phosphor glow.
-   Scope is limited to hero-scale headings (h1/h2/h3 + site-brand) on
-   purpose. `.post-title` and `.story-title` are list-item titles whose
-   at-rest shadow is tuned softer in post.css / components.css; pulling
-   them into this override re-imposes the 22/56px halo via attribute+class
-   specificity and they read as always-hovered. Same reason brutalist
-   below is scoped to the same set. */
-[data-theme="crypt"] h1,
-[data-theme="crypt"] h2,
-[data-theme="crypt"] h3,
-[data-theme="crypt"] .site-brand {
-    text-shadow:
-        0 0 6px var(--primary),
-        0 0 22px var(--primary-glow-strong),
-        0 0 56px var(--primary-glow);
-}
-
-/* Brutalist theme: drop only the chromatic RGB split on headings — the
-   colored fringes clash with a flat palette. Keep the phosphor glow so
-   VT323's pixel edges still soften, and keep vignette + bezel + flicker
-   so the CRT identity holds. Scanlines already vanish via the transparent
-   --scan token in the palette. */
-[data-theme="brutalist"] h1,
-[data-theme="brutalist"] h2,
-[data-theme="brutalist"] h3,
-[data-theme="brutalist"] .site-brand {
-    text-shadow:
-        0 0 6px var(--primary),
-        0 0 22px var(--primary-glow-strong),
-        0 0 56px var(--primary-glow);
 }
 
 /* P7 + P11 themes: flat tradecraft / clinical-telemetry look —

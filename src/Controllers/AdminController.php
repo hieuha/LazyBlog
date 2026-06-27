@@ -124,6 +124,7 @@ final class AdminController
             'post' => null,
             'originalFilename' => '',
             'formError' => null,
+            'flash' => self::consumeFlash(),
             'seriesSuggestions' => $this->repo->allSeries(),
             'formValues' => [
                 'date' => $today,
@@ -187,6 +188,7 @@ final class AdminController
             'post' => $post,
             'originalFilename' => $originalFilename,
             'formError' => null,
+            'flash' => self::consumeFlash(),
             'seriesSuggestions' => $this->repo->allSeries(),
             'formValues' => [
                 'date' => $editDate,
@@ -289,6 +291,7 @@ final class AdminController
                 'post' => null,
                 'originalFilename' => $originalFilename,
                 'formError' => $e->getMessage(),
+                'flash' => null,
                 'seriesSuggestions' => $this->repo->allSeries(),
                 'formValues' => $values,
             ]);
@@ -378,7 +381,7 @@ final class AdminController
         $previousFilename = $post->displayDate() . '-' . $post->slug . '.md';
         $this->repo->save($updated, $previousFilename);
 
-        self::setFlash($post->isProtected() ? "Password updated: {$slug}" : "Password set: {$slug}");
+        self::setFlash($post->isProtected() ? 'Password updated.' : 'Password set.');
         Http::redirect('/admin/edit/' . rawurlencode($slug));
     }
 
@@ -404,7 +407,7 @@ final class AdminController
         }
         if (!$post->isProtected()) {
             // Already public — nothing to do, just redirect back.
-            self::setFlash("No password to remove: {$slug}");
+            self::setFlash('No password to remove.');
             Http::redirect('/admin/edit/' . rawurlencode($slug));
             return;
         }
@@ -427,7 +430,7 @@ final class AdminController
         $previousFilename = $post->displayDate() . '-' . $post->slug . '.md';
         $this->repo->save($updated, $previousFilename);
 
-        self::setFlash("Password removed: {$slug}");
+        self::setFlash('Password removed.');
         Http::redirect('/admin/edit/' . rawurlencode($slug));
     }
 

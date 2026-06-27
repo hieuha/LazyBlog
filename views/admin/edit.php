@@ -4,12 +4,24 @@
 /** @var \App\Post|null $post */
 /** @var string $originalFilename */
 /** @var string|null $formError */
+/** @var string|null $flash */
 /** @var array{date:string,time:string,slug:string,title:string,author:string,tags:string,draft:bool,icon:string,summary:string,image:string,series:string,part:string,body:string,password:string,remove_password:bool,is_protected:bool} $formValues */
 
 use App\Csrf;
 use App\Http;
 
 $isEdit = $mode === 'edit';
+
+// Flash from /admin/set-password and /admin/remove-password redirects.
+// Treat anything starting with "Failed" / "Password must" / "No password
+// to remove" as a soft error so the operator gets a clear "did/didn't"
+// signal — the controller deliberately uses one channel for both
+// success and failure to keep the redirect target single.
+$flashIsError = is_string($flash ?? null) && (
+    str_starts_with($flash, 'Failed')
+    || str_starts_with($flash, 'Password must')
+    || str_starts_with($flash, 'No password')
+);
 ?>
 
 <section>
@@ -17,6 +29,9 @@ $isEdit = $mode === 'edit';
 
     <?php if ($formError !== null): ?>
         <p class="admin-error">// <?= Http::e($formError) ?></p>
+    <?php endif; ?>
+    <?php if ($flash !== null): ?>
+        <p class="<?= $flashIsError ? 'admin-error' : 'admin-flash' ?>">// <?= Http::e($flash) ?></p>
     <?php endif; ?>
 
     <form method="post" action="/admin/save" class="admin-form">

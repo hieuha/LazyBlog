@@ -485,7 +485,65 @@
         });
     }
 
-    /* ---------- 4. Unsaved-changes guard ---------- */
+    /* ---------- 4. Password length guard ----------
+     * Mirrors AdminController::buildPostFromForm + setPassword: server
+     * rejects any password shorter than 4 characters, and Set Password
+     * additionally rejects an empty field. Catch both client-side so
+     * the operator gets immediate feedback instead of a flash redirect
+     * round trip. */
+    var passwordInput = document.getElementById('post-password');
+    if (passwordInput) {
+        var pwField = passwordInput.closest('.admin-field');
+
+        function showPwError(msg) {
+            if (!pwField) return;
+            var err = pwField.querySelector('.admin-field-error');
+            if (!err) {
+                err = document.createElement('p');
+                err.className = 'admin-error admin-field-error';
+                err.style.marginTop = '6px';
+                pwField.appendChild(err);
+            }
+            err.textContent = '// ' + msg;
+            passwordInput.focus();
+        }
+        function clearPwError() {
+            if (!pwField) return;
+            var err = pwField.querySelector('.admin-field-error');
+            if (err) err.remove();
+        }
+        passwordInput.addEventListener('input', clearPwError);
+
+        form.addEventListener('submit', function (e) {
+            var sub = e.submitter;
+            if (!sub) return;
+            var action = sub.getAttribute('formaction') || '';
+            var value = passwordInput.value;
+            // Remove Password never reads the field — skip entirely.
+            if (action.indexOf('/admin/remove-password/') === 0) return;
+            // Set Password: empty AND short both fail server-side, but
+            // the messages differ for clarity.
+            if (action.indexOf('/admin/set-password/') === 0) {
+                if (value === '') {
+                    e.preventDefault();
+                    showPwError('Enter a password (at least 4 characters) before [ Set Password ].');
+                } else if (value.length < 4) {
+                    e.preventDefault();
+                    showPwError('Password must be at least 4 characters.');
+                }
+                return;
+            }
+            // Default Save path: empty means "keep existing", which is
+            // legitimate. Only block when the operator typed something
+            // shorter than the server will accept.
+            if (value !== '' && value.length < 4) {
+                e.preventDefault();
+                showPwError('Password must be at least 4 characters.');
+            }
+        });
+    }
+
+    /* ---------- 5. Unsaved-changes guard ---------- */
     var dirty = false;
 
     function markDirty() {

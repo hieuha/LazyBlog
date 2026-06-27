@@ -114,11 +114,15 @@ a.stalk-public-handle:hover {
     align-self: center;
 }
 
-/* Mobile: tighten gaps so the single-line row still fits date + handle +
-   title without forcing too much ellipsis on the title. */
+/* Mobile: drop the date column entirely. At <600px the 72px date min-width
+   plus the handle were squeezing the title down to ~30% of row width, so
+   feed posts read as "@source NEW <truncated>...". Year header + NEW badge
+   + DESC order already convey freshness — exact date is not load-bearing
+   on a phone. Scoped to .stalk-public-item so the main archive list keeps
+   its date column on every screen size. */
 @media (max-width: 600px) {
     .stalk-public-item { gap: 8px; }
-    .stalk-public-item .archive-date { min-width: 72px; font-size: 11px; }
+    .stalk-public-item .archive-date { display: none; }
 }
 
 /* ---------- Admin /admin/stalk — deltas only (admin.css loaded by core) ---- */

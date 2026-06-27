@@ -306,27 +306,34 @@
             },
         });
 
-        // iOS IME bridge: when the user finishes a Vietnamese telex
-        // sequence ("a + s" → "á"), iOS Safari fires compositionend with
-        // the final character, but CodeMirror's contenteditable poll can
-        // run before the DOM settles and drop the character. Listen at
-        // the wrapper level and force CM to re-poll its input on the
-        // next animation frame so any final composed text gets folded
-        // into the document model. Gated to touch devices so desktop
-        // IME (which works fine) isn't double-polled.
+        // iOS IME bridge: Vietnamese telex (and any sticky-key IME) drops
+        // characters in CodeMirror's contenteditable when Safari's own
+        // autocorrect / autocapitalize layer overlaps with composition.
+        // Strip those iOS-specific attributes off both the underlying
+        // input element and the contenteditable display node. Then hook
+        // compositionend to nudge CM's poll on the next frame so the
+        // final composed character is folded into the document model
+        // even if Safari's DOM hadn't settled when CM first polled.
         if (isTouchDevice) {
-            easyMDE.codemirror.getWrapperElement().addEventListener(
-                'compositionend',
-                function () {
-                    requestAnimationFrame(function () {
-                        var input = easyMDE.codemirror.display && easyMDE.codemirror.display.input;
-                        if (input && typeof input.poll === 'function') {
-                            input.poll();
-                        }
-                    });
-                },
-                true
-            );
+            var cm = easyMDE.codemirror;
+            var iosAttrs = function (el) {
+                if (!el) return;
+                el.setAttribute('autocorrect', 'off');
+                el.setAttribute('autocapitalize', 'off');
+                el.setAttribute('autocomplete', 'off');
+                el.setAttribute('spellcheck', 'false');
+                el.setAttribute('inputmode', 'text');
+            };
+            iosAttrs(cm.getInputField());
+            iosAttrs(cm.getWrapperElement().querySelector('[contenteditable="true"]'));
+            cm.getWrapperElement().addEventListener('compositionend', function () {
+                requestAnimationFrame(function () {
+                    var input = cm.display && cm.display.input;
+                    if (input && typeof input.poll === 'function') {
+                        input.poll();
+                    }
+                });
+            }, true);
         }
 
         // EasyMDE's default post-upload insertion ends with `![](url)` and

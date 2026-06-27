@@ -198,12 +198,20 @@
     margin-bottom: 8px;
 }
 /* Mobile: tighten letter-spacing and shrink font so the post meta line
-   (`§ TRANSMISSION — YYYY-MM-DD — CALLSIGN — N VIEW`) fits one line on
-   narrow viewports instead of wrapping mid-segment. */
+   (`§ [ UNLOCKED ] TRANSMISSION — YYYY-MM-DD — CALLSIGN — N VIEW`) fits
+   one line on narrow viewports instead of wrapping mid-segment. The
+   earlier 10px + 1.5px letter-spacing was tuned before view-counter +
+   UNLOCKED badge stretched the line; now the row reliably broke onto
+   "VIEW" alone. nowrap is the contract — keep the line atomic; overflow-x
+   auto is the safety net for the smallest viewports so the user can
+   scroll the meta horizontally if it still overruns. */
 @media (max-width: 600px) {
     .section-tag, [class*="section"] > .callsign {
-        letter-spacing: 1.5px;
+        letter-spacing: 1px;
         font-size: 10px;
+        white-space: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 

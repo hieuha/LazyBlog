@@ -418,6 +418,23 @@ header {
     text-shadow: 0 0 6px var(--primary-glow-strong);
 }
 
+/* Mobile header compaction. The subtitle is "first-visit" copy — returning
+   visitors don't need it on every page and it ate 2-3 lines on phones.
+   Buttons get tighter padding + letter-spacing so 8-10 plugin/core links
+   collapse from 4 rows down to 2-3. Theme toggle label drops the current
+   value ("[ THEME: CRYPT ]" → "[ THEME ]") via site.js so the row shrinks
+   by ~10 chars; the active theme is still indicated by aria-current in
+   the dropdown when the operator opens it. */
+@media (max-width: 600px) {
+    .subtitle { display: none; }
+    .header-actions { gap: 6px; }
+    .header-btn {
+        font-size: 12px;
+        padding: 4px 10px;
+        letter-spacing: 1px;
+    }
+}
+
 /* ---------- Main layout ---------- */
 main {
     width: 100%;

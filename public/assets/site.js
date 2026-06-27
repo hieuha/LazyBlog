@@ -18,9 +18,18 @@
     var label = picker.querySelector('[data-theme-label]');
     var items = picker.querySelectorAll('[data-theme-set]');
     var VALID = ['amber', 'green', 'crypt', 'brutalist', 'c64', 'lcd'];
+    /* Same breakpoint as the mobile header rules in base.css — keep these
+       two in sync so the label collapses at the exact width the row gets
+       tight. matchMedia stays cheap and updates when the viewport changes
+       (rotation, devtools resize). */
+    var narrowMQ = window.matchMedia('(max-width: 600px)');
 
     function syncUI(theme) {
-        if (label) label.textContent = '[ THEME: ' + theme.toUpperCase() + ' ]';
+        if (label) {
+            label.textContent = narrowMQ.matches
+                ? '[ THEME ]'
+                : '[ THEME: ' + theme.toUpperCase() + ' ]';
+        }
         for (var i = 0; i < items.length; i++) {
             items[i].setAttribute(
                 'aria-current',
@@ -38,6 +47,13 @@
     }
 
     syncUI(document.documentElement.getAttribute('data-theme') || 'amber');
+    /* Re-sync when the viewport crosses the mobile breakpoint so the label
+       expands/collapses live on rotation or window resize. */
+    if (narrowMQ.addEventListener) {
+        narrowMQ.addEventListener('change', function () {
+            syncUI(document.documentElement.getAttribute('data-theme') || 'amber');
+        });
+    }
 
     toggle.addEventListener('click', function (e) {
         e.stopPropagation();

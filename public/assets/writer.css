@@ -191,6 +191,15 @@ html, body {
     text-shadow: none;
 }
 
+/* Save-status pill ("Editing: <slug>", "Saving…", "Saved") — the
+   "saved" state uses --primary which on cream is the saturated theme
+   neon and washes out (amber #ffb700, green #39ff14, p11 #1ac8ff,
+   brutalist near-white). Drop to --primary-dim on light surface so
+   the pill text stays legible. Same fix already applied to bold +
+   headings; --accent for "saving" gets the same treatment. */
+.writer-body.is-light .writer-status[data-state="saved"]  { color: var(--primary-dim); }
+.writer-body.is-light .writer-status[data-state="saving"] { color: var(--accent-dim); }
+
 /* Brutalist primary is near-white so the filled treatment above leaves
    the button visually flush with the cream surface. Swap to a dark
    slate fill so it still reads as the primary action on light. */

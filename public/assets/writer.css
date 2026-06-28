@@ -68,6 +68,17 @@ html, body {
 .writer-body.is-light .writer-editor > .wb { opacity: 0.6; }
 .writer-body.is-light .writer-editor > .wb.is-current { opacity: 1; }
 
+/* Active heading colour on light surface — same problem as bold: neon
+   --primary vanishes on cream (brutalist's near-white #e6edf3 is the
+   worst case, but green neon and p11 cyan are barely better). The
+   theme's --primary-dim is the intentional deep-tone variant. */
+.writer-body.is-light .writer-editor > .wb.is-current > h1,
+.writer-body.is-light .writer-editor > .wb.is-current > h2,
+.writer-body.is-light .writer-editor > .wb.is-current > h3,
+.writer-body.is-light .writer-editor > .wb.is-current > h4 {
+    color: var(--primary-dim);
+}
+
 .writer-shell {
     position: relative;
     height: 100vh;

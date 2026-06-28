@@ -180,6 +180,139 @@ the same way they will on the published page.
 Viewport detection runs once at page load — rotating the phone or
 resizing the browser doesn't auto-swap editors. Reload to switch.
 
+## Zen Writer Mode (`/writer`)
+
+A fullscreen distraction-free editor for the "blank-page → published
+post" flow. Reach it three ways:
+
+- `[ WRITER ]` link in the site header — starts a new blank post
+- `[ ZEN ]` button next to `[ EDIT ]` on each row of `/admin` — opens
+  the existing post in Zen
+- `[ ZEN ]` button in the post-footer of any `/posts/{slug}` (admin only)
+
+`/writer` requires admin auth; anonymous visitors get redirected to
+`/admin/login?next=/writer` and bounce back after sign-in.
+
+### Surface
+
+No header. No footer. No nav. Just the editor column (max-width 820px,
+`Play` 22px / `Share Tech Mono` for code), the action buttons
+`[ DRAFT ]` `[ SUBMIT ]` floating top-right (label switches to
+`[ SAVE ]` when editing a live post), a status pill top-left (Saving /
+Saved / Draft restored — auto-fades to invisible when idle), a word +
+reading-time counter bottom-right, and a quiet utility row bottom-left
+with `[ exit ]`, `[ light/dark ]`, `[ outline ]`.
+
+The surface honours the active theme (amber / green / crypt / p7 / p11 /
+brutalist) — headings, emphasis, image overlays all tint with the
+chosen `--primary`. `[ light ]` flips to a warm off-white surface for
+sunlight readability while keeping theme accents intact; preference
+persists in `localStorage`.
+
+### Live render
+
+A custom inline parser handles every block kind on each keystroke
+(debounced 90ms):
+
+| Markdown | Rendered as |
+|---|---|
+| `# / ## / ### / ####` | `<h1>`..`<h4>` Play bold |
+| `**bold**` / `*italic*` / `~~strike~~` / `` `code` `` | inline emphasis |
+| `> quote` | left-bar blockquote |
+| ```` ``` ```` | `<pre><code>` block (multiline via Enter inside the block) |
+| `- item` / `* item` / `1. item` | bullet / numbered list |
+| `- [ ] task` / `- [x] task` | checkbox with strikethrough when checked |
+| `[label](url)` | dotted underline link (URL stays visible) |
+| `![alt](url)` | `<img>` with duotone tint + URL source hides when block not active |
+| `---` | horizontal rule |
+
+Markdown syntax markers (`# `, `**`, `[ ]`, etc.) stay visible as dim
+characters while the block is being edited so caret offsets always
+match the source markdown 1:1. The moment focus moves to another
+block the markers collapse to a screen-reader-only sliver and the
+rendered text reads clean. List markers (`- / * / 1.`) stay visible
+always — without them a bullet reads as random indented prose.
+
+### Typewriter
+
+- **Focus**: the block containing the caret renders at full opacity,
+  every other block fades to `opacity: 0.4` so the eye stays on the
+  current thought.
+- **Scrolling**: after every input or selection change, the editor
+  stage scrolls so the caret rect sits at the viewport vertical
+  centre. Padding-bottom: 50vh ensures there's always room to scroll.
+
+### Keyboard
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl/Cmd + S` | Save (draft for new/draft posts; in-place save for live) |
+| `Ctrl/Cmd + Enter` | Publish — confirmation step for first publish |
+| `Ctrl/Cmd + B` | Wrap selection in `**…**` (or drop markers at caret) |
+| `Ctrl/Cmd + I` | Wrap selection in `*…*` |
+| `Ctrl/Cmd + K` | Open URL prompt → insert `[label](url)` |
+| `Ctrl/Cmd + ]` | Toggle outline panel |
+| `Enter` | New block; continues bullet / numbered / task list automatically |
+| `Enter` on empty list item | Break out of the list |
+| `Tab` | Insert 2-space indent |
+| `Esc` | Dismiss modal / outline panel |
+
+### Image paste
+
+Paste an image from the clipboard (`Cmd/Ctrl + V`) and Zen mode
+uploads it through `/admin/upload` (CSRF-protected, 10MB cap, MIME
+check by magic bytes, WebP re-encode, EXIF strip — same security model
+as the regular upload flow) and inserts `![](url)` into a fresh block
+at the caret.
+
+### Auto-save + recovery
+
+- Every 700ms after the last keystroke the document is committed to
+  `localStorage` under `lazyblog.writer.draft` (or
+  `lazyblog.writer.draft:{slug}` in edit mode so the "new post" slot
+  isn't clobbered).
+- Caret position is snapshotted too — re-opening `/writer` restores
+  both content and cursor.
+- `Ctrl/Cmd + S` flushes localStorage immediately before opening the
+  title modal, guaranteeing recoverable state if the modal is
+  dismissed or the tab is closed.
+- A successful publish/save clears the autosave slot.
+- `[ exit ]` and the browser-close path both prompt only when there
+  are unsaved changes; clean state exits silently.
+
+### Title modal
+
+When DRAFT / SUBMIT is pressed, the modal opens with the title input
+pre-filled from the document's first sentence — every markdown
+decoration stripped (heading hashes, emphasis, brackets, code, images,
+links) so the writer doesn't have to clean it up. Summary is optional.
+
+Three flows:
+
+- **DRAFT** (new or existing draft): single-press save → redirect to
+  `/admin/edit/{slug}` to keep editing with full metadata controls.
+- **SUBMIT** (new or draft): title prompt → confirmation screen showing
+  the future `/posts/{slug}` URL → `[ YES, PUBLISH ]` writes to disk
+  and redirects to the live post page.
+- **SAVE** (existing live post): single-press save, no confirmation
+  (no publish-state change). Press `Ctrl/Cmd + S` and one Enter to
+  commit body updates without ceremony.
+
+### Outline
+
+`Ctrl/Cmd + ]` slides in a fixed-left panel listing every h1–h4 in the
+document with hash-level badges (`#` primary, `##` accent, etc.).
+Click an item to jump the caret to the end of that heading; the active
+heading highlights as the writer moves. Closing the panel doesn't lose
+state — it just hides.
+
+### IME
+
+Composition events (`compositionstart` / `compositionend`) gate every
+re-render so Vietnamese Telex, Japanese kana, and Chinese pinyin
+composition stays intact. The 230-key-code from Chrome mid-compose is
+ignored along with `e.isComposing` checks on every keydown branch.
+
 ## Series management (`/admin/series`)
 
 Series are still discovered from post frontmatter — putting `series: my-slug`

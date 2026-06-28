@@ -108,6 +108,32 @@ unlocked-session readers and admins get the markdown back with the
 matches with a `// protected post` snippet but never indexes the body.
 See `docs/writing-posts.md` → "Password-protected posts".
 
+**Zen Writer Mode.** A fullscreen distraction-free editor at `/writer`
+(also reachable from any post via the `[ ZEN ]` button — admin only).
+Inspired by iA Writer: large `Play` typography, typewriter focus
+(active paragraph at full opacity, previous paragraphs dimmed),
+typewriter scrolling (caret stays vertically centred). Live markdown
+render keeps syntax markers visible while the block is being edited
+and collapses them to a screen-reader-only sliver the moment focus
+leaves — so heading hashes, emphasis stars, and image URL noise vanish
+once the writer moves on but reappear the instant they click back in.
+Keyboard-first: `Ctrl/Cmd + S` save, `Ctrl/Cmd + Enter` publish (with
+confirm step on first publish, single-press SAVE on live updates),
+`Ctrl/Cmd + B/I/K` wrap selection in bold/italic/link (Cmd+K opens a
+styled URL prompt), `Ctrl/Cmd + ]` toggles a side outline panel
+auto-built from h1–h4 headings. Paste an image from the clipboard
+and it uploads through `/admin/upload` and inserts `![](url)` at the
+caret — same WebP re-encode + EXIF strip as the normal upload path.
+Auto-saves every 700ms to `localStorage` (per-slug when editing) and
+restores on next visit; the title prompt pre-fills from the document's
+first sentence with all markdown decoration stripped. Light/dark
+surface toggle for sunlight legibility while still tinting headings,
+emphasis, and image overlays with the active theme's `--primary`.
+IME-safe for Vietnamese Telex (composition events guard every
+re-render). Drafts redirect to `/admin/edit/{slug}`; publishes go to
+the live `/posts/{slug}`. See `docs/writing-posts.md` → "Zen Writer
+Mode".
+
 **Hardened, ergonomic.** CSP (incl. `media-src`), CSRF, atomic file
 writes, session hardening, scheme-whitelisted image URLs. Stylesheets
 split by concern and cache-busted via `filemtime` so deploys
@@ -122,6 +148,7 @@ Backup with `rsync`. Restore in seconds.
 │  TOC + scrollspy      ·  code-block copy buttons    │
 │  Browser admin UI     ·  EasyMDE + server-side prev │
 │  Mobile mini-toolbar  ·  IME-safe phone editor      │
+│  Zen Writer Mode      ·  iA-style typewriter focus  │
 │  Image column-width   ·  duotone tint + hover-orig │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  Image gallery grid   ·  caption via title-attr     │

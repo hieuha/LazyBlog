@@ -36,8 +36,17 @@ html, body {
     --border: #cfcabe;
 }
 .writer-body.is-light .writer-editor { caret-color: var(--primary); }
-.writer-body.is-light .writer-editor strong { color: var(--primary); }
-.writer-body.is-light .writer-editor em     { color: var(--primary); }
+/* Bold/italic on light surface use the theme's pre-tuned deep variants
+   (--primary-dim / --accent-dim) instead of the neon --primary/--accent.
+   Saturated phosphor primaries (green #39ff14, amber #ffb700, p11 cyan,
+   brutalist near-white) wash out on cream — the *-dim tokens are the
+   theme's intentional deep-tone counterparts and give strong contrast
+   against the light background while still reading as the theme accent.
+   Selector specificity (0,3,1) beats both the dark-surface
+   ".writer-editor .wb strong/em" rules below (0,2,1) and the
+   "> .wb > * { color: inherit }" reset (0,2,0). */
+.writer-body.is-light .writer-editor .wb strong { color: var(--primary-dim); }
+.writer-body.is-light .writer-editor .wb em     { color: var(--accent-dim); }
 .writer-body.is-light .writer-editor code,
 .writer-body.is-light .writer-editor > .wb > pre {
     background: #e6e2d6;
@@ -52,6 +61,12 @@ html, body {
 }
 .writer-body.is-light .writer-editor > .wb { color: var(--text-dim); }
 .writer-body.is-light .writer-editor > .wb.is-current { color: var(--text); }
+/* Non-current blocks: bump opacity from 0.4 (tuned for dark) to 0.6 so
+   dimmed paragraphs stay legible against the cream surface. 0.4 of
+   near-black on #f5f3ee reads as washed gray; 0.6 keeps the dim signal
+   while preserving readability. */
+.writer-body.is-light .writer-editor > .wb { opacity: 0.6; }
+.writer-body.is-light .writer-editor > .wb.is-current { opacity: 1; }
 
 .writer-shell {
     position: relative;

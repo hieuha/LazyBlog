@@ -270,7 +270,13 @@ html, body {
     .writer-stats {
         bottom: 14px;
         right: 16px;
-        font-size: 10px;
+        /* Match .writer-utility font-size + line-height so the bottom
+           utility row ([ exit ] [ dark ] [ outline ]) and the stats
+           pill ("N words · M min") sit on the same visual baseline.
+           At 10px vs 11px with no line-height set the stats sat a
+           pixel or two higher than the utility row. */
+        font-size: 11px;
+        line-height: 1;
     }
 }
 
@@ -526,12 +532,18 @@ html, body {
        buttons. Row 1: status (full width, ellipsis). Row 2: actions
        (right-aligned). Both still float over the editor; the bumped
        editor `padding-top: 30vh` leaves plenty of headroom. */
+    /* Phone layout — keep the actions row near the top of the viewport
+       (was top: 46px which felt visibly low). Status pill shares the
+       row but caps its width so DRAFT/SUBMIT stay clear; long slugs
+       like "Editing: long-post-slug" ellipsis sooner. The buttons
+       paint over the status anyway since status is opacity:0 when
+       idle (the common case). */
     .writer-status {
         top: 14px;
         left: 16px;
         right: 16px;
         font-size: 11px;
-        max-width: calc(100% - 32px);
+        max-width: calc(100% - 190px);
         overflow: hidden;
         white-space: nowrap;
     }
@@ -542,7 +554,7 @@ html, body {
         min-width: 0;
     }
     .writer-actions {
-        top: 46px;
+        top: 14px;
         right: 16px;
         gap: 6px;
     }

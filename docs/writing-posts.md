@@ -274,6 +274,21 @@ check by magic bytes, WebP re-encode, EXIF strip — same security model
 as the regular upload flow) and inserts `![](url)` into a fresh block
 at the caret.
 
+If the clipboard carries multiple images at once (Pixel / iOS multi-
+select sheets, clipboard-manager apps) all of them upload in parallel
+via `Promise.all` and land as image blocks in paste-order at the caret.
+The status pill aggregates progress (`Uploading N images...` →
+`Uploaded N images`, or `Uploaded X / N images` on partial failure —
+failed slots drop out silently while successful ones still land in
+order).
+
+Consecutive image blocks serialize as adjacent markdown lines
+(`![](u1)\n![](u2)\n...`), so MarkdownRenderer's
+`preprocessStandaloneImages` groups them into a `post-figure-gallery
+count-N` row on the public render. To force separate standalone
+figures, put any non-image block (text, hr, blockquote, …) between
+them.
+
 ### Auto-save + recovery
 
 - Every 700ms after the last keystroke the document is committed to
@@ -301,6 +316,14 @@ When DRAFT / SUBMIT is pressed, the modal opens with the title input
 pre-filled from the document's first sentence — every markdown
 decoration stripped (heading hashes, emphasis, brackets, code, images,
 links) so the writer doesn't have to clean it up. Summary is optional.
+For **new posts only**, an optional Password field also appears below
+Summary — leave blank for a public post, or type ≥4 chars to lock the
+post the moment it's saved (bcrypt hashed into `password_hash:`
+frontmatter, same security model as the admin editor's `[ Set Password ]`
+button). The field hides itself on edits since `/admin/edit/{slug}`
+already owns the 3-state password UI (no-op / set / clear) for existing
+posts. The password value is wiped on modal close so a sensitive string
+never persists across modal opens.
 
 Three flows:
 

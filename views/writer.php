@@ -76,6 +76,10 @@ $favicon = 'data:image/svg+xml,'
     </div>
 
     <div class="writer-actions">
+        <a class="writer-btn" id="writer-view-btn" target="_blank" rel="noopener"
+           href="<?= $existingPost !== null ? '/posts/' . Http::e(rawurlencode($existingPost->slug)) : '#' ?>"
+           title="View live post (opens new tab)"
+           <?= $existingPost === null || $existingPost->draft ? 'hidden' : '' ?>>[ VIEW ]</a>
         <button type="button" class="writer-btn" id="writer-draft-btn"
                 title="Save as draft (Ctrl/Cmd + S)">[ DRAFT ]</button>
         <button type="button" class="writer-btn writer-btn-primary" id="writer-submit-btn"

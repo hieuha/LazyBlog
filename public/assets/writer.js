@@ -893,19 +893,26 @@
             // steals focus — guarantees a recoverable draft even if the
             // operator dismisses the title prompt or closes the tab.
             flushAutosave();
-            // On a live post Ctrl/Cmd+S means "save updates" — keep the
-            // post live, don't silently flip it back to draft. openModal
-            // with 'publish' picks up `isLiveUpdate` and skips the confirm
-            // step so a single key combo writes to disk.
+            // Live post → silent in-place save, stay in writer. New post
+            // or draft → open the title modal.
             var existing = window.LB_WRITER_EXISTING;
             var isLivePost = existing && existing.draft === false;
-            openModal(isLivePost ? 'publish' : 'draft');
+            if (isLivePost) {
+                saveLiveInline();
+            } else {
+                openModal('draft');
+            }
             return;
         }
         if (meta && (e.key === 'Enter' || e.key === '\n')) {
             e.preventDefault();
             flushAutosave();
-            openModal('publish');
+            var exE = window.LB_WRITER_EXISTING;
+            if (exE && exE.draft === false) {
+                saveLiveInline();
+            } else {
+                openModal('publish');
+            }
             return;
         }
 
@@ -1660,8 +1667,53 @@
         if (existing && existing.draft === false) {
             // Already published — primary action is "save updates", not "publish".
             submitBtn.textContent = '[ SAVE ]';
-            submitBtn.title = 'Save updates (Ctrl/Cmd + Enter)';
+            submitBtn.title = 'Save updates (Ctrl/Cmd + S)';
         }
+    }
+
+    // Silent in-place save for a post that's already live. No title prompt,
+    // no redirect — the writer keeps editing right where they were. Uses
+    // the title + summary already on disk; only body/draft state get pushed.
+    function saveLiveInline() {
+        var existing = window.LB_WRITER_EXISTING || null;
+        if (!existing || existing.draft !== false) return false;
+        var existingSlug = document.getElementById('writer-existing-slug').value;
+        var existingFilename = document.getElementById('writer-existing-filename').value;
+
+        var fd = new FormData();
+        fd.append('_csrf', csrfToken);
+        fd.append('mode', 'publish');
+        fd.append('title', existing.title || '');
+        fd.append('summary', existing.summary || '');
+        fd.append('body', fullMarkdown());
+        fd.append('existing_slug', existingSlug);
+        fd.append('existing_filename', existingFilename);
+
+        setStatus('saving', 'Saving...');
+        fetch('/writer/save', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+        })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (out) {
+                if (!out.ok || !out.data || !out.data.ok) {
+                    setStatus('error', (out.data && out.data.error) || 'Save failed');
+                    return;
+                }
+                setStatus('saved', 'Saved');
+                isDirty = false;
+                // Clear any stale autosave for this slug — disk is now
+                // the source of truth.
+                try {
+                    localStorage.removeItem(draftKey());
+                    localStorage.removeItem(caretKey());
+                } catch (e) {}
+            })
+            .catch(function () {
+                setStatus('error', 'Save failed');
+            });
+        return true;
     }
 
     function init() {
@@ -1706,7 +1758,16 @@
             e.returnValue = '';
         });
         draftBtn.addEventListener('click', function () { openModal('draft'); });
-        submitBtn.addEventListener('click', function () { openModal('publish'); });
+        submitBtn.addEventListener('click', function () {
+            // [ SAVE ] on a live post: silent in-place save with no modal.
+            // [ SUBMIT ] on a new/draft post: open the publish flow.
+            var ex = window.LB_WRITER_EXISTING;
+            if (ex && ex.draft === false) {
+                saveLiveInline();
+            } else {
+                openModal('publish');
+            }
+        });
         modalForm.addEventListener('submit', onModalSubmit);
         // Backdrop click + the explicit cancel button share dismiss intent
         // but the cancel button has phase-aware behavior (back vs close)

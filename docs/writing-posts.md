@@ -207,7 +207,16 @@ The surface honours the active theme (amber / green / crypt / p7 / p11 /
 brutalist) — headings, emphasis, image overlays all tint with the
 chosen `--primary`. `[ light ]` flips to a warm off-white surface for
 sunlight readability while keeping theme accents intact; preference
-persists in `localStorage`.
+persists in `localStorage`. On light surface the writer swaps the
+saturated `--primary` / `--accent` for the theme's `--primary-dim` /
+`--accent-dim` deep-tone variants when colouring bold, italic, active
+headings, and the save-status pill — neon yellows, greens, cyans, and
+brutalist near-white all wash out against cream, the `*-dim` tokens
+keep usable contrast. Primary action buttons stay filled with the
+saturated `--primary` (brutalist gets a dark-slate substitute since its
+primary is itself near-white). The non-current paragraph dim is also
+softer on light (`opacity: 0.6` vs `0.4` on dark) so faded blocks stay
+readable against the bright surface.
 
 ### Live render
 
@@ -236,8 +245,8 @@ always — without them a bullet reads as random indented prose.
 ### Typewriter
 
 - **Focus**: the block containing the caret renders at full opacity,
-  every other block fades to `opacity: 0.4` so the eye stays on the
-  current thought.
+  every other block fades to `opacity: 0.4` (or `0.6` on light surface)
+  so the eye stays on the current thought.
 - **Scrolling**: after every input or selection change, the editor
   stage scrolls so the caret rect sits at the viewport vertical
   centre. Padding-bottom: 50vh ensures there's always room to scroll.
@@ -278,7 +287,13 @@ at the caret.
   dismissed or the tab is closed.
 - A successful publish/save clears the autosave slot.
 - `[ exit ]` and the browser-close path both prompt only when there
-  are unsaved changes; clean state exits silently.
+  are unsaved changes; clean state exits silently. The `[ exit ]`
+  prompt is a styled `.writer-modal` (§ EXIT ZEN, CANCEL / EXIT
+  buttons, dismiss on backdrop click or Escape) so the theme + CRT
+  aesthetic carry through — the native browser confirm dialog is no
+  longer used. `beforeunload` (tab close / refresh / back button) still
+  falls back to the browser-native warning since the page can't render
+  a custom modal in that lifecycle phase.
 
 ### Title modal
 

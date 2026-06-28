@@ -123,10 +123,14 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                                     <?php endif; ?>
                                 </td>
                                 <td class="admin-row-actions">
+                                    <a class="admin-btn admin-btn-sm" href="/writer?slug=<?= Http::e((string) $entry['slug']) ?>" title="Open in Writer / Zen Mode">ZEN</a>
                                     <a class="admin-btn admin-btn-sm" href="/admin/edit/<?= Http::e((string) $entry['slug']) ?>">EDIT</a>
                                     <form method="post" action="/admin/delete/<?= Http::e((string) $entry['slug']) ?>"
                                           style="display:inline"
-                                          onsubmit="return confirm('Delete <?= Http::e((string) $entry['slug']) ?>? This is permanent.');">
+                                          data-confirm="Delete &quot;<?= Http::e((string) $entry['slug']) ?>&quot;? This is permanent."
+                                          data-confirm-title="Delete post"
+                                          data-confirm-label="[ DELETE ]"
+                                          data-confirm-danger="1">
                                         <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
                                         <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">DEL</button>
                                     </form>

@@ -37,7 +37,10 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
       <div class="admin-series-edit-left">
         <form id="rename-form" method="post" action="/admin/series/<?= Http::e($slug) ?>/rename"
               class="admin-series-rename-block"
-              onsubmit="return confirm('Rename this series? It will rewrite the series field on every post that uses this slug + move content/series/<?= Http::e($slug) ?>/ to the new path. Cannot be undone.');">
+              data-confirm="Rename this series? It will rewrite the series field on every post that uses this slug + move content/series/<?= Http::e($slug) ?>/ to the new path. Cannot be undone."
+              data-confirm-title="Rename series"
+              data-confirm-label="[ RENAME ]"
+              data-confirm-danger="1">
             <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
             <label class="admin-label" for="new_slug">Slug
                 <span class="admin-label-hint">(kebab-case · renaming rewrites every post's frontmatter)</span>

@@ -1132,3 +1132,66 @@ input[type="file"].admin-file-input::file-selector-button:hover,
     border: 0;
     background: var(--bg);
 }
+
+/* ---------- Admin confirm modal ----------
+   Shared dialog rendered once via _confirm-modal.php and driven by
+   `data-confirm="message"` on any form. Drops the native browser confirm
+   in favour of a styled, theme-aware prompt matching the rest of the
+   admin chrome. */
+.admin-confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: admin-confirm-fade 0.18s ease;
+}
+.admin-confirm-modal[hidden] { display: none; }
+
+@keyframes admin-confirm-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.admin-confirm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.admin-confirm-modal-panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 26px 28px 22px;
+    width: min(480px, 92vw);
+    box-shadow: 0 0 0 1px var(--primary-glow), 0 18px 50px rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.admin-confirm-modal-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    text-transform: uppercase;
+}
+
+.admin-confirm-modal-message {
+    margin: 0;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.admin-confirm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}

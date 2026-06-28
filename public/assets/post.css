@@ -250,16 +250,16 @@
 .post-meta-tags + .post-footer {
     margin-top: 28px;
 }
-/* On phones the three-button row (VIEW SOURCE / EDIT / BACK TO INDEX,
-   for admins) wraps onto two lines because the default padding +
-   letter-spacing on .view-source-link pushes total width past the
-   viewport. Compact the row so all three sit on one line — drop the
-   wrap, shrink horizontal padding, halve the tracking, and let buttons
-   shrink instead of overflowing. */
+/* On phones the action row (VIEW SOURCE / EDIT / ZEN / BACK TO INDEX,
+   for admins) is wider than the viewport so we let it wrap onto two
+   lines. Each button still gets compact horizontal padding + tighter
+   tracking + a hard `white-space: nowrap` so its own label never breaks
+   mid-word. Anonymous visitors see fewer buttons and the row still wraps
+   gracefully. */
 @media (max-width: 600px) {
-    .post-footer { flex-wrap: nowrap; gap: 6px; }
+    .post-footer { flex-wrap: wrap; gap: 6px; }
     .post-footer .view-source-link {
-        flex: 0 1 auto;
+        flex: 0 0 auto;
         min-width: 0;
         padding: 7px 8px;
         font-size: 10px;

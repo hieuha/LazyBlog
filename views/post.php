@@ -30,8 +30,16 @@ $renderTocList = function () use ($toc): void {
     // line — no separate badge box, no extra styling.
     $metaSlots = Http::plugins()?->slotPostMeta(['slug' => $post->slug]) ?? [];
     ?>
+    <?php
+    // Show wall-clock time alongside the date when the frontmatter `date:`
+    // carries an ISO datetime. Legacy date-only entries stay date-only so
+    // a one-day-precision post doesn't grow a fake `00:00` tail.
+    $postWhen = $post->hasExplicitTime()
+        ? $post->dateTime()->format('Y-m-d H:i')
+        : $post->displayDate();
+    ?>
     <div class="section-tag">
-        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ <i class="fa fa-unlock-alt" aria-hidden="true"></i> ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($post->displayDate()) ?><?php
+        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ <i class="fa fa-unlock-alt" aria-hidden="true"></i> ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($postWhen) ?><?php
             if ($post->author !== null && $post->author !== '') {
                 echo ' — ' . Http::e($post->author);
             }
@@ -96,11 +104,12 @@ $renderTocList = function () use ($toc): void {
     <?php endif; ?>
 
     <div class="post-footer">
-        <a class="view-source-link" href="<?= Http::e($post->rawUrl()) ?>">[ VIEW SOURCE .md ]</a>
+        <a class="view-source-link" href="<?= Http::e($post->rawUrl()) ?>" title="View source .md">[ .MD ]</a>
         <?php if ($isAdmin): ?>
             <a class="view-source-link view-source-link-edit" href="/admin/edit/<?= Http::e($post->slug) ?>">[ EDIT ]</a>
+            <a class="view-source-link view-source-link-edit" href="/writer?slug=<?= Http::e($post->slug) ?>">[ ZEN ]</a>
         <?php endif; ?>
-        <a class="view-source-link" href="/">← BACK TO INDEX</a>
+        <a class="view-source-link" href="/" title="Back to home">[ HOME ]</a>
     </div>
 
     <?php

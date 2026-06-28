@@ -1,0 +1,869 @@
+/* =========================================================================
+   LazyBlog — writer
+   Fullscreen distraction-free editor. iA Writer aesthetic translated into
+   LazyBlog's dark phosphor palette. Reuses theme tokens from base.css.
+
+   Loaded ONLY on /writer. Standalone — no header/footer/effects sheets.
+   ========================================================================= */
+
+/* ---------- Shell ---------- */
+
+html, body {
+    height: 100%;
+}
+
+.writer-body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Play', system-ui, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Light surface — keeps the active theme's primary colour (amber, green,
+   crypt red, …) for accents so the writer still feels like a LazyBlog
+   surface, only the background flips to a warm off-white so the screen
+   stays legible under direct sunlight. Tokens are local to the writer
+   page so the rest of the site (header, list pages) never see this. */
+.writer-body.is-light {
+    --bg: #f5f3ee;
+    --panel: #ebe8e0;
+    --text: #1c1a16;
+    --text-dim: #6e6a5e;
+    --border: #cfcabe;
+}
+.writer-body.is-light .writer-editor { caret-color: var(--primary); }
+.writer-body.is-light .writer-editor strong { color: var(--primary); }
+.writer-body.is-light .writer-editor em     { color: var(--primary); }
+.writer-body.is-light .writer-editor code,
+.writer-body.is-light .writer-editor > .wb > pre {
+    background: #e6e2d6;
+    color: #5a3a08;
+}
+.writer-body.is-light .writer-editor .md-syntax {
+    color: #9a9484;
+    opacity: 0.55;
+}
+.writer-body.is-light .writer-editor > .wb.is-current .md-syntax {
+    opacity: 0.75;
+}
+.writer-body.is-light .writer-editor > .wb { color: var(--text-dim); }
+.writer-body.is-light .writer-editor > .wb.is-current { color: var(--text); }
+
+.writer-shell {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---------- Action buttons (top-right floating) ---------- */
+
+.writer-actions {
+    position: fixed;
+    top: 24px;
+    right: 28px;
+    z-index: 30;
+    display: flex;
+    gap: 10px;
+    opacity: 0.75;
+    transition: opacity 0.25s ease;
+}
+
+.writer-actions:hover,
+.writer-actions:focus-within {
+    opacity: 1;
+}
+
+.writer-btn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.writer-btn:hover,
+.writer-btn:focus-visible {
+    color: var(--primary);
+    border-color: var(--primary-dim);
+    outline: none;
+}
+
+.writer-btn-primary {
+    color: var(--primary);
+    border-color: var(--primary-dim);
+}
+
+.writer-btn-primary:hover,
+.writer-btn-primary:focus-visible {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+}
+
+/* ---------- Save-status pill (top-left) ---------- */
+
+.writer-status {
+    position: fixed;
+    top: 24px;
+    left: 28px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--text);
+    /* Idle = fully hidden. Status only surfaces while something is
+       actively happening (Saving / Saved / Draft restored / Error),
+       then fades back to invisible after the reset timer fires. Keeps
+       the writing surface clean by default. */
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    user-select: none;
+}
+
+.writer-status[data-state="saving"] { opacity: 1; color: var(--accent); }
+.writer-status[data-state="saved"]  { opacity: 1; color: var(--primary); }
+.writer-status[data-state="error"]  { opacity: 1; color: #ff6a4a; }
+
+/* Persistent word + reading-time counter — bottom-right quiet zone so
+   it never collides with the action buttons (top-right) or status pill
+   (top-left). Low opacity by default; the writer can glance at it
+   without it pulling focus. */
+.writer-stats {
+    position: fixed;
+    bottom: 20px;
+    right: 28px;
+    z-index: 28;
+    display: inline-flex;
+    gap: 6px;
+    align-items: baseline;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    opacity: 0.45;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.2s ease;
+}
+
+.writer-stats-sep { opacity: 0.5; }
+
+@media (max-width: 720px) {
+    .writer-stats {
+        bottom: 14px;
+        right: 16px;
+        font-size: 10px;
+    }
+}
+
+.writer-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.writer-status[data-state="saving"] .writer-status-dot {
+    animation: writer-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes writer-pulse {
+    0%, 100% { opacity: 0.35; }
+    50%      { opacity: 1; }
+}
+
+/* ---------- Exit handle (bottom-left, quiet) ---------- */
+
+/* Utility corner — bottom-left. Both the exit handle and the surface
+   toggle live here so the writer's eye learns a single "less important
+   controls" zone. Kept dim by default; opacity lifts on hover/focus.
+   Hard-normalised because `<a>` (exit) and `<button>` (bg-toggle) ship
+   with different user-agent baselines + font metrics; without these
+   resets they render at different heights and the row looks staggered. */
+/* Quiet utility row pinned to the bottom-left. A flex container handles
+   spacing automatically — letting each label drive its own width — so
+   "[ outline ]" doesn't collide with "[ light ]" the way fixed left
+   offsets did. */
+.writer-utility {
+    position: fixed;
+    bottom: 20px;
+    left: 28px;
+    z-index: 30;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+}
+
+.writer-exit,
+.writer-bg-toggle,
+.writer-toc-toggle {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-decoration: none;
+    text-align: left;
+    vertical-align: baseline;
+    cursor: pointer;
+    opacity: 0.25;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.writer-toc-toggle.is-active { opacity: 1; color: var(--primary); }
+
+.writer-exit:hover,
+.writer-exit:focus-visible,
+.writer-bg-toggle:hover,
+.writer-bg-toggle:focus-visible,
+.writer-toc-toggle:hover,
+.writer-toc-toggle:focus-visible {
+    opacity: 1;
+    color: var(--primary);
+    outline: none;
+}
+
+@media (max-width: 720px) {
+    .writer-utility { bottom: 14px; left: 18px; gap: 12px; }
+}
+
+/* ---------- Outline / TOC panel ---------- */
+
+/* Hidden by default; the writer toggles via Cmd/Ctrl + . The panel slides
+   in from the left so it doesn't reflow the editor column — it overlays
+   the empty left margin and disappears the moment the writer dismisses it.
+   Soft transition is short enough not to feel sluggish. */
+.writer-toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 25;
+    padding: 64px 20px 24px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    box-sizing: border-box;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.writer-toc[hidden] {
+    display: block;
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.writer-toc::-webkit-scrollbar { width: 0; height: 0; }
+.writer-toc { scrollbar-width: none; }
+
+.writer-toc-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+}
+
+.writer-toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.writer-toc-item {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 6px 8px;
+    text-align: left;
+    font-family: 'Play', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text);
+    opacity: 0.7;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.writer-toc-item:hover,
+.writer-toc-item:focus-visible {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.04);
+    outline: none;
+}
+
+.writer-toc-item.is-current {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.writer-toc-item[data-level="2"] { padding-left: 20px; font-size: 12.5px; }
+.writer-toc-item[data-level="3"] { padding-left: 32px; font-size: 12px;  opacity: 0.6; }
+.writer-toc-item[data-level="4"] { padding-left: 44px; font-size: 11.5px; opacity: 0.55; }
+
+/* Per-level visual marker — small leading badge that reads at a glance
+   so the writer can tell `h1` from `h3` without counting indents. Color
+   keyed off `--primary` for h1 so the document spine stands out; deeper
+   levels fade through `text-dim`. */
+.writer-toc-item::before {
+    display: inline-block;
+    margin-right: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85em;
+    letter-spacing: 0;
+    color: var(--text-dim);
+    opacity: 0.7;
+}
+.writer-toc-item[data-level="1"]::before { content: "#";    color: var(--primary); opacity: 0.85; }
+.writer-toc-item[data-level="2"]::before { content: "##";   color: var(--accent);  opacity: 0.75; }
+.writer-toc-item[data-level="3"]::before { content: "###";  }
+.writer-toc-item[data-level="4"]::before { content: "####"; }
+
+.writer-toc-empty {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-style: italic;
+    padding: 6px 0;
+}
+
+.writer-toc-hint {
+    margin-top: 18px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+}
+
+/* Light surface — flip panel surface tokens. */
+.writer-body.is-light .writer-toc {
+    background: #ebe8e0;
+    border-right-color: #cfcabe;
+}
+.writer-body.is-light .writer-toc-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 720px) {
+    .writer-toc { width: 80vw; max-width: 320px; }
+}
+
+/* ---------- Editor stage ---------- */
+
+.writer-stage {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* scroll-behavior: smooth would animate every scrollTop assignment.
+       Combined with the per-input rAF cadence of typewriter scrolling
+       that meant each new keystroke cancelled the previous animation
+       and the caret never visibly recentered — it just jittered in
+       place. Direct (instant) scroll is the right primitive here. */
+    -webkit-overflow-scrolling: touch;
+}
+
+.writer-stage::-webkit-scrollbar { width: 0; height: 0; }
+.writer-stage { scrollbar-width: none; }
+
+.writer-editor {
+    position: relative;
+    margin: 0 auto;
+    padding: 38vh 24px 50vh;
+    max-width: 820px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: 'Play', system-ui, sans-serif;
+    font-size: 22px;
+    line-height: 1.8;
+    color: var(--text);
+    caret-color: var(--primary);
+    outline: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 720px) {
+    .writer-editor {
+        font-size: 19px;
+        padding: 30vh 18px 45vh;
+    }
+    .writer-btn { font-size: 12px; padding: 7px 11px; }
+
+    /* Phone layout — stack the chrome rows so a long status label like
+       "Editing: test-thu-chuc-nang-..." doesn't slam into the action
+       buttons. Row 1: status (full width, ellipsis). Row 2: actions
+       (right-aligned). Both still float over the editor; the bumped
+       editor `padding-top: 30vh` leaves plenty of headroom. */
+    .writer-status {
+        top: 14px;
+        left: 16px;
+        right: 16px;
+        font-size: 11px;
+        max-width: calc(100% - 32px);
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .writer-status-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    .writer-actions {
+        top: 46px;
+        right: 16px;
+        gap: 6px;
+    }
+    .writer-exit { bottom: 14px; left: 18px; }
+}
+
+/* Placeholder when empty — anchored at the editor's padding-top so it
+   sits exactly where the first block (and caret) lives. */
+.writer-editor[data-empty="true"]::before {
+    content: attr(data-placeholder);
+    color: var(--text-dim);
+    opacity: 0.45;
+    pointer-events: none;
+    position: absolute;
+    top: 38vh;
+    left: 24px;
+}
+
+@media (max-width: 720px) {
+    .writer-editor[data-empty="true"]::before {
+        top: 30vh;
+        left: 18px;
+    }
+}
+
+/* ---------- Per-block typography (live-rendered markdown) ----------
+   Every paragraph is a `.wb` wrapper; the rendered HTML lives inside it.
+   Dim/current state toggles on the wrapper; typography selectors reach
+   the inner heading/blockquote/etc via `.wb > *`. */
+
+.writer-editor > .wb {
+    margin: 0 0 0.85em;
+    /* Dim is a single signal — the active block reads as full-bright
+       `--text`, the rest fall back to the same colour at lower opacity.
+       0.4 puts non-active paragraphs in a clearly secondary band while
+       still keeping them legible. */
+    opacity: 0.4;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    color: var(--text);
+    min-height: 1em;
+}
+
+.writer-editor > .wb.is-current {
+    opacity: 1;
+    color: var(--text);
+}
+
+.writer-editor > .wb > * {
+    margin: 0;
+    color: inherit;
+}
+
+.writer-editor > .wb > h1,
+.writer-editor > .wb > h2,
+.writer-editor > .wb > h3,
+.writer-editor > .wb > h4 {
+    font-family: 'Play', system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    margin: 0.25em 0;
+    /* base.css gives every heading a 6+22+56px phosphor halo plus a
+       chromatic RGB split. In Writer the halo bleeds across dimmed
+       previous paragraphs and turns the smear unreadable — kill both. */
+    text-shadow: none;
+}
+
+.writer-editor > .wb > h1 { font-size: 1.9em; }
+.writer-editor > .wb > h2 { font-size: 1.55em; }
+.writer-editor > .wb > h3 { font-size: 1.25em; }
+.writer-editor > .wb > h4 { font-size: 1.1em;  }
+
+.writer-editor > .wb.is-current > h1,
+.writer-editor > .wb.is-current > h2,
+.writer-editor > .wb.is-current > h3,
+.writer-editor > .wb.is-current > h4 {
+    color: var(--primary);
+}
+
+.writer-editor > .wb > blockquote {
+    padding-left: 18px;
+    border-left: 2px solid var(--primary-dim);
+    font-style: italic;
+}
+
+.writer-editor > .wb > pre {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.88em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.writer-editor > .wb > pre code {
+    font-family: inherit;
+    background: transparent;
+    padding: 0;
+    color: var(--accent);
+}
+
+.writer-editor code {
+    font-family: 'Share Tech Mono', monospace;
+    background: var(--panel);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 0.92em;
+    color: var(--accent);
+}
+
+.writer-editor strong { font-weight: 700; color: var(--primary); }
+.writer-editor em     { color: var(--accent); font-style: italic; }
+
+/* Markdown syntax markers (#, **, *, `, [], (), > , - , 1. ) stay present
+   in textContent so caret offsets map 1:1 to the source markdown. When
+   the block is the active edit target the markers are dimmed but
+   visible; when the block loses focus they collapse to a screen-reader-
+   only sliver so the rendered text reads cleanly (no `##` clutter in
+   front of headings, no `**` around bold spans, etc.). textContent is
+   untouched so caret math stays valid when focus returns. */
+.writer-editor .md-syntax {
+    opacity: 0.28;
+    color: var(--text-dim);
+    font-weight: 400;
+}
+
+.writer-editor > .wb.is-current .md-syntax {
+    opacity: 0.55;
+}
+
+.writer-editor > .wb:not(.is-current) .md-syntax {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Link markers stay visible at all times per user preference — only the
+   block-level + inline emphasis markers collapse. The `.md-link-source`
+   wrapper exists exclusively around `[text](url)` so this exception is
+   safe and tightly scoped. */
+.writer-editor > .wb:not(.is-current) .md-link-source .md-syntax {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    pointer-events: auto;
+}
+
+/* List + task markers (- / * / N.) stay visible at all times even when
+   the block isn't the active edit target. Without the leading `-` the
+   bullet item reads as plain indented prose and the structural cue is
+   lost. Distinct class (not `.md-syntax`) so the SR-only collapse rule
+   above never touches them. */
+.writer-editor .md-list-marker {
+    color: var(--text-dim);
+    opacity: 0.65;
+    font-weight: 400;
+}
+
+.writer-editor > .wb.is-current .md-list-marker {
+    opacity: 0.85;
+}
+
+.writer-editor a {
+    /* Link text shares the body colour — the dotted underline + theme-
+       tinted decoration is the only visual link cue. Keeps the reading
+       rhythm flat instead of breaking it with bright primary spots
+       inside paragraphs. */
+    color: inherit;
+    text-decoration: underline dotted;
+    text-decoration-color: var(--primary);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 4px;
+}
+
+.writer-editor > .wb > .wb-li {
+    padding-left: 1.2em;
+    position: relative;
+}
+
+/* Task-list checkbox styling — the raw `[ ]` / `[x]` characters remain
+   in textContent for caret math, so we style them instead of replacing.
+   `.wb-task-mark` is the middle slot (the space or the `x`); checked
+   state colours it `--primary`. */
+.writer-editor .wb-task {
+    display: inline;
+    letter-spacing: 0;
+}
+.writer-editor .wb-task[data-checked="1"] .wb-task-mark {
+    color: var(--primary);
+    font-weight: 700;
+}
+.writer-editor .wb-task[data-checked="1"] {
+    /* Subtle visual cue that the parent task is done — strikethrough on
+       the rendered label only. Caret math unaffected. */
+    text-decoration: line-through;
+    text-decoration-color: var(--text-dim);
+    text-decoration-thickness: 1px;
+    opacity: 0.7;
+}
+
+/* Live image preview — LazyBlog signature duotone wash. The wrapper
+   carries a multiply-blended ::after overlay tinted with `--primary`,
+   the same trick `.post-figure-image` uses for published posts, so the
+   image in the editor reads as part of the active theme (amber, green,
+   crypt, …) instead of a foreign full-colour rectangle. Hover on
+   pointer-fine devices lifts the wash so the writer can sanity-check
+   the original. */
+.writer-editor .wb-img-wrap {
+    position: relative;
+    display: block;
+    margin: 0.5em 0;
+    border-top: 1px solid var(--primary-dim);
+    border-bottom: 1px solid var(--primary-dim);
+    background: var(--panel);
+    overflow: hidden;
+}
+
+.writer-editor .wb-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: grayscale(0.9) contrast(1.05);
+    transition: filter 0.35s ease;
+}
+
+.writer-editor .wb-img-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--primary);
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+@media (hover: hover) {
+    .writer-editor .wb-img-wrap:hover .wb-img {
+        filter: grayscale(0) contrast(1);
+    }
+    .writer-editor .wb-img-wrap:hover::after {
+        opacity: 0;
+    }
+}
+
+/* Light surface: multiply on white-ish background washes whites into the
+   primary colour, which over-tints the photo. Drop the overlay opacity
+   so the image still tints toward the theme but stays legible. */
+.writer-body.is-light .writer-editor .wb-img-wrap::after {
+    opacity: 0.35;
+}
+.writer-body.is-light .writer-editor .wb-img {
+    filter: grayscale(0.7) contrast(1.02);
+}
+
+/* Image-source toggle. When the block is the active edit target the
+   `![alt](url)` syntax is shown (dimmed) so the writer can edit the
+   URL. When the caret leaves, the source collapses to a screen-reader-
+   only sliver — the chars stay in textContent so caret offsets remain
+   valid for the next focus pass, but visually the block becomes just
+   the rendered image. No duplication, no URL wall of text. */
+.writer-editor > .wb:not(.is-current) .md-img-source {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.writer-editor > .wb.is-current .md-img-source {
+    display: inline;
+}
+
+
+.writer-editor > .wb > hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0.8em 0;
+}
+
+/* ---------- Modal (title + summary capture) ---------- */
+
+.writer-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: writer-fade 0.18s ease;
+}
+
+/* CSS `display: flex` above clobbers the browser's default `display: none`
+   for the `hidden` HTML attribute. Re-assert it so the modal stays hidden
+   until JS opens it. Without this rule the writer page loads with the
+   modal blocking the editor. */
+.writer-modal[hidden] {
+    display: none;
+}
+
+@keyframes writer-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.writer-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.writer-modal-panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 26px 28px 22px;
+    width: min(460px, 92vw);
+    box-shadow: 0 0 0 1px var(--primary-glow), 0 18px 50px rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: inherit;
+}
+
+.writer-modal-tag {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.writer-modal-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 6px;
+}
+
+.writer-modal-req { color: var(--primary); }
+.writer-modal-opt { color: var(--text-dim); text-transform: none; letter-spacing: 0; font-style: italic; }
+
+.writer-modal-input,
+.writer-modal-textarea {
+    font-family: 'Play', system-ui, sans-serif;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    resize: vertical;
+}
+
+.writer-modal-input:focus,
+.writer-modal-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.writer-modal-textarea { min-height: 70px; line-height: 1.55; }
+
+.writer-modal-error {
+    color: #ff6a4a;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+}
+
+.writer-modal-error[hidden] {
+    display: none;
+}
+
+.writer-modal-phase[hidden] {
+    display: none;
+}
+
+.writer-modal-confirm-text {
+    margin: 6px 0 4px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.writer-modal-confirm-title {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.writer-modal-confirm-hint {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.writer-modal-confirm-url {
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.writer-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}

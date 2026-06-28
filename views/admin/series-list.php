@@ -84,7 +84,10 @@ use App\Http;
                             <?php if ($hasManifest): ?>
                                 <form method="post" action="/admin/series/<?= Http::e($slug) ?>/delete"
                                       style="display:inline"
-                                      onsubmit="return confirm('Delete manifest + cover for <?= Http::e($slug) ?>? Posts in this series stay put.');">
+                                      data-confirm="Delete manifest + cover for &quot;<?= Http::e($slug) ?>&quot;? Posts in this series stay put."
+                                      data-confirm-title="Delete manifest"
+                                      data-confirm-label="[ DELETE ]"
+                                      data-confirm-danger="1">
                                     <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
                                     <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">DEL MANIFEST</button>
                                 </form>

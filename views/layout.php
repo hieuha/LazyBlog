@@ -383,6 +383,7 @@ $favicon = 'data:image/svg+xml,'
                 <?php if ($hasAbout): ?>
                     <a class="header-btn" href="/about" role="menuitem" aria-label="About"<?= $path === '/about' ? ' aria-current="page"' : '' ?>>[ ABOUT ]</a>
                 <?php endif; ?>
+                <a class="header-btn" href="/writer" role="menuitem" aria-label="Writer mode"<?= $path === '/writer' ? ' aria-current="page"' : '' ?>>[ WRITER ]</a>
                 <?php
                 // Plugin-contributed header nav. Plugins call $ctx->nav($label, $href, $placement, $auth)
                 // during register(); registry exposes the merged list here. Admin-only
@@ -485,6 +486,11 @@ $favicon = 'data:image/svg+xml,'
 </footer>
 
 <button id="back-to-top" class="back-to-top" aria-label="Back to top" title="Back to top">↑</button>
+
+<?php if (str_starts_with($path, '/admin')): ?>
+    <?php /* Shared confirm dialog — drives any element with `data-confirm`. */ ?>
+    <?php require __DIR__ . '/admin/_confirm-modal.php'; ?>
+<?php endif; ?>
 
 <script defer src="<?= Http::e(Http::asset('assets/site.js')) ?>"></script>
 <?php if ($isPost): ?>

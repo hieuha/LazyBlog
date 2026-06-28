@@ -234,7 +234,10 @@ $flashIsError = is_string($flash ?? null) && (
                             <button type="submit"
                                     formaction="/admin/remove-password/<?= Http::e($formValues['slug']) ?>"
                                     class="admin-btn admin-btn-danger"
-                                    onclick="return confirm('Remove password protection from this post?');">
+                                    data-confirm="Remove password protection from this post?"
+                                    data-confirm-title="Remove password"
+                                    data-confirm-label="[ REMOVE ]"
+                                    data-confirm-danger="1">
                                 [ Remove Password ]
                             </button>
                         </div>

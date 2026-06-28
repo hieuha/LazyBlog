@@ -90,6 +90,7 @@ $adminSeries = new App\Controllers\AdminSeriesController($repo, $seriesManifest,
 $aboutRepo = new App\AboutRepository(__DIR__ . '/../content');
 $aboutCtl = new App\Controllers\AboutController($aboutRepo, $renderer, $repo);
 $adminAboutCtl = new App\Controllers\AdminAboutController($aboutRepo);
+$writerCtl = new App\Controllers\WriterController($repo);
 
 $router = new App\Router();
 
@@ -146,6 +147,8 @@ $router->get('/feed.xml', fn () => $feedCtl->show());
 $router->get('/archive', fn () => $archive->show());
 $router->get('/search', fn () => $search->show());
 $router->get('/about', fn () => $aboutCtl->show());
+$router->get('/writer', fn () => $writerCtl->show());
+$router->post('/writer/save', fn () => $writerCtl->save());
 $router->get('/', fn () => $home->index());
 
 $router->dispatch(

@@ -150,7 +150,15 @@ html, body {
    black. On the writer's light surface --bg is cream, so the selection
    reads as faded cream on neon green. Override to a near-black so the
    selected text stays legible against the theme's primary highlight. */
-.writer-body.is-light ::selection,
+/* Split into separate rules — a comma-grouped selector list is dropped
+   wholesale by browsers that don't recognise one of the entries (e.g.,
+   Chrome on ::-moz-selection), so grouping these would leave the base
+   ::selection from base.css unchallenged. */
+.writer-body.is-light ::selection {
+    background: var(--primary);
+    color: #100a04;
+    text-shadow: none;
+}
 .writer-body.is-light ::-moz-selection {
     background: var(--primary);
     color: #100a04;

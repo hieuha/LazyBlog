@@ -402,25 +402,43 @@
         return Array.prototype.slice.call(editor.querySelectorAll(':scope > .wb'));
     }
 
+    var IMAGE_LINE_RE = /^\s*!\[[^\]]*\]\([^)\s]+\)\s*$/;
+
     function fullMarkdown() {
         var blocks = getAllBlocks();
         var parts = [];
+        var prevImage = false;
         for (var i = 0; i < blocks.length; i++) {
             // Re-sync data-md from current textContent when the block is
             // the active edit target (textContent is fresh, data-md may lag).
             var md = blocks[i].textContent || '';
+            var isImg = IMAGE_LINE_RE.test(md);
+            if (i > 0) {
+                // Two consecutive image-only blocks join with a single
+                // newline so MarkdownRenderer::preprocessStandaloneImages
+                // groups them into a `post-figure-gallery count-N` row.
+                // Anything else gets the normal blank-line paragraph
+                // separator. Matches the MD editor's tight-markdown
+                // gallery convention (adjacent image lines = gallery).
+                parts.push(prevImage && isImg ? '\n' : '\n\n');
+            }
             parts.push(md);
+            prevImage = isImg;
         }
-        return parts.join('\n\n');
+        return parts.join('');
     }
 
     // Detect a line that should stand alone as a Zen block: a list item
-    // (- / * / digit+dot) or a heading (#…####). Tight markdown sources
-    // separate these by a single `\n` rather than `\n\n`, so without this
-    // rule three `- bullet` lines from EasyMDE would collapse into one
-    // Zen block.
+    // (- / * / digit+dot), a heading (#…####), or a standalone image.
+    // Tight markdown sources separate these by a single `\n` rather
+    // than `\n\n`; without this rule three `- bullet` lines from
+    // EasyMDE would collapse into one Zen block, and the multi-image
+    // gallery format (`![](u1)\n![](u2)`) would load as a single
+    // broken block instead of two image blocks.
     function isStandaloneLine(s) {
-        return /^(\s*)([-*]|\d+\.) /.test(s) || /^#{1,4} /.test(s);
+        return /^(\s*)([-*]|\d+\.) /.test(s)
+            || /^#{1,4} /.test(s)
+            || IMAGE_LINE_RE.test(s);
     }
 
     function splitParagraphIntoBlocks(para) {

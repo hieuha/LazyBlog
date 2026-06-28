@@ -49,7 +49,8 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
     </div>
 
     <?php if ($flash !== null): ?>
-        <p class="admin-flash">// <?= Http::e($flash) ?></p>
+        <?php $savedSlug = preg_match('/^Saved: (.+)$/', $flash, $sm) ? $sm[1] : null; ?>
+        <p class="admin-flash">// <?php if ($savedSlug !== null): ?>Saved: <a href="/posts/<?= Http::e($savedSlug) ?>" target="_blank" rel="noopener noreferrer"><?= Http::e($savedSlug) ?></a><?php else: ?><?= Http::e($flash) ?><?php endif; ?></p>
         <?php
         // Match a successful save / delete and drop the editor's
         // localStorage draft for that slug. Also nuke the generic

@@ -71,6 +71,7 @@ final class MarkdownRenderer
         $html = $this->postprocessStrikethrough($html);
         $html = $this->postprocessFreqTags($html);
         $html = $this->postprocessFigures($html);
+        $html = $this->postprocessLinkTargets($html);
         $html = $this->injectHeadingIds($html);
         $toc = $this->extractToc($html);
 
@@ -277,6 +278,35 @@ final class MarkdownRenderer
         $idx = count($this->injected);
         $this->injected[$idx] = $html;
         return "\n\n<!--LAZY-INJ-{$idx}-->\n\n";
+    }
+
+    /**
+     * Force every <a> in the rendered body to open in a new tab. Skip:
+     *   - intra-page anchor links (href="#…" — TOC scroll, footnote refs/backrefs)
+     *   - links that already declare target= (admonition / stashed HTML may set it)
+     * rel="noopener noreferrer" prevents tab-nabbing + referrer leak.
+     */
+    private function postprocessLinkTargets(string $html): string
+    {
+        $result = preg_replace_callback(
+            '/<a\b([^>]*)>/i',
+            static function (array $m): string {
+                $attrs = $m[1];
+                if (preg_match('/\btarget\s*=/i', $attrs)) {
+                    return $m[0];
+                }
+                if (!preg_match('/\bhref\s*=\s*(["\'])(.*?)\1/i', $attrs, $h)) {
+                    return $m[0];
+                }
+                $href = $h[2];
+                if ($href === '' || $href[0] === '#') {
+                    return $m[0];
+                }
+                return '<a' . $attrs . ' target="_blank" rel="noopener noreferrer">';
+            },
+            $html,
+        );
+        return $result ?? $html;
     }
 
     private function reinjectStashed(string $html): string

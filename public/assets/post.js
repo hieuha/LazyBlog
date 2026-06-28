@@ -50,44 +50,62 @@
 })();
 
 /* ---------- Scrollspy: highlight the TOC link for the current heading ----------
-   Uses IntersectionObserver — no scroll listener, no rAF needed. Heading
-   is "active" while it sits inside the top 10–35% of the viewport band.
+   Tracks the last heading whose top has crossed the activation line (25% from
+   the viewport top). This way the active section stays lit while scrolling
+   through the body BETWEEN two headings — a pure IntersectionObserver band
+   would lose the highlight as soon as the heading leaves the band.
    Watches h1/h2/h3 so `#`-level headings in markdown still spy. */
 (function () {
-    if (!('IntersectionObserver' in window)) return;
     var headings = document.querySelectorAll('.post-body h1[id], .post-body h2[id], .post-body h3[id]');
     if (!headings.length) return;
 
     var tocLinks = document.querySelectorAll('.toc-list a');
     if (!tocLinks.length) return;
 
-    var intersecting = new Set();
+    // Click on a TOC link pins the active state briefly so the smooth-scroll
+    // doesn't flicker through intermediate sections before settling.
+    var pinUntil = 0;
 
-    function setActive(activeId) {
-        var activeHref = activeId ? '#' + activeId : null;
+    function setActive(activeHref) {
         tocLinks.forEach(function (a) {
             a.classList.toggle('is-active', a.getAttribute('href') === activeHref);
         });
     }
 
-    var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-            if (e.isIntersecting) intersecting.add(e.target);
-            else intersecting.delete(e.target);
+    function compute() {
+        if (Date.now() < pinUntil) return;
+        var line = window.innerHeight * 0.25;
+        var current = null;
+        for (var i = 0; i < headings.length; i++) {
+            if (headings[i].getBoundingClientRect().top <= line) {
+                current = headings[i];
+            } else {
+                break;
+            }
+        }
+        setActive(current ? '#' + current.id : null);
+    }
+
+    var ticking = false;
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(function () {
+            compute();
+            ticking = false;
         });
-        var topmost = null;
-        var topmostY = Infinity;
-        intersecting.forEach(function (el) {
-            var y = el.getBoundingClientRect().top;
-            if (y < topmostY) { topmostY = y; topmost = el; }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', compute);
+
+    tocLinks.forEach(function (a) {
+        a.addEventListener('click', function () {
+            setActive(a.getAttribute('href'));
+            pinUntil = Date.now() + 700;
         });
-        setActive(topmost ? topmost.id : null);
-    }, {
-        rootMargin: '-10% 0px -65% 0px',
-        threshold: 0,
     });
 
-    headings.forEach(function (h) { observer.observe(h); });
+    compute();
 })();
 
 /* ---------- Code-block enhancements: language label + copy button ---------- */

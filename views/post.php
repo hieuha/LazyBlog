@@ -8,7 +8,7 @@
 use App\Auth;
 use App\Http;
 
-$showToc = isset($toc) && count($toc) >= 3;
+$showToc = isset($toc) && count($toc) >= 2;
 $isAdmin = Auth::check();
 ?>
 

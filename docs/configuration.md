@@ -107,7 +107,7 @@ env vars — editing them means tweaking the CSS:
 - **CRT scanlines + vignette + bezel**: layered fixed overlays at z-index 998–1000. p7 + p11 strip text-shadow only (keep box-shadow + vignette so cards still have depth — a flat tradecraft / clinical-telemetry look).
 - **Heading glow + chromatic-aberration RGB split**: respects `prefers-reduced-motion`. Split active only on amber + green; crypt + brutalist drop the RGB shift but keep the phosphor halo; p7 + p11 strip all text glow.
 - **Mobile header drawer** (<600px): nav links collapse behind a `[ ≡ MENU ]` button (button + `aria-expanded` + CSS overlay panel, same shape as the theme picker). Theme picker stays on row 1 for 1-tap swap. Subtitle hidden, button padding shrunk, theme button drops its current-value readout.
-- **Auto TOC** on posts with ≥3 headings — inline on mobile, floats to left rail on desktop
+- **Auto TOC** on posts with ≥2 headings — inline on mobile, floats to left rail on desktop. The active link tracks the last heading scrolled past, so the highlight stays lit while reading body content between sections.
 - **Reading progress bar** on `/posts/*` — fixed top, fills with theme accent as you scroll
 - **Image full-bleed** + theme tint via `mix-blend-mode: multiply`
 - **Back-to-top** button after ~400px of scroll

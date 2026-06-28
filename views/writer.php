@@ -133,6 +133,18 @@ $favicon = 'data:image/svg+xml,'
             <label class="writer-modal-label" for="writer-summary-input">Summary <span class="writer-modal-opt">optional</span></label>
             <textarea name="summary" id="writer-summary-input" class="writer-modal-textarea"
                       rows="3" maxlength="500" autocomplete="off"></textarea>
+
+            <?php if ($existingPost === null): ?>
+                <!-- Password is only offered on NEW posts. For existing posts
+                     the password lives behind the `/admin/edit/{slug}`
+                     [ Set Password ] / [ Remove Password ] buttons so the
+                     writer doesn't need a 3-state UI (no-op / set / clear)
+                     here. Min 4 chars matches AdminController::setPassword. -->
+                <label class="writer-modal-label" for="writer-password-input">Password <span class="writer-modal-opt">optional · min 4 chars</span></label>
+                <input type="password" name="password" id="writer-password-input" class="writer-modal-input"
+                       minlength="4" maxlength="100" autocomplete="new-password"
+                       placeholder="Leave blank for no protection">
+            <?php endif; ?>
         </div>
 
         <div class="writer-modal-phase" data-phase="confirm" hidden>

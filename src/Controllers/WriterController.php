@@ -64,10 +64,28 @@ final class WriterController
         $body = (string) ($_POST['body'] ?? '');
         $existingSlug = trim((string) ($_POST['existing_slug'] ?? ''));
         $existingFilename = trim((string) ($_POST['existing_filename'] ?? ''));
+        // Password field only appears on new-post submits (the writer hides
+        // it in edit mode). Treat as optional; bcrypt + min-4-chars match
+        // AdminController::setPassword so the lock-screen UX is identical
+        // regardless of which entry path created the post.
+        $passwordRaw = (string) ($_POST['password'] ?? '');
 
         if ($title === '') {
             self::jsonError(400, 'Title is required.');
             return;
+        }
+        $newPasswordHash = null;
+        if ($passwordRaw !== '') {
+            if (mb_strlen($passwordRaw) < 4) {
+                self::jsonError(400, 'Password must be at least 4 characters.');
+                return;
+            }
+            $hashed = password_hash($passwordRaw, PASSWORD_BCRYPT);
+            if (!is_string($hashed)) {
+                self::jsonError(500, 'Failed to hash password.');
+                return;
+            }
+            $newPasswordHash = $hashed;
         }
 
         // Edit mode: preserve the original frontmatter (slug, date, tags,
@@ -132,7 +150,7 @@ final class WriterController
                 image: null,
                 series: null,
                 part: null,
-                passwordHash: null,
+                passwordHash: $newPasswordHash,
             );
 
             try {

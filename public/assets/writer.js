@@ -1253,6 +1253,12 @@
     function closeModal() {
         modal.hidden = true;
         modalConfirm.disabled = false;
+        // Always wipe the password field on close — keeping it across modal
+        // opens would leak a sensitive value into a context where the
+        // writer may not realise the previous draft still has it queued.
+        // Title/summary persist intentionally (they help retry flows).
+        var pw = document.getElementById('writer-password-input');
+        if (pw) pw.value = '';
         editor.focus();
     }
 

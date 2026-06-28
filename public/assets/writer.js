@@ -1039,21 +1039,32 @@
         var cd = e.clipboardData;
         if (!cd) return;
 
-        // Image paste — single image file on the clipboard. Upload via the
-        // existing `/admin/upload` endpoint (CSRF-protected, returns
-        // `{url}`) and drop the resulting `![](url)` into a fresh block.
+        // Image paste — clipboard can carry one image (the common case)
+        // or several (some apps + a phone screenshot tray can dump N at
+        // once). Collect every image item, upload them in parallel via
+        // `/admin/upload`, and insert the resulting `![](url)` blocks in
+        // paste-order at the caret. Failed uploads drop out silently;
+        // status pill reports aggregate progress so a single fail in a
+        // batch of 3 doesn't look like total failure.
         if (cd.items && cd.items.length > 0) {
+            var imageFiles = [];
             for (var ii = 0; ii < cd.items.length; ii++) {
                 var item = cd.items[ii];
                 if (item.kind === 'file' && item.type && item.type.indexOf('image/') === 0) {
-                    e.preventDefault();
-                    var file = item.getAsFile();
-                    if (!file) return;
-                    uploadPastedImage(file).then(function (url) {
-                        if (url) insertImageMarkdown(url);
-                    });
-                    return;
+                    var f = item.getAsFile();
+                    if (f) imageFiles.push(f);
                 }
+            }
+            if (imageFiles.length > 0) {
+                e.preventDefault();
+                uploadPastedImages(imageFiles).then(function (urls) {
+                    var ok = [];
+                    for (var k = 0; k < urls.length; k++) {
+                        if (urls[k]) ok.push(urls[k]);
+                    }
+                    if (ok.length > 0) insertImageMarkdowns(ok);
+                });
+                return;
             }
         }
 
@@ -1510,13 +1521,19 @@
 
     // ---------- Image paste upload ----------
 
-    function uploadPastedImage(file) {
+    // Bare upload — no status side-effects. Returns Promise<url|null>.
+    // Single-image and batch-image flows both go through this so the
+    // POST + JSON-parse + error-fallback logic lives in one place; the
+    // status-pill bookkeeping happens in the callers that own the UX
+    // contract (one image: "Uploading image..." / "Image uploaded";
+    // N images: "Uploading N images..." / "Uploaded N images" /
+    // "Uploaded X / N images" partial).
+    function uploadOneFile(file) {
         var fd = new FormData();
         // UploadController reads `$_FILES['file']` + CSRF via the
         // `X-CSRF-Token` header (or `_csrf` field). Match both.
         fd.append('file', file, file.name || 'paste.png');
         fd.append('_csrf', csrfToken);
-        setStatus('saving', 'Uploading image...');
         return fetch('/admin/upload', {
             method: 'POST',
             headers: { 'X-CSRF-Token': csrfToken },
@@ -1525,40 +1542,79 @@
         })
             .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
             .then(function (out) {
-                if (!out.ok || !out.data || !out.data.url) {
-                    var err = (out.data && out.data.error) || 'Upload failed';
-                    setStatus('error', err);
-                    return null;
-                }
-                setStatus('saved', 'Image uploaded');
+                if (!out.ok || !out.data || !out.data.url) return null;
                 return out.data.url;
             })
-            .catch(function () {
+            .catch(function () { return null; });
+    }
+
+    function uploadPastedImage(file) {
+        setStatus('saving', 'Uploading image...');
+        return uploadOneFile(file).then(function (url) {
+            setStatus(url ? 'saved' : 'error', url ? 'Image uploaded' : 'Upload failed');
+            return url;
+        });
+    }
+
+    // Batch — parallel uploads via Promise.all. Resolves to an array
+    // matching input order; failed slots are `null` so the caller can
+    // skip them while preserving sequence for the successful ones.
+    function uploadPastedImages(files) {
+        if (files.length === 1) {
+            return uploadPastedImage(files[0]).then(function (u) { return [u]; });
+        }
+        var n = files.length;
+        setStatus('saving', 'Uploading ' + n + ' images...');
+        return Promise.all(files.map(uploadOneFile)).then(function (results) {
+            var ok = 0;
+            for (var i = 0; i < results.length; i++) {
+                if (results[i]) ok++;
+            }
+            if (ok === n) {
+                setStatus('saved', 'Uploaded ' + n + ' images');
+            } else if (ok > 0) {
+                setStatus('error', 'Uploaded ' + ok + ' / ' + n + ' images');
+            } else {
                 setStatus('error', 'Upload failed');
-                return null;
-            });
+            }
+            return results;
+        });
     }
 
     function insertImageMarkdown(url) {
-        // Image markdown goes on its own block — split the current block at
-        // caret if necessary, then drop a fresh `![](url)` block between
-        // the before/after halves so the writer keeps prose flow.
+        insertImageMarkdowns([url]);
+    }
+
+    // Insert N images at the caret in a single split: original block
+    // keeps the "before caret" text, image blocks stack in input order,
+    // and one trailing block holds the "after caret" text (caret lands
+    // there). Calling insertImageMarkdown(url) N times in a row would
+    // re-split at each insert and litter the document with empty
+    // blocks between every image — this batch path avoids that.
+    function insertImageMarkdowns(urls) {
+        if (!urls || urls.length === 0) return;
         var block = getCurrentBlock();
         if (!block) return;
         var offset = getCaretOffsetInBlock(block);
         var text = block.textContent || '';
         var before = text.substring(0, offset);
         var after = text.substring(offset);
-        var imgMd = '![](' + url + ')';
+
         block.textContent = before;
         block.setAttribute('data-md', before);
         renderBlock(block);
-        var imgBlock = makeBlock(imgMd);
-        block.insertAdjacentElement('afterend', imgBlock);
-        var trailing = after !== '' ? after : '';
-        var nextBlock = makeBlock(trailing);
-        imgBlock.insertAdjacentElement('afterend', nextBlock);
+
+        var anchor = block;
+        for (var i = 0; i < urls.length; i++) {
+            var imgBlock = makeBlock('![](' + urls[i] + ')');
+            anchor.insertAdjacentElement('afterend', imgBlock);
+            anchor = imgBlock;
+        }
+
+        var nextBlock = makeBlock(after);
+        anchor.insertAdjacentElement('afterend', nextBlock);
         setCaretOffsetInBlock(nextBlock, 0);
+
         isDirty = true;
         updateFocus();
         updateEmptyState();

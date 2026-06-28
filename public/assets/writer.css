@@ -145,6 +145,18 @@ html, body {
     border-color: color-mix(in srgb, var(--primary), #000 35%);
 }
 
+/* Global ::selection (base.css) paints selected text with --bg on a
+   --primary background — designed for dark surfaces where --bg is near
+   black. On the writer's light surface --bg is cream, so the selection
+   reads as faded cream on neon green. Override to a near-black so the
+   selected text stays legible against the theme's primary highlight. */
+.writer-body.is-light ::selection,
+.writer-body.is-light ::-moz-selection {
+    background: var(--primary);
+    color: #100a04;
+    text-shadow: none;
+}
+
 /* Brutalist primary is near-white so the filled treatment above leaves
    the button visually flush with the cream surface. Swap to a dark
    slate fill so it still reads as the primary action on light. */

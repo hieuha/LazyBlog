@@ -145,7 +145,7 @@ Backup with `rsync`. Restore in seconds.
 │  CRT terminal layout  ·  6 phosphor themes          │
 │  Phosphor vignette    ·  chromatic-aberration heads │
 │  Markdown files       ·  llms.txt + raw .md + RSS   │
-│  TOC + scrollspy      ·  code-block copy buttons    │
+│  Sticky-section TOC   ·  code-block copy buttons    │
 │  Browser admin UI     ·  EasyMDE + server-side prev │
 │  Mobile mini-toolbar  ·  IME-safe phone editor      │
 │  Zen Writer Mode      ·  iA-style typewriter focus  │

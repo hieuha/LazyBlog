@@ -1739,14 +1739,43 @@
         // Exit confirm — only when there are unsaved changes since the last
         // disk write. Draft IS auto-stashed in localStorage so the writer
         // can pick up later, but a one-shot prompt avoids the "I clicked
-        // exit by mistake" feeling.
+        // exit by mistake" feeling. Uses the styled modal (matches the
+        // rest of the writer surface) instead of the native browser
+        // confirm dialog so the theme accent + CRT aesthetic carry through.
         var exitLink = document.querySelector('.writer-exit');
+        var exitModal = document.getElementById('writer-exit-modal');
+        var exitConfirmBtn = document.getElementById('writer-exit-confirm');
+        function closeExitModal() {
+            if (exitModal) exitModal.hidden = true;
+        }
+        function openExitModal(targetHref) {
+            if (!exitModal) {
+                window.location.href = targetHref;
+                return;
+            }
+            exitModal.hidden = false;
+            if (exitConfirmBtn) {
+                exitConfirmBtn.onclick = function () {
+                    closeExitModal();
+                    window.location.href = targetHref;
+                };
+                // Focus the confirm button so Enter accepts and Escape (handled
+                // below) cancels — same keyboard semantics as native confirm.
+                exitConfirmBtn.focus();
+            }
+        }
         if (exitLink) {
             exitLink.addEventListener('click', function (e) {
                 if (!isDirty) return;
-                var ok = confirm('Thoát chế độ Zen? Bản nháp đã được lưu trong trình duyệt, bạn có thể quay lại tiếp tục viết bất cứ lúc nào.');
-                if (!ok) e.preventDefault();
+                e.preventDefault();
+                openExitModal(exitLink.getAttribute('href') || '/');
             });
+        }
+        if (exitModal) {
+            var exitDismissEls = exitModal.querySelectorAll('[data-exit-modal-dismiss]');
+            for (var ei = 0; ei < exitDismissEls.length; ei++) {
+                exitDismissEls[ei].addEventListener('click', closeExitModal);
+            }
         }
 
         // Catch tab close / window close / refresh / back button — same
@@ -1785,6 +1814,11 @@
                 if (linkModal && !linkModal.hidden) {
                     e.preventDefault();
                     closeLinkPrompt();
+                    return;
+                }
+                if (exitModal && !exitModal.hidden) {
+                    e.preventDefault();
+                    closeExitModal();
                     return;
                 }
                 if (tocVisible()) {

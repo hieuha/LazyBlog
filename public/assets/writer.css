@@ -113,6 +113,53 @@ html, body {
     border-color: var(--primary);
 }
 
+/* Light surface — secondary buttons need a darker outline than --border
+   gives on cream, and the wrapper's idle 0.75 opacity compounds the
+   problem. Primary action gets filled with the theme primary so it
+   stays the obvious "go" button regardless of how the theme's primary
+   reads against light. Brutalist primary is itself near-white so it's
+   replaced with a dark slate fill for that theme only. */
+.writer-body.is-light .writer-actions { opacity: 0.95; }
+
+.writer-body.is-light .writer-btn {
+    border-color: #8a8576;
+    color: #1c1a16;
+    background: rgba(255, 255, 255, 0.55);
+}
+.writer-body.is-light .writer-btn:hover,
+.writer-body.is-light .writer-btn:focus-visible {
+    color: #1c1a16;
+    border-color: #4a4438;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.writer-body.is-light .writer-btn-primary {
+    color: #100a04;
+    background: var(--primary);
+    border-color: color-mix(in srgb, var(--primary), #000 25%);
+}
+.writer-body.is-light .writer-btn-primary:hover,
+.writer-body.is-light .writer-btn-primary:focus-visible {
+    color: #100a04;
+    background: color-mix(in srgb, var(--primary), #000 8%);
+    border-color: color-mix(in srgb, var(--primary), #000 35%);
+}
+
+/* Brutalist primary is near-white so the filled treatment above leaves
+   the button visually flush with the cream surface. Swap to a dark
+   slate fill so it still reads as the primary action on light. */
+[data-theme="brutalist"] .writer-body.is-light .writer-btn-primary {
+    background: #1c1a16;
+    border-color: #1c1a16;
+    color: #f5f3ee;
+}
+[data-theme="brutalist"] .writer-body.is-light .writer-btn-primary:hover,
+[data-theme="brutalist"] .writer-body.is-light .writer-btn-primary:focus-visible {
+    background: #2f2b24;
+    border-color: #2f2b24;
+    color: #f5f3ee;
+}
+
 /* ---------- Save-status pill (top-left) ---------- */
 
 .writer-status {
@@ -554,8 +601,14 @@ html, body {
     color: var(--accent);
 }
 
-.writer-editor strong { font-weight: 700; color: var(--primary); }
-.writer-editor em     { color: var(--accent); font-style: italic; }
+/* Strong/em colour rules need 2-class specificity to beat the
+   `.writer-editor > .wb > * { color: inherit }` reset above. Block-level
+   paragraphs render `renderInline(md)` straight into `.wb`, so `<strong>`
+   and `<em>` are DIRECT children of `.wb` — without the `.wb` qualifier
+   the inherit rule wins and bold/italic both read as plain text instead
+   of the theme primary/accent. */
+.writer-editor .wb strong { font-weight: 700; color: var(--primary); }
+.writer-editor .wb em     { color: var(--accent); font-style: italic; }
 
 /* Markdown syntax markers (#, **, *, `, [], (), > , - , 1. ) stay present
    in textContent so caret offsets map 1:1 to the source markdown. When

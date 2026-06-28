@@ -156,6 +156,21 @@ $favicon = 'data:image/svg+xml,'
     </form>
 </div>
 
+<div class="writer-modal" id="writer-exit-modal" hidden role="dialog" aria-modal="true" aria-labelledby="writer-exit-modal-title">
+    <div class="writer-modal-backdrop" data-exit-modal-dismiss></div>
+    <div class="writer-modal-panel">
+        <div class="writer-modal-tag" id="writer-exit-modal-title">§ EXIT ZEN</div>
+        <p class="writer-modal-confirm-text">Thoát chế độ Zen?</p>
+        <p class="writer-modal-confirm-hint">
+            Bản nháp đã được lưu trong trình duyệt — bạn có thể quay lại tiếp tục viết bất cứ lúc nào.
+        </p>
+        <div class="writer-modal-actions">
+            <button type="button" class="writer-btn" id="writer-exit-cancel" data-exit-modal-dismiss>[ CANCEL ]</button>
+            <button type="button" class="writer-btn writer-btn-primary" id="writer-exit-confirm">[ EXIT ]</button>
+        </div>
+    </div>
+</div>
+
 <div class="writer-modal" id="writer-link-modal" hidden role="dialog" aria-modal="true" aria-labelledby="writer-link-modal-title">
     <div class="writer-modal-backdrop" data-link-modal-dismiss></div>
     <form class="writer-modal-panel" id="writer-link-form">

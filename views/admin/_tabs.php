@@ -2,17 +2,21 @@
 /**
  * Shared admin section tabs.
  *
- * Renders the row of `[ ALL POSTS ]  [ PLUGINS ]  [ SECURITY ]  [ SERIES ]
- * [ LOG OUT ]` consistently across every admin index view (post list,
- * series list, security keys). Including views pass `$activeTab` to mark
- * the current page; optional counts come from the caller's local scope:
+ * Renders `[ ALL POSTS ]  [ PLUGINS ]  [ SECURITY ]  [ SERIES ]  [ LOG OUT ]`
+ * consistently across every admin index view (post list, series list,
+ * security keys). The active tab carries the dotted underline + bright
+ * color + an inline count `(N)` so the operator sees the metric for
+ * whatever section they're currently looking at. Inactive tabs render
+ * label-only — counts on every tab would multiply visual noise across
+ * the row without paying its way.
  *
- *   `$activeTab`     : one of 'posts' | 'plugins' | 'security' | 'series'
- *   `$total`         : optional int — post count, shown when set
- *   `$seriesCount`   : optional int — series count, shown when set
+ * Caller contract:
+ *   `$activeTab`   : one of 'posts' | 'plugins' | 'security' | 'series'
+ *   `$total`       : optional int — post count (only used when activeTab='posts')
+ *   `$seriesCount` : optional int — series count (only used when activeTab='series')
  *
- * Plugin + security counts are derived inline (cheap — registry + JSON
- * read).
+ * Plugin + security active counts are derived inline (cheap: plugin
+ * registry already booted, credentials store is one small JSON read).
  */
 
 /** @var string $activeTab */
@@ -25,8 +29,21 @@ use App\Http;
 
 $pluginRegistry = Http::plugins();
 $enabledPlugins = $pluginRegistry !== null ? $pluginRegistry->enabledSlugs() : [];
-$postsLabel = isset($total) ? '[ ALL POSTS (' . (int) $total . ') ]' : '[ ALL POSTS ]';
-$seriesLabel = isset($seriesCount) ? '[ SERIES (' . (int) $seriesCount . ') ]' : '[ SERIES ]';
+
+// Build each tab's label: append "(N)" only when this tab is the active one.
+$postsLabel = $activeTab === 'posts' && isset($total)
+    ? '[ ALL POSTS (' . (int) $total . ') ]'
+    : '[ ALL POSTS ]';
+$pluginsLabel = $activeTab === 'plugins'
+    ? '[ PLUGINS (' . count($enabledPlugins) . ') ]'
+    : '[ PLUGINS ]';
+$securityLabel = $activeTab === 'security'
+    ? '[ SECURITY (' . Auth::webauthnKeyCount() . ') ]'
+    : '[ SECURITY ]';
+$seriesLabel = $activeTab === 'series' && isset($seriesCount)
+    ? '[ SERIES (' . (int) $seriesCount . ') ]'
+    : '[ SERIES ]';
+
 $ariaCurrent = static fn (string $name): string => $activeTab === $name
     ? 'aria-current="page" aria-selected="true"'
     : 'aria-selected="false"';
@@ -37,11 +54,11 @@ $ariaCurrent = static fn (string $name): string => $activeTab === $name
     </a>
     <?php if ($enabledPlugins !== []): ?>
         <a class="admin-tab" role="tab" href="/admin?tab=plugins" <?= $ariaCurrent('plugins') ?>>
-            [ PLUGINS (<?= count($enabledPlugins) ?>) ]
+            <?= Http::e($pluginsLabel) ?>
         </a>
     <?php endif; ?>
     <a class="admin-tab" role="tab" href="/admin/security" <?= $ariaCurrent('security') ?>>
-        [ SECURITY (<?= Auth::webauthnKeyCount() ?>) ]
+        <?= Http::e($securityLabel) ?>
     </a>
     <a class="admin-tab" role="tab" href="/admin/series" <?= $ariaCurrent('series') ?>>
         <?= Http::e($seriesLabel) ?>

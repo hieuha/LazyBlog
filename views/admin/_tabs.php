@@ -2,7 +2,7 @@
 /**
  * Shared admin section tabs.
  *
- * Renders `[ ALL POSTS ]  [ PLUGINS ]  [ SECURITY ]  [ SERIES ]  [ LOG OUT ]`
+ * Renders `[ POSTS ]  [ SERIES ]  [ PLUGINS ]  [ SECURITY ]  [ LOG OUT ]`
  * consistently across every admin index view (post list, series list,
  * security keys). The active tab carries the dotted underline + bright
  * color + an inline count `(N)` so the operator sees the metric for
@@ -32,8 +32,8 @@ $enabledPlugins = $pluginRegistry !== null ? $pluginRegistry->enabledSlugs() : [
 
 // Build each tab's label: append "(N)" only when this tab is the active one.
 $postsLabel = $activeTab === 'posts' && isset($total)
-    ? '[ ALL POSTS (' . (int) $total . ') ]'
-    : '[ ALL POSTS ]';
+    ? '[ POSTS (' . (int) $total . ') ]'
+    : '[ POSTS ]';
 $pluginsLabel = $activeTab === 'plugins'
     ? '[ PLUGINS (' . count($enabledPlugins) . ') ]'
     : '[ PLUGINS ]';
@@ -52,6 +52,9 @@ $ariaCurrent = static fn (string $name): string => $activeTab === $name
     <a class="admin-tab" role="tab" href="/admin" <?= $ariaCurrent('posts') ?>>
         <?= Http::e($postsLabel) ?>
     </a>
+    <a class="admin-tab" role="tab" href="/admin/series" <?= $ariaCurrent('series') ?>>
+        <?= Http::e($seriesLabel) ?>
+    </a>
     <?php if ($enabledPlugins !== []): ?>
         <a class="admin-tab" role="tab" href="/admin?tab=plugins" <?= $ariaCurrent('plugins') ?>>
             <?= Http::e($pluginsLabel) ?>
@@ -59,9 +62,6 @@ $ariaCurrent = static fn (string $name): string => $activeTab === $name
     <?php endif; ?>
     <a class="admin-tab" role="tab" href="/admin/security" <?= $ariaCurrent('security') ?>>
         <?= Http::e($securityLabel) ?>
-    </a>
-    <a class="admin-tab" role="tab" href="/admin/series" <?= $ariaCurrent('series') ?>>
-        <?= Http::e($seriesLabel) ?>
     </a>
     <form method="post" action="/admin/logout" class="admin-tab-form">
         <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">

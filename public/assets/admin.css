@@ -47,7 +47,7 @@ body.is-admin main { max-width: 1180px; }
 }
 
 /* ---------- Admin tabs ----------
-   Section switcher between ALL POSTS and PLUGINS. Each tab carries the H2
+   Section switcher between POSTS and PLUGINS. Each tab carries the H2
    weight when active so it reads as the page heading; inactive tabs sit at
    the same size but dimmed, so the user can scan-switch between sections
    without losing the "where am I" anchor. */
@@ -99,7 +99,7 @@ button.admin-tab {
 }
 @media (max-width: 768px) {
     /* On narrow viewports the desktop `clamp(28px, 5vw, 36px)` + gap 22px
-       lands [ ALL POSTS (N) ] on one row and pushes [ PLUGINS ] / [ SECURITY ]
+       lands [ POSTS (N) ] on one row and pushes [ PLUGINS ] / [ SECURITY ]
        onto a second wrap row, which reads as a different group of links.
        Shrink the font + drop into a single horizontally-scrollable row so
        all tabs stay visually paired with each other. Threshold matches

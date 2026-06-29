@@ -48,7 +48,7 @@ $previewUrl = $hasPreview ? Http::seriesAsset($slug, '.preview.webp') : null;
             <div class="admin-series-rename-row">
                 <input type="text" name="new_slug" id="new_slug"
                        value="<?= Http::e($slug) ?>"
-                       pattern="[a-z0-9][a-z0-9-]*"
+                       pattern="[a-z0-9][a-z0-9\-]*"
                        class="admin-input"
                        title="kebab-case: lowercase + digits + hyphens, starts with letter or digit"
                        required>

@@ -667,14 +667,13 @@ button.admin-btn-sm { font-size: 10px; }
 @media (max-width: 768px) {
     /* Mobile layout shared by every .admin-table (post list, plugins,
        security keys). Each <tr> becomes a 2-row flex card:
-       Breakpoint at 768 (not 600) covers landscape phones + small
-       tablets where the desktop table still produces awkward column
-       wraps. */
          row 1 — `.admin-title-cell` (post title / plugin name / key name)
          row 2 — every `.admin-mono` meta cell inline + status dot + actions
        Cells reorder via `order` so the DOM keeps serving desktop column
        order while mobile sees title-first regardless of which column
-       (varies per table) carries it. */
+       (varies per table) carries it. Breakpoint at 768 (not 600) covers
+       landscape phones + small tablets where the desktop table still
+       produces awkward column wraps. */
     .admin-table thead { display: none; }
     .admin-table, .admin-table tbody { display: block; width: 100% !important; }
     .admin-table tr {

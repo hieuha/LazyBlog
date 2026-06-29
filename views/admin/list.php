@@ -22,10 +22,16 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
 <section>
     <div class="admin-header-row">
         <?php include __DIR__ . '/_tabs.php'; ?>
-        <div class="admin-actions">
-            <a class="admin-btn admin-btn-primary" href="/admin/new">[ NEW POST ]</a>
-            <a class="admin-btn" href="/admin/about">[ <?= (new \App\AboutRepository(__DIR__ . '/../../content'))->exists() ? 'EDIT' : 'CREATE' ?> ABOUT ]</a>
-        </div>
+        <?php if ($activeTab === 'posts'): ?>
+            <?php /* Post-only actions — [ NEW POST ] writes a new entry, [ EDIT/
+                   CREATE ABOUT ] edits the /about bio. Neither makes sense on the
+                   Plugins panel (the plugin list is read-only here; plugin admin
+                   surfaces are reached via the row's [ OPEN ] button). */ ?>
+            <div class="admin-actions">
+                <a class="admin-btn admin-btn-primary" href="/admin/new">[ NEW POST ]</a>
+                <a class="admin-btn" href="/admin/about">[ <?= (new \App\AboutRepository(__DIR__ . '/../../content'))->exists() ? 'EDIT' : 'CREATE' ?> ABOUT ]</a>
+            </div>
+        <?php endif; ?>
     </div>
 
     <?php if ($flash !== null): ?>

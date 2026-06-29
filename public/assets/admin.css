@@ -921,35 +921,12 @@ button.admin-btn-sm { font-size: 10px; }
     .admin-series-table td:nth-child(6) { width: 14ch; white-space: nowrap; }
 }
 
-/* Mobile-only — series table converts each row into a compact card.
-   Skip the global posts-table rules that hide tag columns; reveal every
-   cell on its own line, give it a small label-style prefix via the data-
-   label hint already in the HTML (graceful fallback if none), and put
-   the action buttons at the bottom of the card with consistent spacing
-   so they don't overlap each other or bleed into adjacent rows. */
-@media (max-width: 600px) {
-    .admin-series-table tbody tr {
-        padding: 14px 0;
-        display: block;
-    }
-    .admin-series-table td {
-        padding: 2px 0 !important;
-        width: 100% !important;
-        text-align: left !important;
-        display: block !important;
-        white-space: normal !important;
-    }
-    .admin-series-table td.admin-row-actions {
-        margin-top: 8px;
-    }
-    .admin-series-table .admin-series-cover-thumb {
-        width: 56px;
-        height: 56px;
-    }
-    .admin-series-table .admin-series-flag {
-        margin-right: 8px;
-    }
-}
+/* Legacy `.admin-series-table` mobile card was here. Removed: it set
+   `display: block !important` on every td which overrode the new generic
+   `.admin-table` mobile rules + the series-specific single-line override
+   higher in this file. The current behaviour (single row per series,
+   title + EDIT only) lives at the top of the same admin-table mobile
+   block. */
 /* Cancel the global h2 top margin (base.css `h2 { margin: 28px 0 16px }`)
    inside admin header rows — the page already has main padding above and
    actions on the right, so the title doesn't need its own breathing room. */

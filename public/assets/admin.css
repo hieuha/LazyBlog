@@ -743,6 +743,31 @@ button.admin-btn-sm { font-size: 10px; }
         padding: 0;
         background: transparent;
     }
+
+    /* Series-list-specific: collapse to a single line per series. The
+       generic .admin-table mobile rules above produce a 2-row card with
+       title + meta inline; for the series list every meta field (slug
+       chip, posts count, manifest flag, cover thumb, last activity) is
+       reachable on the per-slug edit page, so the listing only needs
+       to show "what is it" + "open it". `.admin-table.admin-series-
+       table .admin-title-cell` wins over the generic `.admin-table
+       .admin-title-cell` (specificity 0,0,3,0 vs 0,0,2,0). */
+    .admin-table.admin-series-table tr {
+        flex-wrap: nowrap;
+        column-gap: 8px;
+    }
+    .admin-table.admin-series-table .admin-title-cell {
+        flex: 1 1 0;
+        order: 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .admin-table.admin-series-table .admin-mono { display: none; }
+    /* Action column keeps EDIT but hides DEL — destructive ops should
+       live on the edit screen where the operator has full context. */
+    .admin-table.admin-series-table .admin-row-actions form { display: none; }
 }
 
 /* ---------- Series chip in admin posts list (under the title) ---------- */

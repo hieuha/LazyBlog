@@ -58,7 +58,12 @@ use App\Http;
                                 <?= Http::e($slug) ?>
                             </a>
                         </td>
-                        <td class="admin-title-cell"><?= Http::e((string) $s['title']) ?></td>
+                        <?php /* Title falls back to slug when no manifest title is set —
+                               mobile hides the SLUG column entirely, so the cell needs to
+                               carry a meaningful identifier on its own. */ ?>
+                        <td class="admin-title-cell">
+                            <?= Http::e($s['title'] !== '' ? (string) $s['title'] : (string) $slug) ?>
+                        </td>
                         <td class="admin-mono admin-col-mobile-hide"><?= (int) $s['count'] ?></td>
                         <td class="admin-mono admin-col-mobile-hide">
                             <?php if ($hasManifest): ?>

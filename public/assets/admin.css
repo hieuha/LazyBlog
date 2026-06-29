@@ -78,8 +78,47 @@ body.is-admin main { max-width: 1180px; }
     border-bottom-color: var(--primary);
     text-shadow: 0 0 8px var(--primary-glow);
 }
+/* `<button class="admin-tab">` (logout) needs the user-agent button reset
+   so its visual matches the `<a>` siblings. The wrapper `<form>` must not
+   add inline-block padding so it inherits the tabs flex gap cleanly. */
+button.admin-tab {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    padding: 0 0 4px;
+    border-bottom: 2px solid transparent;
+}
+.admin-tab-form {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: flex-end;
+}
 @media (max-width: 600px) {
-    .admin-tabs { gap: 14px; }
+    /* On narrow viewports the desktop `clamp(28px, 5vw, 36px)` + gap 22px
+       lands [ ALL POSTS (N) ] on one row and pushes [ PLUGINS ] / [ SECURITY ]
+       onto a second wrap row, which reads as a different group of links.
+       Shrink the font + drop into a single horizontally-scrollable row so
+       all tabs stay visually paired with each other. */
+    .admin-tabs {
+        gap: 14px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .admin-tabs::-webkit-scrollbar { display: none; }
+    .admin-tab {
+        font-size: 20px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
+@media (max-width: 380px) {
+    .admin-tab { font-size: 18px; }
+    .admin-tabs { gap: 10px; }
 }
 
 /* ---------- Edit form ---------- */

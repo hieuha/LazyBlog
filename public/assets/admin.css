@@ -1133,9 +1133,23 @@ input[type="file"].admin-file-input::file-selector-button:hover,
 }
 .admin-series-posts-list li {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 8px;
     align-items: baseline;
+}
+/* Title link (middle 1fr column) needs `min-width: 0` (via `minmax(0, 1fr)`
+   above) so a long slug doesn't push the grid wider than the container —
+   without it the date column gets squeezed and wraps "2026-06-23" into
+   "2026-06-/23". Ellipsis-truncate over-long titles inside the column. */
+.admin-series-posts-list li > a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+/* Date never breaks. */
+.admin-series-posts-list li > .admin-mono:last-child {
+    white-space: nowrap;
 }
 
 /* ---------- Mobile mini-toolbar ----------

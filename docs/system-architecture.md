@@ -156,6 +156,10 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `SeriesCoverProcessor` | Convert uploaded image → 1-bit Atkinson dither WebP with transparent background | Hard dep on `ext-imagick` (`isAvailable()` gate); downscale-only (never upscale a small upload); preview / commit two-phase flow |
 | `SeriesAssetController` | Serve `content/series/{slug}/{file}` at `/series-assets/{slug}/{file}` | Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg` only — no `json`/`php`), realpath jail |
 | `AdminSeriesController` | CRUD for series manifest + cover (list / edit / preview / save / delete) | Auth + CSRF + slug regex on every endpoint; manifest-delete keeps posts untouched (discovery still works via frontmatter) |
+| `WebAuthnCredential` | Readonly DTO for a registered FIDO2 credential | Holds `{id, publicKey (PEM), counter, name, transports, aaguid, createdAt, lastUsedAt}`; immutable; `withCounter()` returns a fresh instance |
+| `WebAuthnCredentialStore` | Atomic JSON storage at `content/admin/webauthn-credentials.json` | tempnam + LOCK_EX + rename for every write; per-operator `user_handle` generated once and pinned; duplicate credential IDs rejected on add() |
+| `WebAuthn` | High-level wrapper around `lbuchs/webauthn`: register/login begin + complete | RP ID resolves from `WEBAUTHN_RP_ID` env → `HTTP_HOST` → `localhost`; challenges stored in session with 60 s TTL; counter monotonic check defends against replay; library exceptions mapped to neutral strings before they leave the controller |
+| `AdminSecurityController` | `/admin/security` index + revoke + WebAuthn register/login begin/complete endpoints | Auth + CSRF on register + revoke; CSRF (no auth — this IS the auth) on login; 64 KB body cap on all JSON; per-IP throttle shared with password login; last-key revoke guard blocks self-lockout when `WEBAUTHN=true` |
 
 **Bundled opt-in plugins** (enabled via `PLUGINS=` env):
 
@@ -211,7 +215,11 @@ Public visitors transparently warm the caches. No cron, no service.
 | Markdown files on disk | Concurrent write corruption | `FileWriter::writeAtomic` — LOCK_EX + rename |
 | Admin session | Fixation | `session.use_strict_mode` + regenerate_id on login |
 | Admin session | Cookie theft | HttpOnly, SameSite=Lax, Secure (when SESSION_SECURE=true) |
-| Admin login | Brute force | 500ms delay per failed attempt + optional Caddy rate-limit |
+| Admin login | Brute force | 500ms delay per failed attempt + optional Caddy rate-limit; `WEBAUTHN=true` + ≥1 key hard-disables the password endpoint server-side so leaked hashes don't lead anywhere |
+| Admin login | Phishing | Optional FIDO2 / WebAuthn (Yubikey, iOS Passkey, Touch ID) — assertions bound to RP ID; cloned login page at wrong origin can't harvest a working credential |
+| WebAuthn credentials | Server compromise | Only public keys stored in `content/admin/webauthn-credentials.json`; leaking the file does not enable login |
+| WebAuthn replay | Captured assertion replay | Signature counter monotonic check rejects assertions whose counter doesn't advance |
+| WebAuthn endpoints | Body-size DoS / brute force | 64 KB hard cap on POST body; per-IP throttle shared with password login (10 fails / 15 min); library exception messages sanitised to neutral strings before leaving the server |
 | Protected post unlock | Brute force | 10 failures per IP within 15-min sliding window + 500ms delay per attempt |
 | Protected post unlock | Timing oracle (enumerate locked posts) | Anonymous `.md` fetches return 404 instead of 403 |
 | Protected post password | Plaintext disclosure | Never stored in YAML, never indexed, never served via `.md` routes — only hash on disk |
@@ -243,7 +251,8 @@ Public visitors transparently warm the caches. No cron, no service.
 │       ├── site.js                       (theme picker, mobile nav drawer, back-to-top; loaded everywhere)
 │       ├── post.js                       (reading progress, scrollspy, code-block UI; /posts/* only)
 │       ├── admin.css                     (admin-only)
-│       └── admin-editor.js               (admin-only)
+│       ├── admin-editor.js               (admin-only)
+│       └── admin-security.js             (admin-only; /admin/security + /admin/login when WEBAUTHN=true)
 ├── src/                                  ← outside web root
 ├── views/                                ← outside web root
 │   ├── post-password.php                 (unlock form for protected posts)
@@ -262,6 +271,8 @@ Public visitors transparently warm the caches. No cron, no service.
     │   └── .feed.xml
     ├── uploads/                          ← admin-uploaded images (year/month subdirs)
     ├── series/                           ← series manifests + covers
+    ├── admin/                            ← operator-only — never web-served
+    │   └── webauthn-credentials.json     ← FIDO2 credential store (gitignored by `/content/*`)
     └── plugins/                          ← plugin-private storage (gitignored)
         └── {slug}/                       ← each enabled plugin has its own dir
 ```

@@ -11,6 +11,7 @@ content/
 ├── posts/                  # your authored markdown files (PRESERVE)
 ├── uploads/                # admin-UI image uploads, year/month subdirs (PRESERVE)
 ├── series/                 # series manifests + dithered covers (PRESERVE)
+├── admin/                  # operator-only — WebAuthn credential store (PRESERVE)
 ├── plugins/                # plugin-private storage (PRESERVE)
 ├── .index.json             # frontmatter cache — regenerated on demand (SKIP)
 ├── .llms.txt               # derived cache — regenerated on demand (SKIP)
@@ -19,11 +20,18 @@ content/
 
 The `.*` dotfiles are caches that rebuild automatically when posts change,
 so the only state you really need to preserve is `content/posts/`,
-`content/uploads/`, `content/series/`, and `content/plugins/` (if any
-plugins store persistent state). The script archives the whole `content/`
-directory which is simpler — caches add a few KB, uploads and series cover
-WebPs add whatever you've uploaded (typically a few MB per post with
-images), and plugin storage varies by plugin.
+`content/uploads/`, `content/series/`, `content/admin/`, and
+`content/plugins/` (if any plugins store persistent state). The script
+archives the whole `content/` directory which is simpler — caches add a few
+KB, uploads and series cover WebPs add whatever you've uploaded (typically
+a few MB per post with images), the WebAuthn credentials file is a few KB,
+and plugin storage varies by plugin.
+
+`content/admin/webauthn-credentials.json` is the FIDO2 credential store
+(only public keys + signature counters; nothing exploitable on its own).
+Losing it locks you out of WebAuthn login but the `ADMIN_PASSWORD_HASH`
+env fallback still works — see
+`docs/webauthn-passwordless-login.md` → "Recovery (lost all keys)".
 
 ## Ephemeral rate-limit files (never backed up)
 

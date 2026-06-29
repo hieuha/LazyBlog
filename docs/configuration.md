@@ -13,7 +13,9 @@
 | `FOOTER_SIGNOFF` | no | Copyright line at the bottom. Supports `{year}` token. Empty hides the line |
 | `POSTS_PER_PAGE` | no | Page size on home + tag listings. Default `10` |
 | `STREAK_UNIT` | no | Streak card cadence on `/about` — `day` / `week` / `month` / `year`. Default `week`. Badges each declare their own `unit` param so this only affects the standalone "Current Streak" card, not achievement badges. |
-| `ADMIN_PASSWORD_HASH` | yes for admin | bcrypt hash. Empty = login disabled — site is read-only |
+| `ADMIN_PASSWORD_HASH` | yes for admin | bcrypt hash. Empty = login disabled — site is read-only. Also serves as the break-glass when `WEBAUTHN=true` falls back into bootstrap (0 keys registered) |
+| `WEBAUTHN` | no | `true` enables passwordless FIDO2 / WebAuthn admin login (Yubikey, Passkeys). Default `false`. When `true` AND ≥ 1 key is registered at `/admin/security`, the password endpoint is hard-disabled server-side. See [`webauthn-passwordless-login.md`](webauthn-passwordless-login.md) for setup + recovery |
+| `WEBAUTHN_RP_ID` | no | Pin the Relying Party ID for FIDO2 credentials. Defaults to the request host stripped of port. Set this to your canonical hostname BEFORE registering keys if you might migrate domains or test on `localhost` first — credentials are bound to the RP ID at registration time |
 | `SESSION_NAME` | no | Cookie name. Default `lazyblog_sess` |
 | `SESSION_SECURE` | yes for HTTPS | `true` in production (HTTPS-only cookie); `false` for local HTTP dev |
 | `TRUST_CF_CONNECTING_IP` | no | `true` to read the visitor IP from the `CF-Connecting-IP` header instead of `REMOTE_ADDR`. Default `false`. Only turn this on when the origin server **only** accepts traffic that has actually transited Cloudflare — otherwise the header is spoofable and the unlock-attempt rate limit becomes useless. See [`security.md`](security.md) → "Behind a CDN / reverse proxy" |
@@ -84,6 +86,10 @@ readers find the feed without a URL hint.
 | `POST /admin/series/{slug}/attach` | Rewrite the target post's `series:` frontmatter to {slug}; moves posts between series in one click |
 | `POST /admin/series/{slug}/rename` | Bulk-rewrite every matching post's `series:` field + rename `content/series/{old}/` → `content/series/{new}/` |
 | `POST /admin/series/{slug}/delete` | Remove manifest + cover artefacts; posts referencing the slug are untouched |
+| `GET /admin/security` | FIDO2 / WebAuthn key management — list, register, revoke. Tab shows count of registered keys |
+| `POST /admin/security/revoke/{id}` | CSRF-protected credential removal. Last-key guard blocks self-lockout when `WEBAUTHN=true` |
+| `POST /admin/webauthn/register/{begin,complete}` | Two-leg WebAuthn registration (auth + CSRF, 64 KB body cap) |
+| `POST /admin/webauthn/login/{begin,complete}` | Two-leg WebAuthn login (no auth — this IS auth; CSRF + per-IP throttle + counter monotonic check) |
 | `GET /admin/stalk` | Manage stalk plugin — friend list, status, add/remove UI, config (requires `PLUGINS=stalk`) |
 | `POST /admin/stalk/add` | Probe + validate + add a friend blog |
 | `POST /admin/stalk/remove/{id}` | Remove a friend and purge their cached posts |

@@ -79,14 +79,15 @@ body.is-admin main { max-width: 1180px; }
     text-shadow: 0 0 8px var(--primary-glow);
 }
 /* `<button class="admin-tab">` (logout) needs the user-agent button reset
-   so its visual matches the `<a>` siblings. The wrapper `<form>` must not
-   add inline-block padding so it inherits the tabs flex gap cleanly. */
+   so its visual matches the `<a>` siblings. NOTE: don't set `font: inherit`
+   — `button.admin-tab` selector beats `.admin-tab` on specificity, and
+   `inherit` would pull from the wrapping `<form>` (which has no font
+   set), collapsing the button back to the browser default ~13px. Leaving
+   font/color unset here lets the `.admin-tab` class win cleanly. */
 button.admin-tab {
     background: transparent;
     border: 0;
     cursor: pointer;
-    font: inherit;
-    color: inherit;
     padding: 0 0 4px;
     border-bottom: 2px solid transparent;
 }

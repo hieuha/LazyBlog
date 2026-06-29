@@ -503,8 +503,38 @@
         if (lines.length === 1) return [para];
         var out = [];
         var buf = '';
+        // Fenced code blocks (```…``` or ~~~…~~~) become their own Zen
+        // block, even when the surrounding markdown isn't separated by
+        // a blank line. Two reasons:
+        //   1. Lines inside the fence (shell `# comment`, indented code)
+        //      must NOT be lifted out by `isStandaloneLine`.
+        //   2. Tight markdown with no blank line between text and fence
+        //      would otherwise glue the text and the entire fence into
+        //      one paragraph block, which the renderer can't dress as
+        //      both prose and code at once.
+        var inFence = false;
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
+            var fenceToggle = /^\s*(```|~~~)/.test(line);
+            if (fenceToggle) {
+                if (!inFence) {
+                    // Opening fence: flush prose buffer, start code buffer.
+                    if (buf !== '') { out.push(buf); buf = ''; }
+                    buf = line;
+                    inFence = true;
+                } else {
+                    // Closing fence: emit the complete code block.
+                    buf = buf + '\n' + line;
+                    out.push(buf);
+                    buf = '';
+                    inFence = false;
+                }
+                continue;
+            }
+            if (inFence) {
+                buf = buf === '' ? line : (buf + '\n' + line);
+                continue;
+            }
             if (isStandaloneLine(line)) {
                 if (buf !== '') { out.push(buf); buf = ''; }
                 out.push(line);
@@ -516,11 +546,49 @@
         return out;
     }
 
+    // Fence-aware paragraph split — blank lines INSIDE a fenced code
+    // block don't break the paragraph, so a code sample with empty lines
+    // between statements stays in one Zen block instead of shattering
+    // into prose paragraphs (which would parse the `# comment` lines as
+    // headings on the next load).
+    function splitParagraphsFenceAware(md) {
+        // Normalize Windows/legacy line endings — without this a CRLF
+        // file leaves a stray `\r` on every line, so `line === ''`
+        // never matches and the whole body collapses into one paragraph.
+        var lines = (md || '').replace(/\r\n?/g, '\n').split('\n');
+        var paragraphs = [];
+        var buf = [];
+        var inFence = false;
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var isFence = /^\s*(```|~~~)/.test(line);
+            if (isFence) {
+                inFence = !inFence;
+                buf.push(line);
+                continue;
+            }
+            if (inFence) {
+                buf.push(line);
+                continue;
+            }
+            if (line === '') {
+                if (buf.length > 0) {
+                    paragraphs.push(buf.join('\n'));
+                    buf = [];
+                }
+                // Consecutive blank lines collapse to one paragraph break.
+                continue;
+            }
+            buf.push(line);
+        }
+        if (buf.length > 0) paragraphs.push(buf.join('\n'));
+        return paragraphs.length > 0 ? paragraphs : [''];
+    }
+
     function loadMarkdown(md) {
         suspendInput = true;
         editor.innerHTML = '';
-        var paragraphs = (md || '').split(/\n{2,}/);
-        if (paragraphs.length === 0) paragraphs = [''];
+        var paragraphs = splitParagraphsFenceAware(md);
         var blocks = [];
         for (var p = 0; p < paragraphs.length; p++) {
             var pieces = splitParagraphIntoBlocks(paragraphs[p]);

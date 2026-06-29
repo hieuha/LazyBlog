@@ -353,6 +353,41 @@ webauthn: lbuchs\WebAuthn\WebAuthnException: signature counter went down
 - Safari only — Chrome on iOS uses Safari's WebKit but Passkey UI is
   Safari-specific
 
+### iPhone NFC says "no credential" even though you registered the Yubikey
+
+The Yubikey is fine and the registration completed — it's the **stored
+credentials are bound to a different RP ID than the one iPhone is
+hitting**. Usually one of:
+
+- The Yubikey was registered on `localhost` (or a dev tunnel hostname)
+  during testing, and the credential entry stayed in
+  `content/admin/webauthn-credentials.json` after you deployed to prod
+- Server is now serving `https://www.example.com` but the entries were
+  registered at `https://example.com` (no `www.`) — `rpIdHash` differs
+- `WEBAUTHN_RP_ID` env was added/changed after the keys were registered
+
+Browser doesn't show "RP ID mismatch" — it reports the generic "no
+credential" because the authenticator searches its memory for a
+credential whose RP ID hash matches the current request, finds none,
+and returns empty.
+
+**Recovery (path B from the section above):**
+
+1. SSH the server, set `WEBAUTHN=false` in `.env`, reload php-fpm
+2. Log in via password from the actual production URL (the one iPhone
+   uses)
+3. Go to `/admin/security` and **revoke the stale entries** — they were
+   bound to the old hostname and will never authenticate again
+4. **Register the Yubikey fresh** at this URL — now the RP ID matches
+   the iPhone's
+5. Flip `WEBAUTHN=true` back, reload php-fpm
+6. Test NFC tap on iPhone — should work
+
+If you want to avoid this trap on future migrations, pin
+`WEBAUTHN_RP_ID="example.com"` in `.env` **before** registering any
+key, so the binding survives changes to `HTTP_HOST` (eg. www / non-www
+switches, dev tunnels, port forwards).
+
 ### Lost ALL keys + cannot SSH
 
 You're in deep trouble — design your recovery so this never happens.

@@ -70,3 +70,17 @@ $ariaCurrent = static fn (string $name): string => $activeTab === $name
         </button>
     </form>
 </div>
+<script>
+/* Center the active tab inside the horizontally-scrolling row so the
+   dotted-underline indicator is always visible on phones (the row's
+   `flex-wrap: nowrap; overflow-x: auto` rule on mobile means later
+   tabs sit off-screen by default). No-op on desktop because there is
+   no horizontal overflow there. */
+(function () {
+    var active = document.currentScript.previousElementSibling
+        && document.currentScript.previousElementSibling.querySelector
+        && document.currentScript.previousElementSibling.querySelector('.admin-tab[aria-current="page"]');
+    if (!active || typeof active.scrollIntoView !== 'function') return;
+    active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
+})();
+</script>

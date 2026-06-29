@@ -59,7 +59,7 @@ use App\Http;
                             </a>
                         </td>
                         <td class="admin-title-cell"><?= Http::e((string) $s['title']) ?></td>
-                        <td class="admin-mono"><?= (int) $s['count'] ?></td>
+                        <td class="admin-mono admin-col-mobile-hide"><?= (int) $s['count'] ?></td>
                         <td class="admin-mono admin-col-mobile-hide">
                             <?php if ($hasManifest): ?>
                                 <span class="admin-series-flag" title="Manifest present" aria-label="Manifest present"></span>

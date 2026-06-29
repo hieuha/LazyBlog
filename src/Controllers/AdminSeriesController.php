@@ -327,6 +327,22 @@ final class AdminSeriesController
             Http::redirect('/admin/series/' . $oldSlug);
             return;
         }
+        // Belt-and-braces: even if manifest()/hasCover()/bySeries() are all
+        // empty, refuse the rename when content/series/{newSlug}/ already
+        // exists (e.g. operator hand-crafted a dir). POSIX rename only
+        // moves over an *empty* destination directory; without this guard
+        // an `@rename` failure would silently leave posts re-stamped to
+        // {newSlug} while the manifest stayed under {oldSlug}/.
+        $newDir = $this->manifest->dir($newSlug);
+        if (is_dir($newDir)) {
+            $entries = @scandir($newDir);
+            $hasFiles = is_array($entries) && array_values(array_diff($entries, ['.', '..'])) !== [];
+            if ($hasFiles) {
+                $this->flash("Cannot rename: '{$newSlug}' directory already has files.");
+                Http::redirect('/admin/series/' . $oldSlug);
+                return;
+            }
+        }
 
         // Re-stamp every post's frontmatter. Each save is atomic via the
         // PostRepository's tmp+rename pattern, so a mid-way crash leaves
@@ -376,6 +392,18 @@ final class AdminSeriesController
 
         $slug = self::cleanSlug($params['slug'] ?? '');
         if ($slug === null) {
+            $this->notFound();
+            return;
+        }
+
+        // Discovery gate — mirror what editForm/save/preview enforce. Without
+        // this an admin (or chained CSRF) could call delete on an arbitrary
+        // kebab slug and have SeriesManifest::delete walk into
+        // content/series/{slug}/ unlinking any matching artefact filename.
+        $discovered = $this->manifest->exists($slug)
+            || $this->manifest->hasCover($slug)
+            || $this->repo->bySeries($slug) !== [];
+        if (!$discovered) {
             $this->notFound();
             return;
         }

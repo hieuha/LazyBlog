@@ -1567,6 +1567,16 @@
                 try {
                     localStorage.removeItem(draftKey());
                     localStorage.removeItem(caretKey());
+                    // Also nuke the EasyMDE autosave for this slug — the
+                    // regular /admin/edit/{slug} editor uses `smde_lazyblog-
+                    // {slug}` and would otherwise repopulate from the stale
+                    // pre-save draft next time the operator reopens it.
+                    // Server-side list.php strips this on redirect to /admin
+                    // (the draft path); publish redirects to /posts/{slug}
+                    // which never sees that script.
+                    if (out.data && out.data.slug) {
+                        localStorage.removeItem('smde_lazyblog-' + out.data.slug);
+                    }
                 } catch (e) {}
                 isDirty = false;
                 setStatus('saved', modalMode.value === 'publish' ? 'Published' : 'Draft saved');

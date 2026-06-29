@@ -93,9 +93,26 @@ final class WriterController
         // summary/draft state. The writer never sees those fields so the
         // operator manages them in the regular /admin/edit/{slug} form.
         if ($existingSlug !== '' && $existingFilename !== '') {
+            // Lock the previousFilename to the canonical `YYYY-MM-DD-{slug}.md`
+            // shape and bind it to the actual existing post on disk. Without
+            // this, a forged hidden field could in principle race PostRepository's
+            // clobber-protection TOCTOU (between in-memory index and on-disk
+            // is_file()) and unlink an unrelated file in postsDir.
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}-(.+)\.md$/', basename($existingFilename), $fm)
+                || $fm[1] !== $existingSlug) {
+                self::jsonError(400, 'Original filename does not match slug.');
+                return;
+            }
             $existing = $this->repo->bySlug($existingSlug);
             if ($existing === null) {
                 self::jsonError(404, 'Original post not found.');
+                return;
+            }
+            // Tighten further: the previous filename MUST equal what
+            // PostRepository::save will derive from the loaded post.
+            $expectedFilename = substr($existing->date, 0, 10) . '-' . $existing->slug . '.md';
+            if (basename($existingFilename) !== $expectedFilename) {
+                self::jsonError(400, 'Original filename does not match existing post.');
                 return;
             }
             $post = new Post(
@@ -170,12 +187,20 @@ final class WriterController
         ));
 
         // Published → public post page so the writer sees their work live.
-        // Draft → admin editor so they can keep working on it (drafts 404
-        // on /posts/{slug} for non-admins, and we don't want to dump the
-        // writer back into the admin list mid-thought).
-        $redirect = $isPublish
-            ? '/posts/' . rawurlencode($slug)
-            : '/admin/edit/' . rawurlencode($slug);
+        // Draft → admin list. Routing through /admin (not /admin/edit/{slug})
+        // is intentional: list.php carries the localStorage-eviction script
+        // that wipes the EasyMDE autosave (`smde_lazyblog-{slug}`). Without
+        // that hop, reopening the editor for this slug would load the stale
+        // pre-save draft over the freshly persisted markdown. The flash
+        // message must match the `^Saved: (.+)$` regex in list.php for the
+        // eviction script to fire.
+        if ($isPublish) {
+            $redirect = '/posts/' . rawurlencode($slug);
+        } else {
+            Auth::start();
+            $_SESSION['_flash'] = "Saved: {$slug}";
+            $redirect = '/admin';
+        }
 
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([

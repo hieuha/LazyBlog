@@ -46,7 +46,7 @@ final class PostController
         // UI would lie about it. The check uses the SAME sliding 15-min
         // window per IP (Auth::RATE_LIMIT_WINDOW_SEC) the POST path uses.
         if ($post->isProtected() && !Auth::isPostUnlocked($post->slug)) {
-            $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+            $ip = Auth::clientIp();
             if (Auth::postUnlockTooMany($ip)) {
                 $this->renderUnlockForm(
                     $post,
@@ -202,7 +202,7 @@ final class PostController
             Http::redirect($post->url());
         }
 
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        $ip = Auth::clientIp();
         if (Auth::postUnlockTooMany($ip)) {
             usleep(500_000);
             // Throttled: render the form with input disabled. A second

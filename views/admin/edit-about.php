@@ -97,6 +97,14 @@ TELEGRAM | @xv5hp | https://t.me/xv5hp"><?= Http::e($formValues['contacts']) ?><
                       placeholder="Building a self-hosted blog. Reading about CRDTs. Tinkering with RTL-SDR."><?= Http::e($formValues['currently']) ?></textarea>
         </div>
 
+        <!-- Hidden slug so admin-editor.js' autosave namespace ("smde_lazyblog-
+             {slug}") doesn't collide with /admin/new (which uses
+             "smde_lazyblog-new"). Treating the about page as its own slug
+             also lets the editor's stale-cache guard treat this view as
+             edit-mode and drop the localStorage draft on every load,
+             matching /admin/edit/{slug} semantics. -->
+        <input type="hidden" id="slug" value="__about__">
+
         <!-- Body — bio, rendered as markdown -->
         <div class="admin-field">
             <label class="admin-label" for="body">Bio <span class="admin-label-hint">(markdown · same syntax as posts)</span></label>

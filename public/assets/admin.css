@@ -97,12 +97,14 @@ button.admin-tab {
     display: inline-flex;
     align-items: flex-end;
 }
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     /* On narrow viewports the desktop `clamp(28px, 5vw, 36px)` + gap 22px
        lands [ ALL POSTS (N) ] on one row and pushes [ PLUGINS ] / [ SECURITY ]
        onto a second wrap row, which reads as a different group of links.
        Shrink the font + drop into a single horizontally-scrollable row so
-       all tabs stay visually paired with each other. */
+       all tabs stay visually paired with each other. Threshold matches
+       the admin-table mobile rules below so a single "is this mobile?"
+       answer applies across the page. */
     .admin-tabs {
         gap: 14px;
         flex-wrap: nowrap;
@@ -662,9 +664,12 @@ button.admin-btn-sm { font-size: 10px; }
     box-shadow: 0 0 6px rgba(255, 183, 0, 0.5);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     /* Mobile layout shared by every .admin-table (post list, plugins,
        security keys). Each <tr> becomes a 2-row flex card:
+       Breakpoint at 768 (not 600) covers landscape phones + small
+       tablets where the desktop table still produces awkward column
+       wraps. */
          row 1 — `.admin-title-cell` (post title / plugin name / key name)
          row 2 — every `.admin-mono` meta cell inline + status dot + actions
        Cells reorder via `order` so the DOM keeps serving desktop column

@@ -56,7 +56,7 @@ Pick the path that matches your deploy.
 
 ```bash
 cd /var/www/lazyblog          # or wherever you cloned
-git fetch origin && git checkout v1.20.1
+git fetch origin && git checkout v1.20.2
 
 # Pull the new lbuchs/webauthn dep into vendor/
 composer install --no-dev --optimize-autoloader
@@ -80,10 +80,10 @@ docker compose up -d
 
 ```bash
 curl -s https://your-blog.example.com/healthz
-# expect: ok 1.20.1
+# expect: ok 1.20.2
 ```
 
-If it still prints `ok 1.19.x` or `ok 1.20.0`, php-fpm hasn't reloaded — old OPcache
+If it still prints `ok 1.19.x` or an older `1.20.x`, php-fpm hasn't reloaded — old OPcache
 or process pool still serving. Force `sudo systemctl restart php8.2-fpm`
 (restart, not reload) to evict cached bytecode.
 

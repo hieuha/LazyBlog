@@ -1195,3 +1195,31 @@ input[type="file"].admin-file-input::file-selector-button:hover,
     gap: 10px;
     margin-top: 4px;
 }
+
+/* ── /admin/login : tap-key button (admin-btn-primary variant) ──────────
+ * Sits inline alongside [ BACK ] in `.admin-actions` — matches the
+ * `[ LOG IN ]` / `[ BACK ]` shape of the password login form so the two
+ * variants of /admin/login feel like the same screen.
+ * `data-state="waiting"` swaps onto the phosphor-pulse animation while
+ * the browser is waiting for the authenticator. JS toggles the attribute
+ * around `navigator.credentials.get()`.
+ */
+.admin-btn-tap {
+    white-space: nowrap;
+}
+.admin-btn-tap[data-state="waiting"] {
+    animation: phosphor-pulse 1.4s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.85;
+}
+@keyframes phosphor-pulse {
+    50% { box-shadow: 0 0 24px var(--primary-glow); }
+}
+
+/* ── /admin/security : 1-line status summary (WEBAUTHN env state) ─── */
+.admin-mode-summary {
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    margin: 12px 0 18px;
+}

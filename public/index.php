@@ -63,6 +63,21 @@ header(
     . "form-action 'self';"
 );
 
+// Refuse browser + proxy caching on every admin/writer surface. Without
+// this, a logged-out visitor on a shared device can hit Back and replay
+// the admin's session-rendered HTML out of bfcache / browser cache, and
+// intermediaries (corporate proxies, CDN misconfig) could store the
+// authenticated response. Static-asset routes set their own long-lived
+// Cache-Control further down so this only constrains the dynamic admin
+// shell. The login page is included intentionally — its CSRF token +
+// WebAuthn challenge are stateful per-session.
+$reqPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+if (str_starts_with($reqPath, '/admin') || str_starts_with($reqPath, '/writer')) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
+
 // Start the session BEFORE any output so layout.php's Auth::check() (used by
 // the `[ ADMIN ]` header button, edit-link on posts, etc.) doesn't trigger
 // "headers already sent" warnings on public routes.
@@ -91,6 +106,9 @@ $aboutRepo = new App\AboutRepository(__DIR__ . '/../content');
 $aboutCtl = new App\Controllers\AboutController($aboutRepo, $renderer, $repo);
 $adminAboutCtl = new App\Controllers\AdminAboutController($aboutRepo);
 $writerCtl = new App\Controllers\WriterController($repo);
+$webauthnStore = new App\WebAuthnCredentialStore();
+$webAuthn = new App\WebAuthn($webauthnStore);
+$adminSecurityCtl = new App\Controllers\AdminSecurityController($webauthnStore, $webAuthn);
 
 $router = new App\Router();
 
@@ -126,6 +144,12 @@ $router->post('/admin/preview', fn () => $admin->preview());
 $router->post('/admin/upload', fn () => $upload->upload());
 $router->get('/admin/about', fn () => $adminAboutCtl->editForm());
 $router->post('/admin/about/save', fn () => $adminAboutCtl->save());
+$router->get('/admin/security', fn () => $adminSecurityCtl->index());
+$router->post('/admin/security/revoke/{id}', fn (array $p) => $adminSecurityCtl->revoke($p));
+$router->post('/admin/webauthn/register/begin', fn () => $adminSecurityCtl->registerBegin());
+$router->post('/admin/webauthn/register/complete', fn () => $adminSecurityCtl->registerComplete());
+$router->post('/admin/webauthn/login/begin', fn () => $adminSecurityCtl->loginBegin());
+$router->post('/admin/webauthn/login/complete', fn () => $adminSecurityCtl->loginComplete());
 $router->get('/admin/series', fn () => $adminSeries->index());
 $router->get('/admin/series/{slug}', fn (array $p) => $adminSeries->editForm($p));
 $router->post('/admin/series/{slug}', fn (array $p) => $adminSeries->save($p));

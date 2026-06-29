@@ -82,6 +82,26 @@ every 3h/10h/1d, shows top-N newest posts per friend — see
 `plugins/stalk/README.md`). Empty `PLUGINS=` is a no-op. See
 `docs/plugin-development.md`.
 
+**Passwordless admin login (FIDO2 / WebAuthn).** Set `WEBAUTHN=true`
+in `.env` and `/admin/login` swaps the password form for a single
+`fa-fingerprint` tap-key button — wave a Yubikey, Touch ID, or any
+FIDO2 authenticator and you're in. Multi-credential by default:
+register a primary + backup at `/admin/security` (operator-named
+nicknames, status pills mirroring the post list, REVOKE confirm
+dialog matching the DEL-post pattern). Bootstrap fallback: when
+`WEBAUTHN=true` but no keys are registered yet, the page still shows
+the password form with a dim hint so the first registration cannot
+lock you out. SSH break-glass works too — delete
+`content/admin/webauthn-credentials.json` or flip the env back to
+`false`. The per-IP brute-force throttle (10/15min, same one shared
+with password login) covers failed assertions, the signature counter
+is verified monotonic, CSRF is required on every endpoint, and origin
+binding makes a cloned phishing `/admin/login` useless because the
+authenticator refuses to sign for it. The Relying Party ID auto-pins
+to the request host but you can lock it to a single hostname via
+`WEBAUTHN_RP_ID=` when migrating domains. Full operator guide:
+`docs/webauthn-passwordless-login.md`.
+
 **Password-protected posts.** Lock a single post behind a per-post
 password without touching the rest of the editor flow. Set it in the
 admin editor with one click ([ Set Password ] / [ Remove Password ]
@@ -95,7 +115,7 @@ sliding 15-min window throttle the IP and disable the field
 (`TRUST_CF_CONNECTING_IP=true` switches the IP source to the
 `CF-Connecting-IP` header when traffic actually flows through
 Cloudflare). Listings prefix the title with a bare Font Awesome
-padlock (`fa-lock` locked, `fa-unlock-alt` once the visitor has unlocked
+padlock (`fa-lock` locked, `fa-unlock-keyhole` once the visitor has unlocked
 this session) that tints with the active theme via `currentColor`, so
 the operator can see at a glance which posts are gated. Set / Update
 / Remove all flash inline feedback above the form (`// Password set.`,
@@ -225,6 +245,7 @@ playbook.
 | `docs/backup-and-restore.md` | Backup script, cron, restore drill |
 | `docs/seo-and-social.md` | OG tags, JSON-LD, llms.txt, RSS, how to test link previews |
 | `docs/security.md` | CSP, session hardening, production checklist |
+| `docs/webauthn-passwordless-login.md` | FIDO2 / Yubikey / Passkey admin login — setup, recovery, threat model |
 | `docs/system-architecture.md` | Request lifecycle, render pipeline, file layout |
 | `docs/badges.md` | TX streak + customisable badge catalogue on `/about` |
 | `docs/plugin-development.md` | Writing your own plugin — routes, nav, assets, admin, storage |

@@ -89,13 +89,27 @@ final class Auth
         // Successful login — drop the per-IP failure record so legitimate
         // sessions don't carry a strike count after a typo.
         self::clearFailures($ip);
-        session_regenerate_id(true);
-        // Rotate the CSRF token too so any pre-login captured token is
-        // invalidated. Next Csrf::token() call regenerates lazily.
-        unset($_SESSION[Csrf::SESSION_KEY]);
-        $_SESSION['admin'] = true;
-        $_SESSION['admin_since'] = time();
+        self::finalizeLogin();
         return true;
+    }
+
+    /**
+     * Expose the per-IP login failure tracker to controllers other than the
+     * password flow (e.g. WebAuthn) so they all share the same 10/15-min budget.
+     */
+    public static function recordFailedLogin(): void
+    {
+        self::recordFailure(self::clientIp());
+    }
+
+    public static function clearFailedLogins(): void
+    {
+        self::clearFailures(self::clientIp());
+    }
+
+    public static function loginThrottled(): bool
+    {
+        return self::tooManyFailures(self::clientIp());
     }
 
     private const RATE_LIMIT_FILE = '/tmp/lazyblog-login-attempts.json';
@@ -103,7 +117,13 @@ final class Auth
     private const RATE_LIMIT_MAX = 10;
     private const RATE_LIMIT_WINDOW_SEC = 900;  // 15 minutes
 
-    private static function clientIp(): string
+    /**
+     * Resolve the client IP for rate-limit bookkeeping. Public so other
+     * controllers (post-unlock throttle, future feature throttles) share a
+     * single TRUST_CF_CONNECTING_IP decision instead of re-implementing
+     * the REMOTE_ADDR vs CF-Connecting-IP fallback on their own.
+     */
+    public static function clientIp(): string
     {
         // Default: REMOTE_ADDR is the only IP source we trust. Behind
         // Cloudflare, every visitor lands on the same edge IP and would
@@ -249,6 +269,44 @@ final class Auth
     {
         self::start();
         return !empty($_SESSION['admin']);
+    }
+
+    /**
+     * True when WEBAUTHN=true in env. Off-by-default so a fresh fork or
+     * misconfigured deploy never falls into a state where no one can log in.
+     */
+    public static function webauthnEnabled(): bool
+    {
+        return strtolower((string) Config::get('WEBAUTHN', 'false')) === 'true';
+    }
+
+    /**
+     * Number of registered FIDO2 credentials. Cheap enough to call from
+     * views (single JSON file read). Returns 0 when the store doesn't
+     * exist yet — important for the bootstrap fallback in /admin/login.
+     */
+    public static function webauthnKeyCount(): int
+    {
+        return (new WebAuthnCredentialStore())->count();
+    }
+
+    public static function webauthnHasCredentials(): bool
+    {
+        return self::webauthnKeyCount() > 0;
+    }
+
+    /**
+     * Finalize a successful login: regen session ID, rotate CSRF, mark
+     * session authed. Shared between password and WebAuthn completion paths
+     * so they stay byte-identical on success.
+     */
+    public static function finalizeLogin(): void
+    {
+        self::start();
+        session_regenerate_id(true);
+        unset($_SESSION[Csrf::SESSION_KEY]);
+        $_SESSION['admin'] = true;
+        $_SESSION['admin_since'] = time();
     }
 
     public static function logout(): void

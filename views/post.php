@@ -39,7 +39,7 @@ $renderTocList = function () use ($toc): void {
         : $post->displayDate();
     ?>
     <div class="section-tag">
-        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ <i class="fa fa-unlock-alt" aria-hidden="true"></i> ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($postWhen) ?><?php
+        § <?php if ($post->isProtected()): ?><span class="post-lock post-lock--unlocked" title="Unlocked this session" aria-label="Unlocked this session">[ <i class="fa-solid fa-unlock-keyhole" aria-hidden="true"></i> ]</span> <?php endif; ?>TRANSMISSION — <?= Http::e($postWhen) ?><?php
             if ($post->author !== null && $post->author !== '') {
                 echo ' — ' . Http::e($post->author);
             }

@@ -36,6 +36,12 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                     [ PLUGINS (<?= count($enabledPlugins) ?>) ]
                 </a>
             <?php endif; ?>
+            <a class="admin-tab"
+               role="tab"
+               href="/admin/security"
+               aria-selected="false">
+                [ SECURITY (<?= App\Auth::webauthnKeyCount() ?>) ]
+            </a>
         </div>
         <div class="admin-actions">
             <a class="admin-btn admin-btn-primary" href="/admin/new">[ NEW POST ]</a>
@@ -119,7 +125,7 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                                         <span class="admin-status admin-status-live" title="Live" aria-label="Live">Live</span>
                                     <?php endif; ?>
                                     <?php if (!empty($entry['protected'])): ?>
-                                        <span class="post-lock" title="Password protected" aria-label="Password protected">[ <i class="fa fa-lock" aria-hidden="true"></i> ]</span>
+                                        <span class="post-lock" title="Password protected" aria-label="Password protected">[ <i class="fa-solid fa-lock" aria-hidden="true"></i> ]</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="admin-row-actions">

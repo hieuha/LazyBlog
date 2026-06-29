@@ -3,8 +3,20 @@
 /** @var string $next */
 /** @var string|null $error */
 
+use App\Auth;
 use App\Csrf;
 use App\Http;
+
+// WebAuthn route: when enabled AND at least one key is registered, replace
+// the password form entirely with the tap-key flow. When enabled but 0 keys
+// registered, fall back to password (bootstrap mode) so the operator can
+// log in once to register their first key.
+if (Auth::webauthnEnabled() && Auth::webauthnHasCredentials()) {
+    include __DIR__ . '/login-webauthn.php';
+    return;
+}
+
+$bootstrapHint = Auth::webauthnEnabled() && !Auth::webauthnHasCredentials();
 ?>
 
 <section class="admin-card">
@@ -13,6 +25,10 @@ use App\Http;
 
     <?php if ($error !== null): ?>
         <p class="admin-error">// <?= Http::e($error) ?></p>
+    <?php endif; ?>
+
+    <?php if ($bootstrapHint): ?>
+        <p class="admin-mode-summary">// Bootstrap mode — register a security key at /admin/security after login.</p>
     <?php endif; ?>
 
     <form method="post" action="/admin/login" class="admin-form">

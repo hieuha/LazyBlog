@@ -271,11 +271,13 @@ $favicon = 'data:image/svg+xml,'
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome 4 — used by the .post-lock badge across listings
-         (fa-lock / fa-unlock-alt) and by the EasyMDE toolbar in the
-         admin editor. Loaded once here so admin views don't duplicate
-         the request and so cache hits carry across public ↔ admin. -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- Font Awesome 6 — `fa-fingerprint` on /admin/login (WebAuthn tap
+         button) needed an FA5+ icon. v4-shims.min.css is loaded second so
+         any lingering `fa-paint-brush`/`fa-unlock-alt`/`fa-cloud-upload`/
+         `fa-check-square-o`/`fa-exclamation-triangle` from EasyMDE +
+         post lock badge keep rendering via the legacy-name map. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/v4-shims.min.css">
 
     <?php
     // Stylesheets split by concern, each with its own ?v= cache-bust.

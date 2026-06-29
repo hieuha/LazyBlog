@@ -127,6 +127,19 @@
     if (bodyEl && window.EasyMDE && !skipEasyMDE) {
         var autosaveId = 'lazyblog-' + (slugEl && slugEl.value ? slugEl.value : 'new');
 
+        // Stale-cache guard. EasyMDE.init() unconditionally pulls
+        // `localStorage['smde_' + uniqueId]` over the textarea's PHP-
+        // rendered value when present, even if the saved-on-disk body
+        // is newer (e.g. published via /writer, then reopened here).
+        // For EDIT mode (slug is set) the disk content is canonical:
+        // drop the autosave entry before EasyMDE inits so the textarea
+        // wins. NEW-post mode still keeps the `smde_lazyblog-new`
+        // recovery so a closed tab doesn't lose unsaved fresh drafts.
+        var isEditMode = !!(slugEl && slugEl.value);
+        if (isEditMode) {
+            try { localStorage.removeItem('smde_' + autosaveId); } catch (e) {}
+        }
+
         // Mirror fullscreen state to the body so we can hide the CRT scanline
         // overlay while the editor takes over the viewport.
         var observer = new MutationObserver(function () {
@@ -217,7 +230,7 @@
                         }).join('\n');
                         cm.replaceSelection(out);
                     },
-                    className: 'fa fa-check-square-o',
+                    className: 'fa-solid fa-square-check',
                     title: 'Task list (- [ ] item)',
                 },
                 {
@@ -238,7 +251,7 @@
                             cm.replaceSelection('==' + sel + '==');
                         }
                     },
-                    className: 'fa fa-paint-brush',
+                    className: 'fa-solid fa-paintbrush',
                     title: 'Highlight (==text==)',
                 },
                 '|',
@@ -286,7 +299,7 @@
                         var output = '::: highlight\nKey fact or callout.\n:::';
                         cm.replaceSelection('\n' + output + '\n');
                     },
-                    className: 'fa fa-exclamation-triangle',
+                    className: 'fa-solid fa-triangle-exclamation',
                     title: 'Insert highlight admonition',
                 },
                 {
@@ -438,11 +451,11 @@
             { label: '•',  title: 'Bullet list',                       action: prefixLines('- ') },
             { label: '`',   title: 'Inline code',                       action: insertInlineCode },
             { label: '```', title: 'Code fence',                        action: insertCodeFence },
-            { icon: 'fa fa-link',          title: 'Link',                action: insertLink },
-            { icon: 'fa fa-cloud-upload',  title: 'Upload image (multi)', action: function () { fileInput.click(); } },
+            { icon: 'fa-solid fa-link',            title: 'Link',                action: insertLink },
+            { icon: 'fa-solid fa-cloud-arrow-up',  title: 'Upload image (multi)', action: function () { fileInput.click(); } },
             { label: '!',  title: 'Highlight callout',                 action: insertBlock('::: highlight\nKey fact or callout.\n:::') },
-            { icon: 'fa fa-comment',       title: 'Story card',          action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
-            { icon: 'fa fa-eye',           title: 'Preview',             action: function () { openMobilePreview(textarea); } },
+            { icon: 'fa-solid fa-comment',         title: 'Story card',          action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
+            { icon: 'fa-solid fa-eye',             title: 'Preview',             action: function () { openMobilePreview(textarea); } },
         ];
 
         buttons.forEach(function (b) {

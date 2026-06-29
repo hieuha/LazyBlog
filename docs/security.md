@@ -73,6 +73,34 @@ escaped form.
   failed password attempts
 - **Preview DoS**: `/admin/preview` reads at most 256KB from the request body
 
+## Security keys (FIDO2 / WebAuthn)
+
+Passwordless admin login with hardware keys (Yubikey, SoloKey) or platform
+Passkeys (Touch ID, Face ID). Opt-in via `WEBAUTHN=true` in `.env`.
+
+Quick summary:
+
+- **Phishing-resistant**: assertions are bound to the Relying Party ID;
+  a cloned login page at the wrong domain cannot harvest a working
+  assertion
+- **No shared secret on the server**: only public keys are stored, the
+  credentials file leaking does not enable login
+- **Replay defense**: signature counter verified monotonic on every login
+- **Password endpoint is hard-disabled** server-side when `WEBAUTHN=true`
+  AND ≥ 1 key is registered — leaking `ADMIN_PASSWORD_HASH` does not let
+  an attacker brute-force through `/admin/login`
+- **Bootstrap fallback**: `WEBAUTHN=true` with 0 keys still renders the
+  password form so the operator can sign in to register their first key
+- **Same per-IP throttle** as password login (10 fails / 15 min,
+  `TRUST_CF_CONNECTING_IP=true` to honour Cloudflare's edge header)
+- **Body cap**: WebAuthn endpoints reject request bodies over 64 KB
+- **Sanitised errors**: lib internals stay out of HTTP responses (mapped
+  to coarse buckets like "Malformed request" / "Replay detected"); full
+  exception traces still land in the PHP error log for diagnosis
+
+Full operator guide — installation, daily use, recovery, troubleshooting,
+threat model — lives in [`docs/webauthn-passwordless-login.md`](webauthn-passwordless-login.md).
+
 ## Password-protected posts
 
 Posts can be individually locked behind a bcrypt-hashed password. Unlock

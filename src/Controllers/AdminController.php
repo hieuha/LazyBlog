@@ -56,6 +56,21 @@ final class AdminController
             $next = '/admin';
         }
 
+        // When WEBAUTHN=true AND ≥1 key is registered, password login is
+        // disabled — even if ADMIN_PASSWORD_HASH leaks, an attacker cannot
+        // brute-force in via this endpoint. Bootstrap mode (WEBAUTHN=true
+        // + 0 keys) still allows password login so the operator can sign
+        // in and register their first key. See docs/security.md → Recovery.
+        if (Auth::webauthnEnabled() && Auth::webauthnHasCredentials()) {
+            http_response_code(403);
+            Http::render('admin/login', [
+                'title' => 'Admin Login',
+                'next' => $next,
+                'error' => 'Password login disabled — use your security key.',
+            ]);
+            return;
+        }
+
         if (Auth::attempt($password)) {
             Http::redirect($next);
         }

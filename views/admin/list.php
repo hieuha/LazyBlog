@@ -21,38 +21,7 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
 
 <section>
     <div class="admin-header-row">
-        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
-            <a class="admin-tab"
-               role="tab"
-               href="/admin"
-               <?= $activeTab === 'posts' ? 'aria-current="page" aria-selected="true"' : 'aria-selected="false"' ?>>
-                [ ALL POSTS (<?= (int) $total ?>) ]
-            </a>
-            <?php if ($enabledPlugins !== []): ?>
-                <a class="admin-tab"
-                   role="tab"
-                   href="/admin?tab=plugins"
-                   <?= $activeTab === 'plugins' ? 'aria-current="page" aria-selected="true"' : 'aria-selected="false"' ?>>
-                    [ PLUGINS (<?= count($enabledPlugins) ?>) ]
-                </a>
-            <?php endif; ?>
-            <a class="admin-tab" role="tab" href="/admin/security" aria-selected="false">
-                [ SECURITY (<?= App\Auth::webauthnKeyCount() ?>) ]
-            </a>
-            <a class="admin-tab" role="tab" href="/admin/series" aria-selected="false">
-                [ SERIES ]
-            </a>
-            <?php /* Logout sits in the tabs row too — it's a one-shot navigation
-                   ("go to logged-out state"), not an action on the current page.
-                   `<button>` with .admin-tab + .admin-tab-logout matches the tab
-                   visual but stays a POST + CSRF form for the actual sign-out. */ ?>
-            <form method="post" action="/admin/logout" class="admin-tab-form">
-                <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
-                <button type="submit" class="admin-tab admin-tab-logout">
-                    [ LOG OUT ]
-                </button>
-            </form>
-        </div>
+        <?php include __DIR__ . '/_tabs.php'; ?>
         <div class="admin-actions">
             <a class="admin-btn admin-btn-primary" href="/admin/new">[ NEW POST ]</a>
             <a class="admin-btn" href="/admin/about">[ <?= (new \App\AboutRepository(__DIR__ . '/../../content'))->exists() ? 'EDIT' : 'CREATE' ?> ABOUT ]</a>

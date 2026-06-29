@@ -10,13 +10,11 @@ use App\Http;
 
 <section>
     <div class="admin-header-row">
-        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
-            <a class="admin-tab" role="tab" href="/admin">[ ALL POSTS ]</a>
-            <a class="admin-tab" role="tab" aria-current="page" aria-selected="true" href="/admin/series">[ SERIES (<?= count($series) ?>) ]</a>
-        </div>
-        <div class="admin-actions">
-            <a class="admin-btn" href="/admin">[ ← BACK TO POSTS ]</a>
-        </div>
+        <?php
+        $activeTab = 'series';
+        $seriesCount = count($series);
+        include __DIR__ . '/_tabs.php';
+        ?>
     </div>
 
     <?php if ($flash !== null): ?>
@@ -62,14 +60,14 @@ use App\Http;
                         </td>
                         <td class="admin-title-cell"><?= Http::e((string) $s['title']) ?></td>
                         <td class="admin-mono"><?= (int) $s['count'] ?></td>
-                        <td class="admin-mono">
+                        <td class="admin-mono admin-col-mobile-hide">
                             <?php if ($hasManifest): ?>
                                 <span class="admin-series-flag" title="Manifest present" aria-label="Manifest present"></span>
                             <?php else: ?>
                                 <span style="color: var(--text-dim);">—</span>
                             <?php endif; ?>
                         </td>
-                        <td class="admin-mono">
+                        <td class="admin-mono admin-col-mobile-hide">
                             <?php if ($hasCover): ?>
                                 <span class="admin-series-cover-thumb"
                                       style="--dot-mask: url('<?= Http::e(Http::seriesAsset($slug, 'cover.webp')) ?>');"

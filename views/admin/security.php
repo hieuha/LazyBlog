@@ -27,20 +27,12 @@ $fmtStamp = static function (?string $iso): string {
 
 <section>
     <div class="admin-header-row">
-        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
-            <a class="admin-tab" role="tab" href="/admin" aria-selected="false">[ ALL POSTS ]</a>
-            <?php if ($enabledPlugins !== []): ?>
-                <a class="admin-tab" role="tab" href="/admin?tab=plugins" aria-selected="false">
-                    [ PLUGINS (<?= count($enabledPlugins) ?>) ]
-                </a>
-            <?php endif; ?>
-            <a class="admin-tab" role="tab" href="/admin/security" aria-current="page" aria-selected="true">
-                [ SECURITY (<?= count($credentials) ?>) ]
-            </a>
-        </div>
+        <?php
+        $activeTab = 'security';
+        include __DIR__ . '/_tabs.php';
+        ?>
         <div class="admin-actions">
             <button type="button" class="admin-btn admin-btn-primary" id="open-add-key-modal">[ + ADD KEY ]</button>
-            <a class="admin-btn" href="/admin">[ BACK ]</a>
         </div>
     </div>
 

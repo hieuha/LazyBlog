@@ -729,6 +729,16 @@ button.admin-btn-sm { font-size: 10px; }
         order: 4;
         margin-left: auto;
     }
+
+    /* Strip the slug chip's dashed border + padding on mobile so it sits
+       inline as plain mono text alongside the date instead of dominating
+       the meta row with a 180 px wide chip. Desktop keeps the visual
+       chip — there's plenty of room there. */
+    .admin-table .admin-series-chip {
+        border: 0;
+        padding: 0;
+        background: transparent;
+    }
 }
 
 /* ---------- Series chip in admin posts list (under the title) ---------- */

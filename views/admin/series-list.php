@@ -87,7 +87,7 @@ use App\Http;
                                       data-confirm-label="[ DELETE ]"
                                       data-confirm-danger="1">
                                     <input type="hidden" name="_csrf" value="<?= Http::e(Csrf::token()) ?>">
-                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">DEL MANIFEST</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger" title="Delete manifest + cover (posts untouched)">DEL</button>
                                 </form>
                             <?php endif; ?>
                         </td>

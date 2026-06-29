@@ -9,7 +9,15 @@ use App\Http;
 ?>
 
 <section>
-    <h2><?= $isNew ? 'CREATE ABOUT' : 'EDIT ABOUT' ?></h2>
+    <div class="admin-header-row">
+        <h2><?= $isNew ? 'CREATE ABOUT' : 'EDIT ABOUT' ?></h2>
+        <div class="admin-actions">
+            <a class="admin-btn" href="/admin">[ ← BACK ]</a>
+            <?php if (!$isNew): ?>
+                <a class="admin-btn" href="/about" target="_blank">[ VIEW PUBLIC ]</a>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <?php if ($formError !== null): ?>
         <p class="admin-error">// <?= Http::e($formError) ?></p>

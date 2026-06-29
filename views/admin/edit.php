@@ -25,7 +25,15 @@ $flashIsError = is_string($flash ?? null) && (
 ?>
 
 <section>
-    <h2><?= $isEdit ? 'EDIT: ' . Http::e($formValues['title']) : 'NEW POST' ?></h2>
+    <div class="admin-header-row">
+        <h2><?= $isEdit ? 'EDIT: ' . Http::e($formValues['title']) : 'NEW POST' ?></h2>
+        <div class="admin-actions">
+            <a class="admin-btn" href="/admin">[ ← BACK ]</a>
+            <?php if ($isEdit && !empty($formValues['slug'])): ?>
+                <a class="admin-btn" href="/posts/<?= Http::e((string) $formValues['slug']) ?>" target="_blank">[ VIEW PUBLIC ]</a>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <?php if ($formError !== null): ?>
         <p class="admin-error">// <?= Http::e($formError) ?></p>

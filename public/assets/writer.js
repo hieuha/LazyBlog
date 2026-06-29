@@ -197,12 +197,40 @@
         // Inline code first — contents are not re-processed.
         html = html.replace(/`([^`\n]+)`/g,
             '<code>' + S_OPEN + '`' + S_CLOSE + '$1' + S_OPEN + '`' + S_CLOSE + '</code>');
+        // Bold+italic ***text*** / ___text___ — must run before the 2-marker
+        // and 1-marker passes so the triple run is consumed atomically.
+        // CommonMark renders both as <em><strong>…</strong></em>.
+        // The marker chars inside the .md-syntax spans are written as
+        // private-use placeholders so the subsequent bold/italic regex
+        // passes don't see literal `*` / `_` and re-wrap the inner content.
+        // Both placeholders are swapped back to their real chars right
+        // before return so textContent stays equal to the source markdown.
+        var STAR_PH = '';
+        var US_PH = '';
+        html = html.replace(/\*\*\*([^*\n]+)\*\*\*/g,
+            '<em>' + S_OPEN + STAR_PH + S_CLOSE
+            + '<strong>' + S_OPEN + STAR_PH + STAR_PH + S_CLOSE + '$1'
+            + S_OPEN + STAR_PH + STAR_PH + S_CLOSE + '</strong>'
+            + S_OPEN + STAR_PH + S_CLOSE + '</em>');
+        html = html.replace(/(^|[^_\w])___([^_\n]+)___(?!_)/g,
+            '$1<em>' + S_OPEN + US_PH + S_CLOSE
+            + '<strong>' + S_OPEN + US_PH + US_PH + S_CLOSE + '$2'
+            + S_OPEN + US_PH + US_PH + S_CLOSE + '</strong>'
+            + S_OPEN + US_PH + S_CLOSE + '</em>');
         // Bold **text**
         html = html.replace(/\*\*([^*\n]+)\*\*/g,
             '<strong>' + S_OPEN + '**' + S_CLOSE + '$1' + S_OPEN + '**' + S_CLOSE + '</strong>');
+        // Bold __text__ (underscore variant — CommonMark parity)
+        html = html.replace(/(^|[^_\w])__([^_\n]+)__(?!_)/g,
+            '$1<strong>' + S_OPEN + '__' + S_CLOSE + '$2' + S_OPEN + '__' + S_CLOSE + '</strong>');
         // Italic *text* (not part of **)
         html = html.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,
             '$1<em>' + S_OPEN + '*' + S_CLOSE + '$2' + S_OPEN + '*' + S_CLOSE + '</em>');
+        // Italic _text_ (underscore variant — CommonMark word-boundary rules
+        // mean `foo_bar_baz` stays literal; we mirror that by requiring a
+        // non-word char before the opener and disallowing `__` flanking).
+        html = html.replace(/(^|[^_\w])_([^_\n]+)_(?!_)/g,
+            '$1<em>' + S_OPEN + '_' + S_CLOSE + '$2' + S_OPEN + '_' + S_CLOSE + '</em>');
         // Strikethrough ~~text~~ (GFM)
         html = html.replace(/~~([^~\n]+)~~/g,
             '<del>' + S_OPEN + '~~' + S_CLOSE + '$1' + S_OPEN + '~~' + S_CLOSE + '</del>');
@@ -247,6 +275,10 @@
                 + '<span class="md-link-source">' + S_OPEN + '](' + u + ')' + S_CLOSE + '</span>'
                 + '</a>';
         });
+        // Swap the triple-marker placeholders back to their real chars so
+        // textContent equals the source markdown (caret offset invariant).
+        if (html.indexOf(STAR_PH) >= 0) html = html.split(STAR_PH).join('*');
+        if (html.indexOf(US_PH) >= 0) html = html.split(US_PH).join('_');
         return html;
     }
 
@@ -282,12 +314,37 @@
             block.dataset.kind = 'h' + lvl;
             return;
         }
-        if (md.indexOf('> ') === 0) {
-            block.innerHTML = '<blockquote>'
-                + syntaxSpan('> ') + renderInline(md.substring(2))
-                + '</blockquote>';
-            block.dataset.kind = 'blockquote';
-            return;
+        if (md.indexOf('> ') === 0 || md === '>') {
+            // Multi-line quote: every line must start with `> ` (or be a
+            // bare `>` for blank quote lines). Renders as ONE blockquote
+            // with `\n` text nodes between lines — CSS `white-space:
+            // pre-wrap` on the blockquote turns those into visual line
+            // breaks while textContent stays equal to the source markdown
+            // (caret offset invariant).
+            var qLines = md.split('\n');
+            var allQuote = true;
+            for (var qi = 0; qi < qLines.length; qi++) {
+                var ql = qLines[qi];
+                if (ql !== '>' && ql.indexOf('> ') !== 0) {
+                    allQuote = false;
+                    break;
+                }
+            }
+            if (allQuote) {
+                var qHtml = '';
+                for (var qj = 0; qj < qLines.length; qj++) {
+                    var line = qLines[qj];
+                    if (qj > 0) qHtml += '\n';
+                    if (line === '>') {
+                        qHtml += syntaxSpan('>');
+                    } else {
+                        qHtml += syntaxSpan('> ') + renderInline(line.substring(2));
+                    }
+                }
+                block.innerHTML = '<blockquote>' + qHtml + '</blockquote>';
+                block.dataset.kind = 'blockquote';
+                return;
+            }
         }
         if (md.indexOf('```') === 0) {
             // Multi-line code block: keep everything literal.
@@ -711,6 +768,112 @@
         scheduleAutosave();
     }
 
+    // Enter on a closing ``` fence — exit the code block by parking the
+    // caret in a fresh paragraph below. Returns true when handled.
+    //
+    // Triggers only when:
+    //   * the caret line is exactly ``` (just three backticks)
+    //   * that line is NOT the opening fence (i.e. there's text before it)
+    //
+    // Anything trailing the closing fence (the writer split mid-block)
+    // becomes the body of the new paragraph so no characters are lost.
+    function handleCodeExit(block) {
+        if (!block) return false;
+        var text = block.textContent || '';
+        var offset = getCaretOffsetInBlock(block);
+        var before = text.substring(0, offset);
+        var after = text.substring(offset);
+        var lastNlBefore = before.lastIndexOf('\n');
+        if (lastNlBefore === -1) return false; // caret on opening fence line
+        var firstNlAfter = after.indexOf('\n');
+        var lineStartIdx = lastNlBefore + 1;
+        var endOfLine = (firstNlAfter === -1)
+            ? text.length
+            : offset + firstNlAfter;
+        var currentLine = text.substring(lineStartIdx, endOfLine);
+        if (currentLine !== '```') return false;
+        var keep = text.substring(0, endOfLine);
+        var trailing = text.substring(endOfLine);
+        if (trailing.indexOf('\n') === 0) trailing = trailing.substring(1);
+        block.textContent = keep;
+        block.setAttribute('data-md', keep);
+        renderBlock(block);
+        var nbExitCode = makeBlock(trailing);
+        block.insertAdjacentElement('afterend', nbExitCode);
+        setCaretOffsetInBlock(nbExitCode, 0);
+        pendingCapitalize = true;
+        updateFocus();
+        centerCaret();
+        scheduleAutosave();
+        return true;
+    }
+
+    // Enter inside a blockquote — insert `\n> ` so the quote stays as one
+    // multi-line block. Returns true when the keystroke was handled.
+    //
+    // Two flows:
+    //   1. Caret line is just `> ` (empty body) → exit. Drops the empty
+    //      trailing marker and inserts a fresh paragraph block below.
+    //   2. Otherwise → insert `\n> ` at the caret, re-render, advance the
+    //      caret past the new marker so the writer keeps typing the
+    //      continuation body.
+    function handleQuoteEnter(block) {
+        if (!block) return false;
+        var text = block.textContent || '';
+        // Treat as a quote when the block is already rendered as one OR
+        // the raw text starts with `> ` (covers the freshly-typed case
+        // before the render debounce fires).
+        if (block.dataset.kind !== 'blockquote' && text.indexOf('> ') !== 0) {
+            return false;
+        }
+        var offset = getCaretOffsetInBlock(block);
+        var before = text.substring(0, offset);
+        var after = text.substring(offset);
+        // Find the line that contains the caret. Exit when it's an empty
+        // marker line (`> ` with no body before the caret on this line).
+        var lastNl = before.lastIndexOf('\n');
+        var currentLine = before.substring(lastNl + 1);
+        if (currentLine === '> ' && after === '') {
+            // Drop the empty trailing `> ` marker, fall back to either a
+            // shorter quote block (when there was prior content) or a
+            // fresh paragraph below this block.
+            var trimmed = before.substring(0, lastNl);
+            if (lastNl >= 0 && trimmed !== '') {
+                block.textContent = trimmed;
+                block.setAttribute('data-md', trimmed);
+                renderBlock(block);
+                var nbExit = makeBlock('');
+                block.insertAdjacentElement('afterend', nbExit);
+                setCaretOffsetInBlock(nbExit, 0);
+            } else {
+                // Whole block was just `> ` — convert to empty paragraph.
+                block.textContent = '';
+                block.setAttribute('data-md', '');
+                renderBlock(block);
+                setCaretOffsetInBlock(block, 0);
+            }
+            pendingCapitalize = true;
+            updateFocus();
+            centerCaret();
+            scheduleAutosave();
+            return true;
+        }
+        // Continue the quote: `\n> ` at caret. Stays inside the same block
+        // so the renderer keeps everything inside one <blockquote>. No
+        // auto-cap here — quote continuation is mid-thought by default
+        // (matches the code-block newline behavior, which also skips it).
+        var insertion = '\n> ';
+        var newText = before + insertion + after;
+        block.textContent = newText;
+        block.setAttribute('data-md', newText);
+        renderBlock(block);
+        setCaretOffsetInBlock(block, before.length + insertion.length);
+        updateFocus();
+        centerCaret();
+        scheduleAutosave();
+        return true;
+    }
+
     // Walk up from any node until we land on a `.wb` wrapper or the editor.
     function blockOf(node) {
         while (node && node !== editor) {
@@ -818,20 +981,23 @@
         return true;
     }
 
-    // Tiny QoL auto-format: when the current block starts with `-X` or
-    // `*X` (no space after the marker) we insert the missing space so the
+    // Tiny QoL auto-format: when the current block starts with `-X`
+    // (no space after the marker) we insert the missing space so the
     // list renderer kicks in. Standard CommonMark requires `- text`, but
     // users routinely skip the space and expect a bullet anyway. Caret
     // offset shifts +1 only when the caret sits after the insertion point.
+    //
+    // `*` is intentionally excluded: `*word*` is italic, and auto-spacing
+    // would clobber emphasis the moment the user typed `*w`.
     function autoSpaceListMarker() {
         var block = getCurrentBlock();
         if (!block) return;
         if (block.dataset.kind === 'pre') return;
         var text = block.textContent || '';
-        var m = text.match(/^(\s*)([-*])(\S.*)$/);
+        var m = text.match(/^(\s*)(-)(\S.*)$/);
         if (!m) return;
-        // Skip when the next char would form `**` (bold) or `--` (en-dash
-        // start) — neither is a list intent.
+        // Skip when the next char would form `--` (en-dash start) — not
+        // a list intent.
         if (m[3][0] === m[2]) return;
         var insertAt = m[1].length + 1;
         var offset = getCaretOffsetInBlock(block);
@@ -998,11 +1164,27 @@
                     || (curBlock.textContent || '').indexOf('```') === 0);
             if (inCodeBlock || e.shiftKey) {
                 e.preventDefault();
+                // Closing fence + Enter (no Shift) exits the code block —
+                // moves the caret into a fresh paragraph below so the
+                // writer can keep going outside the fence. Shift+Enter
+                // stays as a raw newline insertion (escape hatch).
+                if (inCodeBlock && !e.shiftKey && handleCodeExit(curBlock)) {
+                    return;
+                }
                 if (!insertTextAtCaret('\n')) return;
                 if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
                 renderCurrentBlock();
                 centerCaret();
                 scheduleAutosave();
+                return;
+            }
+            // Inside a blockquote — Enter inserts `\n> ` so the quote
+            // continues as ONE multi-line block (matches the code-block
+            // behavior above). Exit when the line immediately before the
+            // caret is just `> ` with no body — drop that empty marker and
+            // break out into a fresh paragraph below.
+            if (handleQuoteEnter(curBlock)) {
+                e.preventDefault();
                 return;
             }
             e.preventDefault();

@@ -638,6 +638,10 @@ html, body {
     padding-left: 18px;
     border-left: 2px solid var(--primary-dim);
     font-style: italic;
+    /* Multi-line quote blocks store each line separated by a `\n` text
+       node (caret-offset invariant); pre-wrap turns those into visual
+       line breaks without inserting <br>s. */
+    white-space: pre-wrap;
 }
 
 .writer-editor > .wb > pre {

@@ -67,6 +67,7 @@ final class MarkdownRenderer
         $pre = $this->preprocessAdmonitions($pre);
         $html = (string) $this->converter->convert($pre);
         $html = $this->reinjectStashed($html);
+        $html = $this->postprocessBlockquoteLineBreaks($html);
         $html = $this->postprocessHighlights($html);
         $html = $this->postprocessStrikethrough($html);
         $html = $this->postprocessFreqTags($html);
@@ -560,6 +561,33 @@ final class MarkdownRenderer
         $parts[] = $autoplay ? 'preload="auto"' : 'preload="metadata"';
 
         return ' ' . implode(' ', $parts);
+    }
+
+    /**
+     * Within each <blockquote>, convert the soft-break `\n` chars that
+     * CommonMark left inside `<p>` content into `<br>\n` so consecutive
+     * `> ` lines render as visually separate lines instead of collapsing
+     * into one run-on paragraph. Regular paragraphs outside <blockquote>
+     * keep CommonMark's default soft-break behavior — only multi-line
+     * quote authoring gets the hard-break treatment.
+     *
+     * Note: skips nested `<blockquote>` (non-greedy outer match would
+     * mis-pair with the first inner close). Nested quotes are rare and
+     * can be added later via DOM walking if a real case comes up.
+     */
+    private function postprocessBlockquoteLineBreaks(string $html): string
+    {
+        return (string) preg_replace_callback(
+            '/(<blockquote\b[^>]*>)(.*?)(<\/blockquote>)/s',
+            static function (array $m): string {
+                // `\n(?=[^<])` only matches newlines followed by a text
+                // character — soft breaks inside <p>. Structural newlines
+                // between tags (`</p>\n<p>`) stay untouched.
+                $inner = (string) preg_replace('/\n(?=[^<])/', "<br />\n", $m[2]);
+                return $m[1] . $inner . $m[3];
+            },
+            $html,
+        );
     }
 
     /**

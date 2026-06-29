@@ -662,20 +662,20 @@ button.admin-btn-sm { font-size: 10px; }
 }
 
 @media (max-width: 600px) {
-    /* Per-post layout on mobile: title on row 1 (own line, ellipsis-truncated),
-       date + status dot + actions all on row 2 (inline, gap-spaced, actions
-       push to the right). Two rows per post instead of the desktop table's
-       four, with tighter padding so 5-6 posts fit on a single phone screen.
-       Implemented via `display: flex` on each `<tr>` + `order` to reshuffle
-       cell visual order without touching the DOM (which still serves the
-       desktop column order). */
+    /* Mobile layout shared by every .admin-table (post list, plugins,
+       security keys). Each <tr> becomes a 2-row flex card:
+         row 1 — `.admin-title-cell` (post title / plugin name / key name)
+         row 2 — every `.admin-mono` meta cell inline + status dot + actions
+       Cells reorder via `order` so the DOM keeps serving desktop column
+       order while mobile sees title-first regardless of which column
+       (varies per table) carries it. */
     .admin-table thead { display: none; }
     .admin-table, .admin-table tbody { display: block; width: 100% !important; }
     .admin-table tr {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        column-gap: 12px;
+        column-gap: 10px;
         row-gap: 4px;
         padding: 8px 0;
         border-bottom: 1px solid var(--border);
@@ -689,31 +689,41 @@ button.admin-btn-sm { font-size: 10px; }
         width: auto !important;
     }
 
-    /* Hide SERIES + TAGS on mobile — both wrap to 2-3 lines and dominate
-       each row. Tap into edit to see them. */
+    /* Hide noisy columns on mobile — desktop still shows them.
+       `.admin-col-tags` is added to the post-list TAGS td so we can hide
+       it by class rather than nth-child, since different tables have
+       different column orders. */
     .admin-table .admin-col-series,
-    .admin-table td:nth-child(4) { display: none; }
+    .admin-table .admin-col-tags,
+    .admin-table .admin-col-mobile-hide { display: none; }
 
-    /* Title gets the whole first row, ellipsis when long. */
+    /* Title cell takes the full first row. Negative order so it always
+       wins against any default-ordered (=0) meta cell. */
     .admin-table .admin-title-cell {
-        order: 1;
+        order: -1;
         flex: 1 0 100%;
     }
-    /* Date — dim monospace, sits leftmost on the meta row. */
-    .admin-table td:nth-child(1) {
+
+    /* All other .admin-mono cells (date, slug, version, type, etc) collapse
+       into a single inline meta line, styled like the date used to be:
+       dim monospace small caps. */
+    .admin-table tbody td.admin-mono {
         order: 2;
         color: var(--primary-dim);
         font-family: 'Share Tech Mono', monospace;
         font-size: 11px;
-        letter-spacing: 2px;
+        letter-spacing: 1.5px;
     }
-    /* Status dot — kill the desktop 6px margin-top now that the cell isn't
-       sitting next to a wrap title baseline. */
-    .admin-table td:nth-child(5) {
+
+    /* Status dot — sits between meta and actions. `:has(> .admin-status)`
+       wins over `td.admin-mono` (same specificity) because it's declared
+       later. */
+    .admin-table tbody td:has(> .admin-status) {
         order: 3;
     }
-    .admin-table td:nth-child(5) .admin-status { margin-top: 0; }
-    /* Action buttons — push to the right edge of the row. */
+    .admin-table .admin-status { margin-top: 0; }
+
+    /* Actions push to the right edge. */
     .admin-table td.admin-row-actions {
         order: 4;
         margin-left: auto;

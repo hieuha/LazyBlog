@@ -120,7 +120,7 @@ $activeTab = ($requestedTab === 'plugins' && $enabledPlugins !== []) ? 'plugins'
                                         <span style="color: var(--text-dim);">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="admin-mono"><?= Http::e(implode(', ', (array) $entry['tags'])) ?></td>
+                                <td class="admin-mono admin-col-tags"><?= Http::e(implode(', ', (array) $entry['tags'])) ?></td>
                                 <td class="admin-mono">
                                     <?php if (!empty($entry['draft'])): ?>
                                         <span class="admin-status admin-status-draft" title="Draft" aria-label="Draft">Draft</span>

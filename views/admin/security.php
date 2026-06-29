@@ -83,10 +83,10 @@ $fmtStamp = static function (?string $iso): string {
                     }
                 ?>
                     <tr>
-                        <td><?= Http::e($cred->name) ?></td>
+                        <td class="admin-title-cell"><?= Http::e($cred->name) ?></td>
                         <td class="admin-mono"><?= Http::e($transports) ?></td>
                         <td class="admin-mono"><?= Http::e($added) ?></td>
-                        <td class="admin-mono"><?= Http::e($lastUsed) ?></td>
+                        <td class="admin-mono admin-col-mobile-hide"><?= Http::e($lastUsed) ?></td>
                         <td><span class="<?= $statusClass ?>"><?= Http::e($statusLabel) ?></span></td>
                         <td class="admin-row-actions">
                             <?php if ($isLastWhenEnabled): ?>

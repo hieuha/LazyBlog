@@ -44,7 +44,48 @@ benefit.
 
 ## Installation
 
-WebAuthn is shipped — you don't install anything. You enable it.
+WebAuthn ships as part of LazyBlog ≥ 1.20. Upgrading from 1.19.x or
+earlier needs one pass of dependency install + php-fpm reload before
+the env flag does anything.
+
+### Step 0. Pull the upgrade
+
+Pick the path that matches your deploy.
+
+**Bare-metal `git pull`:**
+
+```bash
+cd /var/www/lazyblog          # or wherever you cloned
+git fetch origin && git checkout v1.20.0
+
+# Pull the new lbuchs/webauthn dep into vendor/
+composer install --no-dev --optimize-autoloader
+
+# Reload php-fpm so the new class autoload + env are picked up.
+# Match the unit name to your distro (`systemctl list-units 'php*-fpm.service'`).
+sudo systemctl reload php8.2-fpm   # or php-fpm, php8.3-fpm, etc.
+```
+
+**Docker (`Dockerfile.prod`):**
+
+```bash
+# composer install runs at build time — just rebuild the image.
+docker compose pull              # if you publish a registry image
+# OR
+docker compose build --no-cache  # if you build locally
+docker compose up -d
+```
+
+**Smoke test:**
+
+```bash
+curl -s https://your-blog.example.com/healthz
+# expect: ok 1.20.0
+```
+
+If it still prints `ok 1.19.0`, php-fpm hasn't reloaded — old OPcache
+or process pool still serving. Force `sudo systemctl restart php8.2-fpm`
+(restart, not reload) to evict cached bytecode.
 
 ### Step 1. Set the env flag
 

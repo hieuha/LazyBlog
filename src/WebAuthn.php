@@ -92,7 +92,7 @@ final class WebAuthn
             'admin',                           // userName (single-operator)
             $this->rpName() . ' admin',        // userDisplayName
             20,                                // timeout (seconds)
-            true,                              // requireResidentKey (discoverable)
+            'preferred',                       // requireResidentKey (discoverable) - iOS compatible
             'preferred',                       // requireUserVerification
             null,                              // crossPlatformAttachment (allow both)
             $excludeIds,
@@ -137,7 +137,7 @@ final class WebAuthn
                 $clientDataJSON,
                 $attestationObject,
                 base64_decode((string) $stash['challenge'], true),
-                false,    // requireUserVerification (we asked 'preferred')
+                false,    // requireUserVerification (we asked 'preferred' — lib treats this param as bool, so 'preferred' would coerce to true and reject UV=0 attestations from iOS Touch ID)
                 true,     // requireUserPresent
                 false,    // failIfRootMismatch — Yubikey + iOS Passkey may use unrecognized roots
             );

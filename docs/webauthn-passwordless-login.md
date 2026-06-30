@@ -388,6 +388,65 @@ If you want to avoid this trap on future migrations, pin
 key, so the binding survives changes to `HTTP_HOST` (eg. www / non-www
 switches, dev tunnels, port forwards).
 
+### "WebAuthn is not supported on sites with TLS certificate errors."
+
+Chrome refuses to invoke `navigator.credentials.create()` /
+`navigator.credentials.get()` when the page's security state is flagged.
+The server-side `register/begin` may return a valid 200 JSON, but the
+JS layer then trips this error before the authenticator prompt appears.
+
+Triggers, in order of likelihood:
+
+1. **Browser cached the old cert mismatch.** You fixed the TLS chain
+   (e.g. switched to Cloudflare Origin Cert, added the missing
+   subdomain), but Chrome still pins the prior bad state via HSTS.
+   Confirm by reproducing in an **Incognito** window — if it works
+   there, this is the cause. Fix:
+   - `chrome://net-internals/#hsts` → *Delete domain security policies*
+     → enter the hostname → Delete
+   - `chrome://settings/cookies/detail?site=<hostname>` → Remove all
+   - DevTools → Application → Storage → **Clear site data**
+   - Quit Chrome completely (cmd+Q / Alt+F4) and reopen
+2. **Mixed content** on the admin page. DevTools → Console flags it
+   explicitly. Hunt down the `http://` reference and switch to `https://`
+   (LazyBlog itself ships no http-only assets; check any custom theme
+   tweaks or plugins).
+3. **Cloudflare SSL/TLS mode set to `Flexible`** — CF↔origin runs HTTP,
+   the browser sees the lock at the edge but the page is still
+   considered "active mixed content" by Chrome. Switch to **Full
+   (strict)** and install a real origin cert. See
+   `bare-metal-deployment-guide.md` §5a.
+4. **Wildcard cert doesn't cover the subdomain you're using.** Run
+   `echo | openssl s_client -connect blog.example.com:443 -servername
+   blog.example.com 2>/dev/null | openssl x509 -noout -ext
+   subjectAltName` and verify the SAN list includes your hostname.
+
+### "Class \"lbuchs\\WebAuthn\\WebAuthn\" not found"
+
+The `lbuchs/webauthn` package is missing from `vendor/` on production.
+This happens when you `git pull` v1.20+ but don't re-run composer. Fix:
+
+```bash
+cd /var/www/lazyblog
+sudo -u lazyblog composer install --no-dev --optimize-autoloader
+sudo systemctl restart php8.2-fpm    # restart, not reload, to evict OPcache
+```
+
+Confirm the class is autoloadable:
+```bash
+ls vendor/lbuchs/webauthn/src/WebAuthn.php
+```
+
+LazyBlog mirrors this and other WebAuthn exceptions to
+`content/admin/webauthn-error.log` so you can `tail` it without
+configuring php-fpm error_log:
+
+```bash
+tail content/admin/webauthn-error.log
+```
+
+The file is gitignored along with the rest of `/content/*`.
+
 ### Lost ALL keys + cannot SSH
 
 You're in deep trouble — design your recovery so this never happens.

@@ -147,6 +147,105 @@ curl -I https://blog.example.com/
 # Expected: HTTP/2 200, valid TLS cert, security headers present
 ```
 
+### 5a. Behind Cloudflare (alternative to Let's Encrypt direct)
+
+If DNS is proxied through Cloudflare (orange-cloud ☁️), the cert browsers
+see is Cloudflare's edge cert — your origin only needs a cert that CF
+trusts. Easiest is the **Cloudflare Origin Certificate** (15-year, no
+renewal). WebAuthn requires a clean TLS chain end-to-end, so this path
+matters even for a private blog.
+
+**1. Create the Origin Certificate**
+
+Cloudflare dashboard → your zone → **SSL/TLS → Origin Server → Create
+Certificate**:
+- Key type: `ECDSA` (smaller, faster)
+- Hostnames: `example.com, *.example.com` (wildcard covers any subdomain)
+- Validity: `15 years`
+- Save the PEM cert + private key — both shown only once
+
+**2. Install on the VPS**
+
+```bash
+sudo mkdir -p /etc/caddy/certs
+sudo chmod 700 /etc/caddy/certs
+sudo nano /etc/caddy/certs/origin.crt    # paste cert PEM
+sudo nano /etc/caddy/certs/origin.key    # paste private key
+sudo chmod 600 /etc/caddy/certs/origin.key
+sudo chmod 644 /etc/caddy/certs/origin.crt
+sudo chown -R caddy:caddy /etc/caddy/certs
+```
+
+**3. Replace Caddy's auto-TLS with the origin cert**
+
+In `/etc/caddy/Caddyfile`, swap the auto-issuance for an explicit `tls`
+directive inside the site block:
+
+```caddy
+blog.example.com {
+    tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
+
+    # ... rest of the site block unchanged
+}
+```
+
+Validate + reload:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+Two warnings are normal and safe to ignore:
+- `Caddyfile input is not formatted` — cosmetic, run
+  `sudo caddy fmt --overwrite /etc/caddy/Caddyfile` to silence
+- `no OCSP stapling for cloudflare origin certificate` — Origin Certs
+  aren't publicly trusted so they have no OCSP responder; browsers never
+  see this cert anyway (CF edge serves the public cert)
+
+**4. Cloudflare side settings**
+
+Same dashboard → **SSL/TLS → Overview**:
+- SSL/TLS encryption mode: **Full (strict)** — otherwise CF connects to
+  origin over HTTP and the browser eventually flags mixed-content state,
+  which Chrome treats as a TLS error for WebAuthn (`navigator.credentials.create()`
+  refuses with *"WebAuthn is not supported on sites with TLS certificate
+  errors."*)
+- **Always Use HTTPS**: ON
+- **Automatic HTTPS Rewrites**: ON
+
+For `/admin/*` paths, in **Rules → Configuration Rules** add a rule that:
+- Disables **Rocket Loader** (rewrites JS, can break the WebAuthn handler)
+- Disables **Email Address Obfuscation** and **Auto Minify** (admin pages
+  carry CSRF tokens — don't let CF rewrite the HTML)
+- Sets **Cache Level: Bypass** (responses include session cookies)
+
+**5. App env**
+
+```dotenv
+SESSION_SECURE="true"             # __Host- cookie prefix + Secure flag
+TRUST_CF_CONNECTING_IP="true"     # rate-limit uses CF-Connecting-IP, not edge IP
+WEBAUTHN_RP_ID="blog.example.com" # pin RP ID so future CF/origin changes don't break registered keys
+```
+
+**6. Verify the full chain**
+
+```bash
+# Public edge — browser path
+curl -sI https://blog.example.com | head -5
+# Expect: HTTP/2 200 (or 404 for HEAD on the homepage), via: 0.0 Caddy
+
+# Origin directly (bypass CF) — proves your VPS cert is the Origin CA
+echo | openssl s_client -connect <VPS-IP>:443 -servername blog.example.com 2>/dev/null \
+  | openssl x509 -noout -issuer
+# Expect: O = CloudFlare, Inc., CN = CloudFlare Origin CA
+```
+
+If the DNS record is `DNS-only` (grey cloud) instead of proxied, browsers
+hit the VPS directly and reject the (non-public) Origin Certificate.
+Always confirm the orange cloud is on for any zone you use this cert
+with.
+
 ## 6. Set admin password
 
 ```bash

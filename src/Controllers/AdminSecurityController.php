@@ -221,7 +221,14 @@ final class AdminSecurityController
     private static function publicErrorMessage(Throwable $e): string
     {
         // Log the full message to the server error log for diagnosis.
-        error_log('webauthn: ' . get_class($e) . ': ' . $e->getMessage());
+        $line = '[' . gmdate('c') . '] ' . get_class($e) . ': ' . $e->getMessage()
+            . ' @ ' . $e->getFile() . ':' . $e->getLine();
+        error_log('webauthn: ' . $line);
+        // Also mirror to a project-local file so operators can `tail` it
+        // without configuring php-fpm logging. Same dir as the credential
+        // store; .gitignored at content/admin/.gitignore.
+        $logPath = __DIR__ . '/../../content/admin/webauthn-error.log';
+        @file_put_contents($logPath, $line . "\n", FILE_APPEND | LOCK_EX);
 
         $msg = strtolower($e->getMessage());
         if (str_contains($msg, 'challenge')) {

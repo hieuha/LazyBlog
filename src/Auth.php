@@ -33,6 +33,28 @@ final class Auth
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
 
+        // Sliding TTL — matches cookie lifetime below so a session file
+        // survives at least as long as the browser can still present it.
+        // Without this override, PHP defaults to ~24 min gc_maxlifetime
+        // and combined with use_strict_mode the browser cookie becomes
+        // orphan mid-writing → editor POSTs land in a fresh empty session
+        // → Auth::requireAuth() redirects to /admin/login → post body lost.
+        $ttlSec = self::sessionTtlSeconds();
+        ini_set('session.gc_maxlifetime', (string) $ttlSec);
+
+        // Move session storage into a project-owned dir. On shared hosts
+        // (Debian/Ubuntu) a system cron wipes /tmp/sess_* using the
+        // system-wide session.gc_maxlifetime from php.ini, ignoring our
+        // per-request ini_set — so files could still vanish in ~24 min.
+        // A private dir avoids that entirely.
+        $saveDir = __DIR__ . '/../content/admin/sessions';
+        if (!is_dir($saveDir)) {
+            @mkdir($saveDir, 0700, true);
+        }
+        if (is_dir($saveDir) && is_writable($saveDir)) {
+            session_save_path($saveDir);
+        }
+
         $name = (string) Config::get('SESSION_NAME', 'lazyblog_sess');
         $secure = strtolower((string) Config::get('SESSION_SECURE', 'false')) === 'true';
 
@@ -46,7 +68,7 @@ final class Auth
 
         session_name($name);
         session_set_cookie_params([
-            'lifetime' => 0,
+            'lifetime' => $ttlSec,
             'path' => '/',
             'secure' => $secure,
             'httponly' => true,
@@ -54,6 +76,24 @@ final class Auth
         ]);
         session_start();
         self::$started = true;
+    }
+
+    /**
+     * Admin session lifetime in seconds, from SESSION_TTL_DAYS env.
+     * Clamped to [1, 365] days; invalid or out-of-range values fall back
+     * to 30 with an error_log warning so the operator notices misconfig.
+     */
+    private static function sessionTtlSeconds(): int
+    {
+        $raw = (string) Config::get('SESSION_TTL_DAYS', '30');
+        $days = filter_var($raw, FILTER_VALIDATE_INT);
+        if ($days === false || $days < 1 || $days > 365) {
+            if ($raw !== '30' && $raw !== '') {
+                error_log("[lazyblog] SESSION_TTL_DAYS='{$raw}' invalid (need 1..365); using 30");
+            }
+            $days = 30;
+        }
+        return $days * 86_400;
     }
 
     public static function attempt(string $password): bool

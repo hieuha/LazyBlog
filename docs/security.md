@@ -35,7 +35,7 @@ escaped form.
   `X-CSRF-Token` header — body is multipart, not form-encoded)
 - **MIME whitelist** via `finfo` magic-byte check (PNG / JPEG / WebP only).
   Client-sent `Content-Type` is ignored
-- **Raw byte cap**: 10 MB on the upload itself (`$_FILES['size']`)
+- **Raw byte cap**: 25 MB on the upload itself (`$_FILES['size']`)
 - **Pixel-count cap**: 40 megapixels max before GD decode — bounds RAM
   usage and prevents decompression bombs
 - **Metadata strip**: source is decoded into a GD truecolor buffer, then

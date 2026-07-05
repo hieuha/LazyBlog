@@ -120,7 +120,7 @@ toolbar button. Backend strips ALL metadata (EXIF, GPS, ICC, vendor blobs),
 downscales to ≤1600px wide, converts to WebP @ q=82, and saves under
 `content/uploads/YYYY/MM/{rand}.webp`. The original (potentially carrying GPS
 coords or device info) is never persisted — only the cleaned WebP. Accepts
-PNG, JPEG, WebP up to 10 MB. EasyMDE auto-inserts `![alt](url)` at the cursor
+PNG, JPEG, WebP up to 25 MB. EasyMDE auto-inserts `![alt](url)` at the cursor
 on success. **Multi-file uploads** (multi-select picker, drag-drop of several
 images, paste of multiple clipboard images) drop each `![](url)` on its own
 line so the markdown source stays readable. Requires `php8.2-gd` extension
@@ -196,7 +196,8 @@ post" flow. Reach it three ways:
 ### Surface
 
 No header. No footer. No nav. Just the editor column (max-width 820px,
-`Play` 22px / `Share Tech Mono` for code), the action buttons
+`Play` 24px desktop / 20px mobile — heading sizes `em`-scaled off that —
+with `Share Tech Mono` for code), the action buttons
 `[ DRAFT ]` `[ SUBMIT ]` floating top-right (label switches to
 `[ SAVE ]` when editing a live post), a status pill top-left (Saving /
 Saved / Draft restored — auto-fades to invisible when idle), a word +
@@ -266,21 +267,33 @@ always — without them a bullet reads as random indented prose.
 | `Tab` | Insert 2-space indent |
 | `Esc` | Dismiss modal / outline panel |
 
-### Image paste
+### Image paste + external drag & drop
 
-Paste an image from the clipboard (`Cmd/Ctrl + V`) and Zen mode
-uploads it through `/admin/upload` (CSRF-protected, 10MB cap, MIME
-check by magic bytes, WebP re-encode, EXIF strip — same security model
-as the regular upload flow) and inserts `![](url)` into a fresh block
-at the caret.
+Paste an image from the clipboard (`Cmd/Ctrl + V`) **or drag one or
+more image files from Finder / a file manager** into the editor and
+Zen mode uploads each through `/admin/upload` (CSRF-protected, 25 MB
+cap, MIME check by magic bytes, WebP re-encode, EXIF strip — same
+security model as the regular upload flow) and inserts `![](url)`
+into a fresh block. Paste lands at the caret; drag lands at the
+drop point (caret jumps there via `caretRangeFromPoint`).
 
-If the clipboard carries multiple images at once (Pixel / iOS multi-
-select sheets, clipboard-manager apps) all of them upload in parallel
-via `Promise.all` and land as image blocks in paste-order at the caret.
-The status pill aggregates progress (`Uploading N images...` →
-`Uploaded N images`, or `Uploaded X / N images` on partial failure —
-failed slots drop out silently while successful ones still land in
-order).
+Drag payload check is strict — only `dataTransfer.files` with a MIME
+of `image/*` counts. A dashed outline + "Drop images here" hint
+appears the moment a file drag hovers the editor and clears on drop
+or leave. Non-image files fall through silently so a stray PDF drop
+doesn't clobber the document.
+
+If the clipboard or drop set carries multiple images at once (Pixel /
+iOS multi-select sheets, clipboard-manager apps, multi-select in
+Finder) all of them upload in parallel via `Promise.all` and land as
+image blocks in original order at the insertion point. The status
+pill aggregates progress (`Uploading N images...` → `Uploaded N
+images`, or `Uploaded X / N images — <reason>` on partial failure).
+On any error the pill shows the server's actual message (`Unsupported
+image type: image/gif`, `File too large (max 25 MB)`, `HTTP 403`)
+instead of a generic "Upload failed" so the reason is visible without
+opening DevTools. Failed slots drop out silently while successful
+ones still land in order.
 
 Consecutive image blocks serialize as adjacent markdown lines
 (`![](u1)\n![](u2)\n...`), so MarkdownRenderer's

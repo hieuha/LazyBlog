@@ -78,7 +78,7 @@ readers find the feed without a URL hint.
 | `POST /admin/set-password/{slug}` | One-click: bcrypt-hash the submitted password and lock the post (or rotate the existing password). No save-post round trip |
 | `POST /admin/remove-password/{slug}` | One-click: strip `password_hash:` from the post's frontmatter |
 | `POST /admin/preview` | Server-side markdown render for EasyMDE preview pane |
-| `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp` |
+| `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp`. Accepts PNG/JPEG/WebP up to 25 MB raw. **Server-side PHP-FPM limits still apply** — bump `upload_max_filesize=25M`, `post_max_size=30M`, `memory_limit=256M` in php.ini (or drop them in `public/.user.ini`) to actually let 25 MB uploads through, otherwise PHP rejects with `UPLOAD_ERR_INI_SIZE` before the controller even sees the file |
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |
 | `GET /admin/series` | Discovered series + manifest/cover state |
 | `GET /admin/series/{slug}` · `POST /admin/series/{slug}` | Edit title, description, cover image |

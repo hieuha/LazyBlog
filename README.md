@@ -142,8 +142,9 @@ confirm step on first publish, single-press SAVE on live updates),
 `Ctrl/Cmd + B/I/K` wrap selection in bold/italic/link (Cmd+K opens a
 styled URL prompt), `Ctrl/Cmd + ]` toggles a side outline panel
 auto-built from h1–h4 headings. Paste an image from the clipboard
-and it uploads through `/admin/upload` and inserts `![](url)` at the
-caret — same WebP re-encode + EXIF strip as the normal upload path.
+**or drag files from Finder** and each uploads through `/admin/upload`
+and inserts `![](url)` at the caret (or the drop point for drag) —
+same WebP re-encode + EXIF strip as the normal upload path.
 Auto-saves every 700ms to `localStorage` (per-slug when editing) and
 restores on next visit; the title prompt pre-fills from the document's
 first sentence with all markdown decoration stripped. Light/dark

@@ -30,7 +30,7 @@ use App\PostImageDitherer;
  */
 final class UploadController
 {
-    private const MAX_BYTES = 10 * 1024 * 1024;  // 10 MB raw input cap
+    private const MAX_BYTES = 25 * 1024 * 1024;  // 25 MB raw input cap
     private const ACCEPTED_MIME = [
         'image/jpeg' => true,
         'image/png'  => true,

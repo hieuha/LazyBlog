@@ -510,7 +510,7 @@ html, body {
     width: 100%;
     box-sizing: border-box;
     font-family: 'Play', system-ui, sans-serif;
-    font-size: 22px;
+    font-size: 24px;
     line-height: 1.8;
     color: var(--text);
     caret-color: var(--primary);
@@ -522,7 +522,7 @@ html, body {
 
 @media (max-width: 720px) {
     .writer-editor {
-        font-size: 19px;
+        font-size: 20px;
         padding: 30vh 18px 45vh;
     }
     .writer-btn { font-size: 12px; padding: 7px 11px; }
@@ -990,4 +990,30 @@ html, body {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 8px;
+}
+
+/* Drop hover — applied by writer.js on dragover when the payload
+   carries files. Removed on dragleave/drop so the outline only shows
+   during an active file drag. */
+.writer-editor.is-drop-hover {
+    outline: 2px dashed var(--primary);
+    outline-offset: -8px;
+    background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.writer-editor.is-drop-hover::after {
+    content: 'Drop images here';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 12px 20px;
+    background: var(--bg);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-family: 'Play', system-ui, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 9999;
 }

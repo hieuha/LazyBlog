@@ -1383,6 +1383,81 @@
         scheduleAutosave();
     }
 
+    /* ---------------- Drag & drop — external image files ---------------- */
+
+    // Only react when the drag payload is actually files. Text/selection
+    // drags inside the editor keep native behavior. We gate on the
+    // 'Files' type to avoid painting the overlay when the user just
+    // rearranges selected text.
+    function dragHasFiles(e) {
+        if (!e.dataTransfer || !e.dataTransfer.types) return false;
+        for (var i = 0; i < e.dataTransfer.types.length; i++) {
+            if (e.dataTransfer.types[i] === 'Files') return true;
+        }
+        return false;
+    }
+
+    function onDragOver(e) {
+        if (!dragHasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        editor.classList.add('is-drop-hover');
+    }
+
+    function onDragLeave(e) {
+        // dragleave fires for every child crossing — only clear the
+        // hover state when the pointer actually leaves the editor box.
+        if (e.target === editor || !editor.contains(e.relatedTarget)) {
+            editor.classList.remove('is-drop-hover');
+        }
+    }
+
+    function onDrop(e) {
+        if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        var imageFiles = [];
+        for (var i = 0; i < e.dataTransfer.files.length; i++) {
+            var f = e.dataTransfer.files[i];
+            if (f.type && f.type.indexOf('image/') === 0) imageFiles.push(f);
+        }
+        if (imageFiles.length === 0) return;
+        // preventDefault only fires when we own the drop — non-image
+        // drops fall through so the browser handles them (or ignores).
+        e.preventDefault();
+        editor.classList.remove('is-drop-hover');
+
+        // Place caret at the drop point so insertImageMarkdowns lands
+        // exactly where the user aimed. caretRangeFromPoint is
+        // Chromium/Safari; caretPositionFromPoint is the Firefox
+        // spelling. If neither exists (very old browsers) we fall
+        // through — insert happens at the pre-drop caret.
+        var range = null;
+        if (document.caretRangeFromPoint) {
+            range = document.caretRangeFromPoint(e.clientX, e.clientY);
+        } else if (document.caretPositionFromPoint) {
+            var pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+            if (pos) {
+                range = document.createRange();
+                range.setStart(pos.offsetNode, pos.offset);
+                range.collapse(true);
+            }
+        }
+        if (range) {
+            var sel = window.getSelection();
+            if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
+
+        uploadPastedImages(imageFiles).then(function (urls) {
+            var ok = [];
+            for (var k = 0; k < urls.length; k++) {
+                if (urls[k]) ok.push(urls[k]);
+            }
+            if (ok.length > 0) insertImageMarkdowns(ok);
+        });
+    }
+
     /* ---------------- Modal ---------------- */
 
     // Pull a default title from the first non-empty block of the document.
@@ -1812,6 +1887,10 @@
     // contract (one image: "Uploading image..." / "Image uploaded";
     // N images: "Uploading N images..." / "Uploaded N images" /
     // "Uploaded X / N images" partial).
+    // Returns Promise<{url: string|null, error: string|null}>. Callers
+    // extract `url` for the success path and surface `error` on the
+    // status pill so the operator sees the real reason (415 unsupported
+    // type, 413 too large, network drop) instead of a generic message.
     function uploadOneFile(file) {
         var fd = new FormData();
         // UploadController reads `$_FILES['file']` + CSRF via the
@@ -1824,25 +1903,41 @@
             body: fd,
             credentials: 'same-origin',
         })
-            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-            .then(function (out) {
-                if (!out.ok || !out.data || !out.data.url) return null;
-                return out.data.url;
+            .then(function (r) {
+                return r.json().then(
+                    function (d) { return { ok: r.ok, status: r.status, data: d }; },
+                    function () { return { ok: r.ok, status: r.status, data: null }; }
+                );
             })
-            .catch(function () { return null; });
+            .then(function (out) {
+                if (out.ok && out.data && out.data.url) {
+                    return { url: out.data.url, error: null };
+                }
+                var msg = (out.data && out.data.error) ? out.data.error : ('HTTP ' + out.status);
+                return { url: null, error: msg };
+            })
+            .catch(function (e) {
+                return { url: null, error: e && e.message ? e.message : 'Network error' };
+            });
     }
 
     function uploadPastedImage(file) {
         setStatus('saving', 'Uploading image...');
-        return uploadOneFile(file).then(function (url) {
-            setStatus(url ? 'saved' : 'error', url ? 'Image uploaded' : 'Upload failed');
-            return url;
+        return uploadOneFile(file).then(function (res) {
+            if (res.url) {
+                setStatus('saved', 'Image uploaded');
+            } else {
+                setStatus('error', res.error || 'Upload failed');
+            }
+            return res.url;
         });
     }
 
     // Batch — parallel uploads via Promise.all. Resolves to an array
-    // matching input order; failed slots are `null` so the caller can
-    // skip them while preserving sequence for the successful ones.
+    // of URLs matching input order; failed slots are `null` so the
+    // caller can skip them while preserving sequence for the
+    // successful ones. First error message wins the status pill so the
+    // operator gets a concrete reason on partial/total failure.
     function uploadPastedImages(files) {
         if (files.length === 1) {
             return uploadPastedImage(files[0]).then(function (u) { return [u]; });
@@ -1851,17 +1946,22 @@
         setStatus('saving', 'Uploading ' + n + ' images...');
         return Promise.all(files.map(uploadOneFile)).then(function (results) {
             var ok = 0;
+            var firstErr = null;
             for (var i = 0; i < results.length; i++) {
-                if (results[i]) ok++;
+                if (results[i].url) ok++;
+                else if (!firstErr) firstErr = results[i].error;
             }
             if (ok === n) {
                 setStatus('saved', 'Uploaded ' + n + ' images');
             } else if (ok > 0) {
-                setStatus('error', 'Uploaded ' + ok + ' / ' + n + ' images');
+                var partialMsg = 'Uploaded ' + ok + ' / ' + n + ' images';
+                if (firstErr) partialMsg += ' — ' + firstErr;
+                setStatus('error', partialMsg);
             } else {
-                setStatus('error', 'Upload failed');
+                setStatus('error', firstErr || 'Upload failed');
             }
-            return results;
+            // Return url|null array so callers keep the old shape.
+            return results.map(function (r) { return r.url; });
         });
     }
 
@@ -2063,6 +2163,9 @@
         editor.addEventListener('input', onInput);
         editor.addEventListener('keydown', onKeyDown);
         editor.addEventListener('paste', onPaste);
+        editor.addEventListener('dragover', onDragOver);
+        editor.addEventListener('dragleave', onDragLeave);
+        editor.addEventListener('drop', onDrop);
         editor.addEventListener('compositionstart', onCompositionStart);
         editor.addEventListener('compositionend', onCompositionEnd);
         document.addEventListener('selectionchange', onSelectionChange);

@@ -3,30 +3,22 @@
    inherit whatever palette the active theme sets. */
 
 /* ---------- floating "Fax this" pill ---------- */
+/* Position + opaque float only. The button's look (border, color, monospace
+   font, letter-spacing, hover glow) is inherited from the page's shared
+   .header-btn class so it matches the nav buttons and re-skins with the theme.
+   An opaque background keeps it legible where it overlaps body text. */
 .fax-pill {
     position: absolute;
     z-index: 9000;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-    padding: 0.35em 0.75em;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-    line-height: 1;
-    color: var(--bg, #100a04);
-    background: var(--primary, #ffb700);
-    border: 1px solid var(--primary, #ffb700);
-    border-radius: 999px;
-    cursor: pointer;
-    box-shadow: 0 4px 14px var(--primary-glow-strong, rgba(0, 0, 0, 0.4));
+    background: var(--bg, #100a04);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
     animation: fax-pop 0.12s ease-out;
 }
-.fax-pill:hover { filter: brightness(1.08); }
+.fax-pill:hover { background: var(--panel, #1a1208); }
 
 @keyframes fax-pop {
-    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- send card ---------- */

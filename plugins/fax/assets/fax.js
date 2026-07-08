@@ -62,14 +62,26 @@
         if (!pill) {
             pill = document.createElement('button');
             pill.type = 'button';
-            pill.className = 'fax-pill';
-            pill.textContent = '📠 Fax this';
+            // header-btn = the page's shared button style (nav buttons);
+            // fax-pill only adds float positioning.
+            pill.className = 'header-btn fax-pill';
+            pill.textContent = '[ 📠 FAX THIS ]';
             // Keep the selection alive when pressing the pill.
             pill.addEventListener('mousedown', function (e) { e.preventDefault(); });
             pill.addEventListener('click', openCard);
             document.body.appendChild(pill);
         }
-        place(pill, info.rect);
+        placePill(pill, info.rect);
+    }
+
+    // Anchor the pill just below the bottom-right corner of the selection,
+    // right-aligned to the selection's right edge (clamped to the viewport).
+    function placePill(el, rect) {
+        var top = window.scrollY + rect.bottom + 6;
+        var left = window.scrollX + rect.right - el.offsetWidth;
+        if (left < window.scrollX + 4) left = window.scrollX + 4;
+        el.style.top = top + 'px';
+        el.style.left = left + 'px';
     }
 
     function openCard() {

@@ -152,6 +152,10 @@
     }
 
     function doSend(sendBtn, commentInput, nameInput, statusEl) {
+        // Re-entry guard: a single Ctrl/Cmd+Enter in the name field bubbles to
+        // BOTH the name and card keydown handlers, so without this the fax
+        // would be sent twice. The disabled button also blocks click re-entry.
+        if (sendBtn.disabled) return;
         sendBtn.disabled = true;
         statusEl.textContent = 'Faxing…';
 

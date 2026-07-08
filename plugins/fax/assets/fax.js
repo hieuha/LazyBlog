@@ -78,7 +78,7 @@
             // header-btn = the page's shared button style (nav buttons);
             // fax-pill only adds float positioning.
             pill.className = 'header-btn fax-pill';
-            pill.textContent = '[ 📠 FAX THIS ]';
+            pill.textContent = '[ FAX THIS ]';
             // Keep the selection alive when pressing the pill.
             pill.addEventListener('mousedown', function (e) { e.preventDefault(); });
             pill.addEventListener('click', openCard);
@@ -110,25 +110,31 @@
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
 
         // Reader's own note. Bounded by the 500-char body cap; a live counter
-        // shows the combined quote + comment length against that budget.
+        // sits in the textarea's bottom-right corner and tracks the combined
+        // quote + comment length against that budget.
+        var commentWrap = document.createElement('div');
+        commentWrap.className = 'fax-comment-wrap';
+
         var comment = document.createElement('textarea');
         comment.className = 'fax-comment';
         comment.rows = 2;
         comment.maxLength = BODY_MAX;
         comment.placeholder = 'Add a comment (optional)…';
 
-        // Counter tracks the whole fax body (quote + comment) against 500. It
-        // starts non-zero because the highlighted quote already fills part of
+        // Starts non-zero because the highlighted quote already fills part of
         // the budget; going over turns red (the server trims the quote to fit).
         var counter = document.createElement('div');
         counter.className = 'fax-comment-count';
         var updateCount = function () {
             var n = bodyLength(captured, comment.value);
-            counter.textContent = 'Fax body: ' + n + '/' + BODY_MAX;
+            counter.textContent = n + '/' + BODY_MAX;
             counter.classList.toggle('fax-over', n > BODY_MAX);
         };
         updateCount();
         comment.addEventListener('input', updateCount);
+
+        commentWrap.appendChild(comment);
+        commentWrap.appendChild(counter);
 
         var name = document.createElement('input');
         name.className = 'fax-name';
@@ -156,8 +162,7 @@
         actions.appendChild(cancel);
         actions.appendChild(status);
         card.appendChild(quote);
-        card.appendChild(comment);
-        card.appendChild(counter);
+        card.appendChild(commentWrap);
         card.appendChild(name);
         card.appendChild(actions);
         document.body.appendChild(card);

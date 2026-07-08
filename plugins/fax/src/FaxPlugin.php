@@ -33,11 +33,8 @@ require_once __DIR__ . '/FaxSender.php';
  */
 final class FaxPlugin implements Plugin
 {
-    /** FaxxMe webhook body cap (chars). */
+    /** FaxxMe webhook body cap (chars). Body = highlighted quote + comment. */
     private const BODY_MAX = 500;
-
-    /** How much of the 500-char body the reader's own comment may claim. */
-    private const COMMENT_MAX = 280;
 
     public function manifest(): PluginManifest
     {
@@ -193,22 +190,22 @@ final class FaxPlugin implements Plugin
      * Merge the highlighted quote + the reader's comment into the single
      * webhook `body`, guaranteed ≤ BODY_MAX chars.
      *
-     * The comment (the reader's own words) is capped at COMMENT_MAX and kept
-     * whole; the quote is truncated with an ellipsis to whatever room is left,
-     * so a long selection never squeezes out the actual message. Either part
-     * may be empty — quote-only reproduces the old behaviour, comment-only
-     * sends just the note.
+     * The comment (the reader's own words) is kept whole and the quote is
+     * truncated with an ellipsis to whatever room is left, so a long selection
+     * never squeezes out the actual message. Both are bounded by the 500-char
+     * body cap. Either part may be empty — quote-only reproduces the old
+     * behaviour, comment-only sends just the note.
      */
     private static function composeBody(string $quote, string $comment): string
     {
-        $comment = trim(mb_substr(trim($comment), 0, self::COMMENT_MAX));
+        $comment = trim(mb_substr(trim($comment), 0, self::BODY_MAX));
         $quote   = trim($quote);
 
         if ($comment === '') {
             return mb_substr($quote, 0, self::BODY_MAX);
         }
         if ($quote === '') {
-            return $comment; // already ≤ COMMENT_MAX ≤ BODY_MAX
+            return $comment; // already ≤ BODY_MAX
         }
 
         // Reserve the comment + framing, fit the quote in the remainder.

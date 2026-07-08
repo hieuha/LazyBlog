@@ -73,6 +73,7 @@
     font-size: 0.7rem;
     color: var(--text-dim, #7a6a55);
 }
+.fax-card .fax-comment-count.fax-over { color: #ff5a4a; }
 .fax-card textarea.fax-comment:focus,
 .fax-card input.fax-name:focus {
     outline: none;

@@ -14,8 +14,21 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
-    // Max chars for the reader's comment — mirrors FaxPlugin::COMMENT_MAX.
-    var COMMENT_MAX = 280;
+    // The webhook caps the fax `body` at 500 chars (name is a separate 40-char
+    // field). The body is the highlighted quote + the reader's comment, so the
+    // counter tracks their combined length — mirrors FaxPlugin::BODY_MAX.
+    var BODY_MAX = 500;
+
+    // Length of the fax body the server will build from quote + comment. Mirrors
+    // FaxPlugin::composeBody framing: "“quote”\n— comment" adds 5 framing chars
+    // when both parts are present.
+    function bodyLength(quote, comment) {
+        quote = (quote || '').trim();
+        comment = (comment || '').trim();
+        if (comment === '') return quote.length;
+        if (quote === '') return comment.length;
+        return quote.length + comment.length + 5;
+    }
 
     var article = document.querySelector('.post-article');
     if (!article) return;
@@ -96,19 +109,23 @@
         quote.className = 'fax-card-quote';
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
 
-        // Reader's own note. Capped at COMMENT_MAX; a live counter shows the
-        // remaining room. The server merges this with the quote under the
-        // webhook's 500-char body cap.
+        // Reader's own note. Bounded by the 500-char body cap; a live counter
+        // shows the combined quote + comment length against that budget.
         var comment = document.createElement('textarea');
         comment.className = 'fax-comment';
         comment.rows = 2;
-        comment.maxLength = COMMENT_MAX;
+        comment.maxLength = BODY_MAX;
         comment.placeholder = 'Add a comment (optional)…';
 
+        // Counter tracks the whole fax body (quote + comment) against 500. It
+        // starts non-zero because the highlighted quote already fills part of
+        // the budget; going over turns red (the server trims the quote to fit).
         var counter = document.createElement('div');
         counter.className = 'fax-comment-count';
         var updateCount = function () {
-            counter.textContent = comment.value.length + '/' + COMMENT_MAX;
+            var n = bodyLength(captured, comment.value);
+            counter.textContent = 'Fax body: ' + n + '/' + BODY_MAX;
+            counter.classList.toggle('fax-over', n > BODY_MAX);
         };
         updateCount();
         comment.addEventListener('input', updateCount);
@@ -172,8 +189,8 @@
         statusEl.textContent = 'Faxing…';
 
         var params = new URLSearchParams();
-        params.set('quote', captured.slice(0, 500));
-        params.set('comment', (commentInput.value || '').slice(0, COMMENT_MAX));
+        params.set('quote', captured.slice(0, BODY_MAX));
+        params.set('comment', (commentInput.value || '').slice(0, BODY_MAX));
         params.set('name', (nameInput.value || '').slice(0, 40));
         params.set('slug', slug);
 

@@ -48,10 +48,11 @@ the webhook returns `429`, which this plugin turns into a light-hearted "the
 fax machine needs a nap" toast rather than a scary error.
 
 Field limits mirror the webhook contract and are clamped before sending:
-`body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars. The reader's
-comment is capped at 280 chars and kept whole; when a long quote + comment
-would blow past the 500-char `body`, the **quote** is truncated (with an
-ellipsis) to fit, never the comment.
+`body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars. The fax `body` is
+the highlighted quote + the reader's comment, so the send card shows a live
+`Fax body: n/500` counter over their combined length (it turns red past 500).
+The comment is kept whole; when quote + comment would exceed 500, the **quote**
+is truncated (with an ellipsis) to fit, never the comment.
 
 ## Folder layout
 

@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "api_version": 1,
     "namespace": "Plugins\\Fax",
-    "author": "LazyBlog",
+    "author": "Phony @ candy.dailycookie.cloud",
     "description": "Let readers highlight a passage and fax it to you via the FaxxMe inbound webhook. Token and endpoint are configured in admin; the webhook enforces its own rate limit.",
     "homepage": "https://github.com/hieuha/LazyBlog/tree/main/plugins/fax"
 }

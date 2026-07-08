@@ -141,13 +141,13 @@
 
         var send = document.createElement('button');
         send.type = 'button';
-        send.className = 'fax-send';
-        send.textContent = 'Send fax';
+        send.className = 'header-btn fax-send';
+        send.textContent = '[ SEND FAX ]';
 
         var cancel = document.createElement('button');
         cancel.type = 'button';
-        cancel.className = 'fax-cancel';
-        cancel.textContent = 'Cancel';
+        cancel.className = 'header-btn fax-cancel';
+        cancel.textContent = '[ CANCEL ]';
 
         var status = document.createElement('span');
         status.className = 'fax-card-status';

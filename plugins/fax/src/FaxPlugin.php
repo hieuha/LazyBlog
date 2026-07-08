@@ -33,6 +33,12 @@ require_once __DIR__ . '/FaxSender.php';
  */
 final class FaxPlugin implements Plugin
 {
+    /** FaxxMe webhook body cap (chars). */
+    private const BODY_MAX = 500;
+
+    /** How much of the 500-char body the reader's own comment may claim. */
+    private const COMMENT_MAX = 280;
+
     public function manifest(): PluginManifest
     {
         /** @var array<string,mixed> $data */
@@ -44,7 +50,9 @@ final class FaxPlugin implements Plugin
     {
         $settings = new FaxSettings($ctx->storagePath());
 
-        $ctx->nav('Fax', '/admin/fax', 'header', 'admin');
+        // No header nav link on purpose — the plugin is reached from the admin
+        // PLUGINS tab (/admin?tab=plugins → OPEN), so it doesn't clutter the
+        // public/site navbar.
 
         // Public proxy — no CSRF: readers have no admin session. Abuse is
         // bounded by the webhook's own per-IP rate limit, not a local token.
@@ -102,16 +110,18 @@ final class FaxPlugin implements Plugin
             return;
         }
 
-        $body = trim((string) ($_POST['body'] ?? ''));
-        if ($body === '') {
+        $quote   = trim((string) ($_POST['quote'] ?? ''));
+        $comment = trim((string) ($_POST['comment'] ?? ''));
+        if ($quote === '' && $comment === '') {
             http_response_code(400);
-            echo self::json(false, 'Highlight some text first — the fax machine needs something to print.');
+            echo self::json(false, 'Highlight some text or add a comment — the fax machine needs something to print.');
             return;
         }
 
-        // Clamp to the webhook's documented maxima so we never get a 400 back
-        // for length (body 500, name 40, post 120, url 200).
-        $body = mb_substr($body, 0, 500);
+        // Combine the highlighted quote + the reader's comment into the single
+        // `body` field, clamped to the webhook's 500-char cap (name 40, post
+        // 120, url 200 are clamped too, so we never get a 400 back for length).
+        $body = self::composeBody($quote, $comment);
         $name = trim((string) ($_POST['name'] ?? ''));
         $name = $name === '' ? 'A reader' : mb_substr($name, 0, 40);
 
@@ -177,6 +187,41 @@ final class FaxPlugin implements Plugin
         $title = mb_substr($post->title, 0, 120);
         $url   = mb_substr(rtrim((string) Config::get('SITE_URL'), '/') . '/posts/' . $post->slug, 0, 200);
         return [$title, $url];
+    }
+
+    /**
+     * Merge the highlighted quote + the reader's comment into the single
+     * webhook `body`, guaranteed ≤ BODY_MAX chars.
+     *
+     * The comment (the reader's own words) is capped at COMMENT_MAX and kept
+     * whole; the quote is truncated with an ellipsis to whatever room is left,
+     * so a long selection never squeezes out the actual message. Either part
+     * may be empty — quote-only reproduces the old behaviour, comment-only
+     * sends just the note.
+     */
+    private static function composeBody(string $quote, string $comment): string
+    {
+        $comment = trim(mb_substr(trim($comment), 0, self::COMMENT_MAX));
+        $quote   = trim($quote);
+
+        if ($comment === '') {
+            return mb_substr($quote, 0, self::BODY_MAX);
+        }
+        if ($quote === '') {
+            return $comment; // already ≤ COMMENT_MAX ≤ BODY_MAX
+        }
+
+        // Reserve the comment + framing, fit the quote in the remainder.
+        // Framing chars: the two wrapping quotes “ ” (2) + the "\n— " lead-in.
+        $tail = "\n— " . $comment;
+        $room = self::BODY_MAX - mb_strlen($tail) - 2;
+        if ($room < 1) {
+            return mb_substr($comment, 0, self::BODY_MAX);
+        }
+        if (mb_strlen($quote) > $room) {
+            $quote = rtrim(mb_substr($quote, 0, $room - 1)) . '…';
+        }
+        return mb_substr('“' . $quote . '”' . $tail, 0, self::BODY_MAX);
     }
 
     private function admin(PluginContext $ctx, FaxSettings $settings): void

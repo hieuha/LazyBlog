@@ -56,6 +56,7 @@
     overflow: auto;
     word-break: break-word;
 }
+.fax-card textarea.fax-comment,
 .fax-card input.fax-name {
     width: 100%;
     box-sizing: border-box;
@@ -68,6 +69,19 @@
     border: 1px solid var(--border, #3a2a1e);
     border-radius: 3px;
 }
+.fax-card textarea.fax-comment {
+    margin-bottom: 0.2rem;
+    resize: vertical;
+    min-height: 2.6rem;
+    line-height: 1.35;
+}
+.fax-card .fax-comment-count {
+    margin-bottom: 0.5rem;
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--text-dim, #7a6a55);
+}
+.fax-card textarea.fax-comment:focus,
 .fax-card input.fax-name:focus {
     outline: none;
     border-color: var(--primary, #ffb700);
@@ -130,27 +144,7 @@
     to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* ---------- admin ---------- */
-.fax-admin .fax-flash {
-    padding: 0.5rem 0.75rem;
-    border-left: 3px solid var(--primary, #ffb700);
-    background: var(--panel, #1a1208);
-}
-.fax-admin .fax-label {
-    display: block;
-    margin: 1rem 0 0.35rem;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--accent, #ffd065);
-}
-.fax-admin .fax-hint {
-    margin: 0.35rem 0 0;
-    font-size: 0.8rem;
-    color: var(--text-dim, #7a6a55);
-}
-.fax-admin .fax-actions { margin-top: 1rem; }
-.fax-admin .fax-form-test {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border, #3a2a1e);
-}
-.fax-admin .fax-note { margin-top: 1.5rem; }
+/* The admin config page (/admin/fax) intentionally ships no styles here — it
+   reuses the core `admin-series-edit-*` chrome from public/assets/admin.css so
+   it stays visually consistent with the series edit/config page. fax.css only
+   loads on post pages anyway (injected by onPostArticleEnd). */

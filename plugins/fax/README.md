@@ -20,16 +20,16 @@ zero markup to your pages.
 
 | Surface | Where |
 |---|---|
-| Reader UI | Injected on `GET /posts/{slug}` — a "📠 Fax this" pill next to any text selection, expanding into a name + Send card |
+| Reader UI | Injected on `GET /posts/{slug}` — a "📠 Fax this" pill next to any text selection, expanding into a comment + name + Send card |
 | Public POST | `POST /fax/send` — proxies to the webhook with your secret token (never exposed to the browser) |
-| Admin page | `GET /admin/fax` — set token + endpoint, send a test fax |
+| Admin page | `GET /admin/fax` — set token + endpoint, send a test fax. Reached from the admin **PLUGINS** tab (`/admin?tab=plugins` → OPEN); no header nav link |
 | Admin save | `POST /admin/fax/save`, `POST /admin/fax/test` |
-| Header nav | `[ FAX ]` (admin-only) |
 | Private storage | `content/plugins/fax/config.json` |
 
-The reader's highlighted text becomes the fax `body`; their (optional) name
-becomes `name`; the post title and canonical URL are resolved **server-side**
-from the slug (so attribution can't be spoofed) and sent as `post` + `url`.
+The highlighted quote and the reader's (optional) comment are merged into the
+fax `body`; their (optional) name becomes `name`; the post title and canonical
+URL are resolved **server-side** from the slug (so attribution can't be spoofed)
+and sent as `post` + `url`.
 
 ## Configuration
 
@@ -48,7 +48,10 @@ the webhook returns `429`, which this plugin turns into a light-hearted "the
 fax machine needs a nap" toast rather than a scary error.
 
 Field limits mirror the webhook contract and are clamped before sending:
-`body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars.
+`body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars. The reader's
+comment is capped at 280 chars and kept whole; when a long quote + comment
+would blow past the 500-char `body`, the **quote** is truncated (with an
+ellipsis) to fit, never the comment.
 
 ## Folder layout
 

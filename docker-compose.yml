@@ -5,6 +5,7 @@ services:
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
+    command: sh -c "[ -d vendor ] || composer install --no-interaction; exec php-fpm"
     environment:
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
     extra_hosts:

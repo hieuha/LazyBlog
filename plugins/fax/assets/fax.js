@@ -14,6 +14,9 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
+    // Max chars for the reader's comment — mirrors FaxPlugin::COMMENT_MAX.
+    var COMMENT_MAX = 280;
+
     var article = document.querySelector('.post-article');
     if (!article) return;
 
@@ -81,6 +84,23 @@
         quote.className = 'fax-card-quote';
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
 
+        // Reader's own note. Capped at COMMENT_MAX; a live counter shows the
+        // remaining room. The server merges this with the quote under the
+        // webhook's 500-char body cap.
+        var comment = document.createElement('textarea');
+        comment.className = 'fax-comment';
+        comment.rows = 2;
+        comment.maxLength = COMMENT_MAX;
+        comment.placeholder = 'Add a comment (optional)…';
+
+        var counter = document.createElement('div');
+        counter.className = 'fax-comment-count';
+        var updateCount = function () {
+            counter.textContent = comment.value.length + '/' + COMMENT_MAX;
+        };
+        updateCount();
+        comment.addEventListener('input', updateCount);
+
         var name = document.createElement('input');
         name.className = 'fax-name';
         name.type = 'text';
@@ -107,27 +127,37 @@
         actions.appendChild(cancel);
         actions.appendChild(status);
         card.appendChild(quote);
+        card.appendChild(comment);
+        card.appendChild(counter);
         card.appendChild(name);
         card.appendChild(actions);
         document.body.appendChild(card);
         place(card, anchor);
-        name.focus();
+        comment.focus();
 
         cancel.addEventListener('click', clearUi);
         send.addEventListener('click', function () {
-            doSend(send, name, status);
+            doSend(send, comment, name, status);
+        });
+        // Cmd/Ctrl+Enter sends from anywhere in the card; plain Enter in the
+        // name field sends too (textarea keeps Enter for newlines).
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault(); doSend(send, comment, name, status);
+            }
         });
         name.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); doSend(send, name, status); }
+            if (e.key === 'Enter') { e.preventDefault(); doSend(send, comment, name, status); }
         });
     }
 
-    function doSend(sendBtn, nameInput, statusEl) {
+    function doSend(sendBtn, commentInput, nameInput, statusEl) {
         sendBtn.disabled = true;
         statusEl.textContent = 'Faxing…';
 
         var params = new URLSearchParams();
-        params.set('body', captured.slice(0, 500));
+        params.set('quote', captured.slice(0, 500));
+        params.set('comment', (commentInput.value || '').slice(0, COMMENT_MAX));
         params.set('name', (nameInput.value || '').slice(0, 40));
         params.set('slug', slug);
 

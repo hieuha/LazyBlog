@@ -49,10 +49,11 @@ fax machine needs a nap" toast rather than a scary error.
 
 Field limits mirror the webhook contract and are clamped before sending:
 `body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars. The fax `body` is
-the highlighted quote + the reader's comment, so the send card shows a live
-`Fax body: n/500` counter over their combined length (it turns red past 500).
-The comment is kept whole; when quote + comment would exceed 500, the **quote**
-is truncated (with an ellipsis) to fit, never the comment.
+the highlighted quote + the reader's comment. The comment textarea shows a live
+`n/500` counter in its bottom-right corner over the comment length only (the
+fixed quote is not counted). Server-side the comment is kept whole; when quote +
+comment would exceed 500, the **quote** is truncated (with an ellipsis) to fit,
+never the comment.
 
 ## Folder layout
 

@@ -64,27 +64,28 @@
 .fax-card textarea.fax-comment {
     margin-bottom: 0;
     /* room at the bottom for the inline corner counter */
-    padding-bottom: 1.15rem;
-    resize: vertical;
+    padding-bottom: 1.3rem;
+    /* no resize grip — it would sit exactly where the corner counter lives */
+    resize: none;
     min-height: 2.6rem;
     line-height: 1.35;
 }
-/* Wrapper anchors the counter inside the textarea's bottom-right corner. */
+/* Wrapper anchors the counter inside the textarea's bottom-right corner,
+   inset from the border so it never overlaps it. */
 .fax-comment-wrap {
     position: relative;
     margin-bottom: 0.6rem;
 }
 .fax-card .fax-comment-count {
     position: absolute;
-    right: 0.6rem;
-    bottom: 0.4rem;
+    right: 0.7rem;
+    bottom: 0.55rem;
     font-size: 0.7rem;
     color: var(--text-dim, #7a6a55);
     background: var(--bg, #100a04);
-    padding: 0 0.15rem;
+    padding: 0 0.2rem;
     pointer-events: none;
 }
-.fax-card .fax-comment-count.fax-over { color: #ff5a4a; }
 .fax-card textarea.fax-comment:focus,
 .fax-card input.fax-name:focus {
     outline: none;

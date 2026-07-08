@@ -14,21 +14,10 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
-    // The webhook caps the fax `body` at 500 chars (name is a separate 40-char
-    // field). The body is the highlighted quote + the reader's comment, so the
-    // counter tracks their combined length — mirrors FaxPlugin::BODY_MAX.
+    // The webhook caps the fax `body` at 500 chars. The counter tracks only the
+    // reader's comment (what they actually type) against that budget — the fixed
+    // highlighted quote is not counted. Mirrors FaxPlugin::BODY_MAX.
     var BODY_MAX = 500;
-
-    // Length of the fax body the server will build from quote + comment. Mirrors
-    // FaxPlugin::composeBody framing: "“quote”\n— comment" adds 5 framing chars
-    // when both parts are present.
-    function bodyLength(quote, comment) {
-        quote = (quote || '').trim();
-        comment = (comment || '').trim();
-        if (comment === '') return quote.length;
-        if (quote === '') return comment.length;
-        return quote.length + comment.length + 5;
-    }
 
     var article = document.querySelector('.post-article');
     if (!article) return;
@@ -121,14 +110,10 @@
         comment.maxLength = BODY_MAX;
         comment.placeholder = 'Add a comment (optional)…';
 
-        // Starts non-zero because the highlighted quote already fills part of
-        // the budget; going over turns red (the server trims the quote to fit).
         var counter = document.createElement('div');
         counter.className = 'fax-comment-count';
         var updateCount = function () {
-            var n = bodyLength(captured, comment.value);
-            counter.textContent = n + '/' + BODY_MAX;
-            counter.classList.toggle('fax-over', n > BODY_MAX);
+            counter.textContent = comment.value.length + '/' + BODY_MAX;
         };
         updateCount();
         comment.addEventListener('input', updateCount);

@@ -1,0 +1,156 @@
+/* Fax plugin — reader-facing selection UI + admin form.
+   Uses the site theme tokens (--primary, --panel, --text …) so the widgets
+   inherit whatever palette the active theme sets. */
+
+/* ---------- floating "Fax this" pill ---------- */
+.fax-pill {
+    position: absolute;
+    z-index: 9000;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.35em 0.75em;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1;
+    color: var(--bg, #100a04);
+    background: var(--primary, #ffb700);
+    border: 1px solid var(--primary, #ffb700);
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px var(--primary-glow-strong, rgba(0, 0, 0, 0.4));
+    animation: fax-pop 0.12s ease-out;
+}
+.fax-pill:hover { filter: brightness(1.08); }
+
+@keyframes fax-pop {
+    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ---------- send card ---------- */
+.fax-card {
+    position: absolute;
+    z-index: 9001;
+    transform: translateX(-50%);
+    width: min(20rem, 90vw);
+    padding: 0.85rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text, #efe0c0);
+    background: var(--panel, #1a1208);
+    border: 1px solid var(--border, #3a2a1e);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: fax-pop 0.12s ease-out;
+}
+.fax-card-quote {
+    margin: 0 0 0.6rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.8rem;
+    color: var(--text-dim, #7a6a55);
+    background: var(--bg, #100a04);
+    border-left: 2px solid var(--primary, #ffb700);
+    border-radius: 3px;
+    max-height: 5.5rem;
+    overflow: auto;
+    word-break: break-word;
+}
+.fax-card input.fax-name {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.4rem 0.5rem;
+    margin-bottom: 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--text, #efe0c0);
+    background: var(--bg, #100a04);
+    border: 1px solid var(--border, #3a2a1e);
+    border-radius: 3px;
+}
+.fax-card input.fax-name:focus {
+    outline: none;
+    border-color: var(--primary, #ffb700);
+}
+.fax-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.fax-card button {
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.fax-card .fax-send {
+    color: var(--bg, #100a04);
+    background: var(--primary, #ffb700);
+    border: 1px solid var(--primary, #ffb700);
+}
+.fax-card .fax-send:disabled { opacity: 0.5; cursor: wait; }
+.fax-card .fax-cancel {
+    color: var(--text-dim, #7a6a55);
+    background: transparent;
+    border: 1px solid var(--border, #3a2a1e);
+}
+.fax-card-status {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-dim, #7a6a55);
+}
+
+/* ---------- toast ---------- */
+.fax-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    z-index: 9100;
+    max-width: min(24rem, 92vw);
+    padding: 0.7rem 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text, #efe0c0);
+    background: var(--panel, #1a1208);
+    border: 1px solid var(--border, #3a2a1e);
+    border-left-width: 3px;
+    border-radius: 5px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: fax-toast-in 0.18s ease-out;
+}
+.fax-toast-ok  { border-left-color: var(--primary, #39ff14); }
+.fax-toast-err { border-left-color: #ff5a4a; }
+.fax-toast-hide { opacity: 0; transform: translateX(-50%) translateY(6px); transition: all 0.25s ease; }
+
+@keyframes fax-toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ---------- admin ---------- */
+.fax-admin .fax-flash {
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--primary, #ffb700);
+    background: var(--panel, #1a1208);
+}
+.fax-admin .fax-label {
+    display: block;
+    margin: 1rem 0 0.35rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent, #ffd065);
+}
+.fax-admin .fax-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-dim, #7a6a55);
+}
+.fax-admin .fax-actions { margin-top: 1rem; }
+.fax-admin .fax-form-test {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border, #3a2a1e);
+}
+.fax-admin .fax-note { margin-top: 1.5rem; }

@@ -138,7 +138,7 @@
         name.className = 'fax-name';
         name.type = 'text';
         name.maxLength = NAME_MAX;
-        name.placeholder = 'Your name (optional)';
+        name.placeholder = 'Your name';
 
         var actions = document.createElement('div');
         actions.className = 'fax-card-actions';

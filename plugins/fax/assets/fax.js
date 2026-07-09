@@ -14,24 +14,23 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
-    // Per-field char limits. body = highlighted quote + comment sharing one
-    // 500-char budget on the webhook; name is a separate 40-char field. The
-    // quote counts against BODY_MAX and the comment against whatever the quote
-    // leaves (BODY_MAX − quote), so the two never exceed 500 combined.
+    // body = highlighted quote + comment sharing one 500-char budget on the
+    // webhook; name is a separate, hard-capped 40-char field with no counter.
+    // A single counter on the comment shows the whole body usage as
+    // (quoted chars + typed chars) / 500.
     var BODY_MAX = 500;
     var NAME_MAX = 40;
 
-    // Wrap a field element with a char counter pinned inside its bottom-right
-    // corner. `lengthFn` returns the current char count; pass live=true to
-    // refresh on the field's own input event (static fields update once).
-    function withCounter(fieldEl, lengthFn, max, live) {
+    // Wrap the comment textarea with a char counter pinned inside its
+    // bottom-right corner. `lengthFn` returns the current combined count.
+    function withCounter(fieldEl, lengthFn, max) {
         var wrap = document.createElement('div');
         wrap.className = 'fax-field';
         var count = document.createElement('div');
         count.className = 'fax-count';
         var update = function () { count.textContent = lengthFn() + '/' + max; };
         update();
-        if (live) fieldEl.addEventListener('input', update);
+        fieldEl.addEventListener('input', update);
         wrap.appendChild(fieldEl);
         wrap.appendChild(count);
         return wrap;
@@ -112,16 +111,15 @@
         card = document.createElement('div');
         card.className = 'fax-card';
 
-        // Read-only preview of the highlighted selection. Counts the full
-        // captured length (not the truncated preview) against the body budget.
+        // Read-only preview of the highlighted selection. No counter of its own —
+        // its chars are folded into the single comment counter below.
         var quote = document.createElement('div');
         quote.className = 'fax-card-quote';
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
-        var quoteWrap = withCounter(quote, function () { return captured.length; }, BODY_MAX, false);
 
-        // Reader's own note. body = quote + comment shares one 500-char budget,
-        // so the comment gets whatever the quote leaves — its max shrinks with
-        // the quote length and the two can never exceed 500 combined.
+        // Reader's own note carries the one combined counter: (quote + comment)
+        // / 500. The comment's own max is whatever the quote leaves, so the
+        // total never exceeds 500.
         var commentMax = Math.max(0, BODY_MAX - captured.length);
         var comment = document.createElement('textarea');
         comment.className = 'fax-comment';
@@ -129,16 +127,18 @@
         comment.maxLength = commentMax;
         comment.placeholder = commentMax === 0
             ? 'The quote already fills the fax (500 chars)'
-            : 'Add a comment (optional)…';
+            : 'Add a comment…';
         if (commentMax === 0) comment.disabled = true;
-        var commentWrap = withCounter(comment, function () { return comment.value.length; }, commentMax, true);
+        var commentWrap = withCounter(comment, function () {
+            return captured.length + comment.value.length;
+        }, BODY_MAX);
 
+        // Name: hard-capped at 40, no counter.
         var name = document.createElement('input');
         name.className = 'fax-name';
         name.type = 'text';
         name.maxLength = NAME_MAX;
         name.placeholder = 'Your name (optional)';
-        var nameWrap = withCounter(name, function () { return name.value.length; }, NAME_MAX, true);
 
         var actions = document.createElement('div');
         actions.className = 'fax-card-actions';
@@ -159,9 +159,9 @@
         actions.appendChild(send);
         actions.appendChild(cancel);
         actions.appendChild(status);
-        card.appendChild(quoteWrap);
+        card.appendChild(quote);
         card.appendChild(commentWrap);
-        card.appendChild(nameWrap);
+        card.appendChild(name);
         card.appendChild(actions);
         document.body.appendChild(card);
         place(card, anchor);
@@ -188,6 +188,14 @@
         // BOTH the name and card keydown handlers, so without this the fax
         // would be sent twice. The disabled button also blocks click re-entry.
         if (sendBtn.disabled) return;
+
+        // Comment is required; name is optional (server defaults it to anonymous).
+        if ((commentInput.value || '').trim() === '') {
+            statusEl.textContent = 'Comment required';
+            commentInput.focus();
+            return;
+        }
+
         sendBtn.disabled = true;
         statusEl.textContent = 'Faxing…';
 

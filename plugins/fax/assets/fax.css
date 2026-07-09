@@ -37,9 +37,8 @@
     animation: fax-pop 0.12s ease-out;
 }
 .fax-card-quote {
-    margin: 0;
-    /* extra bottom room so the corner counter never sits on the text */
-    padding: 0.4rem 0.55rem 1.2rem;
+    margin: 0 0 0.6rem;
+    padding: 0.4rem 0.55rem;
     font-size: 0.8rem;
     color: var(--text-dim, #7a6a55);
     background: var(--bg, #100a04);
@@ -57,7 +56,6 @@
     width: 100%;
     box-sizing: border-box;
     padding: 0.4rem 0.5rem;
-    margin-bottom: 0;
     font-family: inherit;
     font-size: 0.85rem;
     color: var(--text, #efe0c0);
@@ -66,6 +64,8 @@
     border-radius: 3px;
 }
 .fax-card textarea.fax-comment {
+    /* wrapper (.fax-field) owns the spacing below */
+    margin-bottom: 0;
     /* room at the bottom for the inline corner counter */
     padding-bottom: 1.3rem;
     /* no resize grip — it would sit exactly where the corner counter lives */
@@ -73,11 +73,11 @@
     min-height: 2.6rem;
     line-height: 1.35;
 }
-/* room on the right for the single-line counter */
-.fax-card input.fax-name { padding-right: 3.2rem; }
+/* name has no counter/wrapper — space it itself */
+.fax-card input.fax-name { margin-bottom: 0.6rem; }
 
-/* Each field wraps its element + a counter pinned INSIDE a corner, inset from
-   the border so it never overlaps it (pointer-events:none lets clicks through). */
+/* Only the comment carries a counter, pinned inside its bottom-right corner,
+   inset from the border (pointer-events:none lets clicks through). */
 .fax-field {
     position: relative;
     margin-bottom: 0.6rem;
@@ -85,17 +85,13 @@
 .fax-card .fax-count {
     position: absolute;
     right: 0.7rem;
+    bottom: 0.5rem;
     font-size: 0.68rem;
     color: var(--text-dim, #7a6a55);
     background: var(--bg, #100a04);
     padding: 0 0.2rem;
     pointer-events: none;
 }
-/* multi-line boxes (quote, comment): bottom-right corner */
-.fax-field > textarea ~ .fax-count,
-.fax-field > .fax-card-quote ~ .fax-count { bottom: 0.5rem; }
-/* single-line name input: vertically centred on the right */
-.fax-field > input ~ .fax-count { top: 50%; transform: translateY(-50%); }
 .fax-card textarea.fax-comment:focus,
 .fax-card input.fax-name:focus {
     outline: none;

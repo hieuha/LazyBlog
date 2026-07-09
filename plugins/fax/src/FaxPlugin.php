@@ -109,9 +109,9 @@ final class FaxPlugin implements Plugin
 
         $quote   = trim((string) ($_POST['quote'] ?? ''));
         $comment = trim((string) ($_POST['comment'] ?? ''));
-        if ($quote === '' && $comment === '') {
+        if ($comment === '') {
             http_response_code(400);
-            echo self::json(false, 'Highlight some text or add a comment — the fax machine needs something to print.');
+            echo self::json(false, 'A comment is required — add a note before faxing.');
             return;
         }
 
@@ -119,8 +119,9 @@ final class FaxPlugin implements Plugin
         // `body` field, clamped to the webhook's 500-char cap (name 40, post
         // 120, url 200 are clamped too, so we never get a 400 back for length).
         $body = self::composeBody($quote, $comment);
+        // Name is optional — default to "anonymous" when the reader leaves it blank.
         $name = trim((string) ($_POST['name'] ?? ''));
-        $name = $name === '' ? 'A reader' : mb_substr($name, 0, 40);
+        $name = $name === '' ? 'anonymous' : mb_substr($name, 0, 40);
 
         [$post, $url] = $this->resolvePost(trim((string) ($_POST['slug'] ?? '')));
 

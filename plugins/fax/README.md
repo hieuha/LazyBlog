@@ -26,10 +26,11 @@ zero markup to your pages.
 | Admin save | `POST /admin/fax/save`, `POST /admin/fax/test` |
 | Private storage | `content/plugins/fax/config.json` |
 
-The highlighted quote and the reader's (optional) comment are merged into the
-fax `body`; their (optional) name becomes `name`; the post title and canonical
-URL are resolved **server-side** from the slug (so attribution can't be spoofed)
-and sent as `post` + `url`.
+The highlighted quote and the reader's comment (required) are merged into the
+fax `body`; their name becomes `name`, defaulting to `anonymous` when left
+blank; the post title and canonical URL are resolved **server-side** from the
+slug (so attribution can't be spoofed) and sent as `post` + `url`. A send with
+an empty comment is rejected both in the browser and with a 400 from `/fax/send`.
 
 ## Configuration
 
@@ -49,12 +50,12 @@ fax machine needs a nap" toast rather than a scary error.
 
 Field limits mirror the webhook contract and are clamped before sending:
 `body` ≤ 500, `name` ≤ 40, `post` ≤ 120, `url` ≤ 200 chars. The fax `body` is
-the highlighted quote + the reader's comment, sharing one 500-char budget. Each
-card field shows its own counter pinned inside its bottom-right corner: the
-quote as `quoteLen/500`, the comment as `commentLen/(500 − quoteLen)` (its
-max shrinks with the quote so the two never exceed 500 combined), and the name
-as `n/40`. Server-side `composeBody` still clamps the merged body to 500 as a
-backstop.
+the highlighted quote + the reader's comment, sharing one 500-char budget. A
+single counter lives in the comment box's bottom-right corner and shows the
+combined usage as `(quoteLen + commentLen)/500`; the comment's own max shrinks
+with the quote (`500 − quoteLen`) so the two never exceed 500. The name field
+is simply hard-capped at 40 with no counter. Server-side `composeBody` still
+clamps the merged body to 500 as a backstop.
 
 ## Folder layout
 

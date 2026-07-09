@@ -51,6 +51,9 @@
 }
 .fax-card textarea.fax-comment,
 .fax-card input.fax-name {
+    /* block (not the default inline-block) removes the baseline gap below the
+       field that would otherwise push the corner counter down onto the border */
+    display: block;
     width: 100%;
     box-sizing: border-box;
     padding: 0.4rem 0.5rem;

@@ -14,9 +14,10 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
-    // Per-field char limits. body = highlighted quote + comment (500 total on
-    // the webhook); name is a separate 40-char field. Each field shows its own
-    // counter, so quote and comment each display against BODY_MAX.
+    // Per-field char limits. body = highlighted quote + comment sharing one
+    // 500-char budget on the webhook; name is a separate 40-char field. The
+    // quote counts against BODY_MAX and the comment against whatever the quote
+    // leaves (BODY_MAX − quote), so the two never exceed 500 combined.
     var BODY_MAX = 500;
     var NAME_MAX = 40;
 
@@ -118,13 +119,19 @@
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
         var quoteWrap = withCounter(quote, function () { return captured.length; }, BODY_MAX, false);
 
-        // Reader's own note.
+        // Reader's own note. body = quote + comment shares one 500-char budget,
+        // so the comment gets whatever the quote leaves — its max shrinks with
+        // the quote length and the two can never exceed 500 combined.
+        var commentMax = Math.max(0, BODY_MAX - captured.length);
         var comment = document.createElement('textarea');
         comment.className = 'fax-comment';
         comment.rows = 2;
-        comment.maxLength = BODY_MAX;
-        comment.placeholder = 'Add a comment (optional)…';
-        var commentWrap = withCounter(comment, function () { return comment.value.length; }, BODY_MAX, true);
+        comment.maxLength = commentMax;
+        comment.placeholder = commentMax === 0
+            ? 'The quote already fills the fax (500 chars)'
+            : 'Add a comment (optional)…';
+        if (commentMax === 0) comment.disabled = true;
+        var commentWrap = withCounter(comment, function () { return comment.value.length; }, commentMax, true);
 
         var name = document.createElement('input');
         name.className = 'fax-name';

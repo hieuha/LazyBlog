@@ -1,0 +1,151 @@
+/* Fax plugin — reader-facing selection UI + admin form.
+   Uses the site theme tokens (--primary, --panel, --text …) so the widgets
+   inherit whatever palette the active theme sets. */
+
+/* ---------- floating "Fax this" pill ---------- */
+/* Position + opaque float only. The button's look (border, color, monospace
+   font, letter-spacing, hover glow) is inherited from the page's shared
+   .header-btn class so it matches the nav buttons and re-skins with the theme.
+   An opaque background keeps it legible where it overlaps body text. */
+.fax-pill {
+    position: absolute;
+    z-index: 9000;
+    background: var(--bg, #100a04);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    animation: fax-pop 0.12s ease-out;
+}
+.fax-pill:hover { background: var(--panel, #1a1208); }
+
+@keyframes fax-pop {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- send card ---------- */
+.fax-card {
+    position: absolute;
+    z-index: 9001;
+    transform: translateX(-50%);
+    width: min(20rem, 90vw);
+    padding: 0.85rem;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text, #efe0c0);
+    background: var(--panel, #1a1208);
+    border: 1px solid var(--border, #3a2a1e);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: fax-pop 0.12s ease-out;
+}
+.fax-card-quote {
+    margin: 0 0 0.6rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.8rem;
+    color: var(--text-dim, #7a6a55);
+    background: var(--bg, #100a04);
+    border-left: 2px solid var(--primary, #ffb700);
+    border-radius: 3px;
+    max-height: 5.5rem;
+    overflow: auto;
+    word-break: break-word;
+}
+.fax-card textarea.fax-comment,
+.fax-card input.fax-name {
+    /* block (not the default inline-block) removes the baseline gap below the
+       field that would otherwise push the corner counter down onto the border */
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.4rem 0.5rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--text, #efe0c0);
+    background: var(--bg, #100a04);
+    border: 1px solid var(--border, #3a2a1e);
+    border-radius: 3px;
+}
+.fax-card textarea.fax-comment {
+    /* wrapper (.fax-field) owns the spacing below */
+    margin-bottom: 0;
+    /* room at the bottom for the inline corner counter */
+    padding-bottom: 1.3rem;
+    /* no resize grip — it would sit exactly where the corner counter lives */
+    resize: none;
+    min-height: 2.6rem;
+    line-height: 1.35;
+}
+/* name has no counter/wrapper — space it itself */
+.fax-card input.fax-name { margin-bottom: 0.6rem; }
+
+/* Only the comment carries a counter, pinned inside its bottom-right corner,
+   inset from the border (pointer-events:none lets clicks through). */
+.fax-field {
+    position: relative;
+    margin-bottom: 0.6rem;
+}
+.fax-card .fax-count {
+    position: absolute;
+    right: 0.7rem;
+    bottom: 0.5rem;
+    font-size: 0.68rem;
+    color: var(--text-dim, #7a6a55);
+    background: var(--bg, #100a04);
+    padding: 0 0.2rem;
+    pointer-events: none;
+}
+.fax-card textarea.fax-comment:focus,
+.fax-card input.fax-name:focus {
+    outline: none;
+    border-color: var(--primary, #ffb700);
+}
+.fax-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+/* Send/Cancel inherit the page's .header-btn look (bracketed, monospace,
+   themed border). Send takes the brighter --primary outline to read as the
+   primary action, matching the active-nav treatment. */
+.fax-card .fax-send {
+    border-color: var(--primary, #ffb700);
+    color: var(--primary, #ffb700);
+}
+.fax-card .fax-send:disabled { opacity: 0.5; cursor: wait; }
+.fax-card-status {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-dim, #7a6a55);
+}
+
+/* ---------- toast ---------- */
+.fax-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    z-index: 9100;
+    max-width: min(24rem, 92vw);
+    padding: 0.7rem 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text, #efe0c0);
+    background: var(--panel, #1a1208);
+    border: 1px solid var(--border, #3a2a1e);
+    border-left-width: 3px;
+    border-radius: 5px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: fax-toast-in 0.18s ease-out;
+}
+.fax-toast-ok  { border-left-color: var(--primary, #39ff14); }
+.fax-toast-err { border-left-color: #ff5a4a; }
+.fax-toast-hide { opacity: 0; transform: translateX(-50%) translateY(6px); transition: all 0.25s ease; }
+
+@keyframes fax-toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* The admin config page (/admin/fax) intentionally ships no styles here — it
+   reuses the core `admin-series-edit-*` chrome from public/assets/admin.css so
+   it stays visually consistent with the series edit/config page. fax.css only
+   loads on post pages anyway (injected by onPostArticleEnd). */

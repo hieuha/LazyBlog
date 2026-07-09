@@ -14,10 +14,27 @@
     var endpoint = cfg.endpoint || '/fax/send';
     var slug = cfg.slug || '';
 
-    // The webhook caps the fax `body` at 500 chars. The counter tracks only the
-    // reader's comment (what they actually type) against that budget — the fixed
-    // highlighted quote is not counted. Mirrors FaxPlugin::BODY_MAX.
+    // Per-field char limits. body = highlighted quote + comment (500 total on
+    // the webhook); name is a separate 40-char field. Each field shows its own
+    // counter, so quote and comment each display against BODY_MAX.
     var BODY_MAX = 500;
+    var NAME_MAX = 40;
+
+    // Wrap a field element with a char counter pinned inside its bottom-right
+    // corner. `lengthFn` returns the current char count; pass live=true to
+    // refresh on the field's own input event (static fields update once).
+    function withCounter(fieldEl, lengthFn, max, live) {
+        var wrap = document.createElement('div');
+        wrap.className = 'fax-field';
+        var count = document.createElement('div');
+        count.className = 'fax-count';
+        var update = function () { count.textContent = lengthFn() + '/' + max; };
+        update();
+        if (live) fieldEl.addEventListener('input', update);
+        wrap.appendChild(fieldEl);
+        wrap.appendChild(count);
+        return wrap;
+    }
 
     var article = document.querySelector('.post-article');
     if (!article) return;
@@ -94,38 +111,27 @@
         card = document.createElement('div');
         card.className = 'fax-card';
 
+        // Read-only preview of the highlighted selection. Counts the full
+        // captured length (not the truncated preview) against the body budget.
         var quote = document.createElement('div');
         quote.className = 'fax-card-quote';
         quote.textContent = '“' + (captured.length > 160 ? captured.slice(0, 160) + '…' : captured) + '”';
+        var quoteWrap = withCounter(quote, function () { return captured.length; }, BODY_MAX, false);
 
-        // Reader's own note. Bounded by the 500-char body cap; a live counter
-        // sits in the textarea's bottom-right corner and tracks the combined
-        // quote + comment length against that budget.
-        var commentWrap = document.createElement('div');
-        commentWrap.className = 'fax-comment-wrap';
-
+        // Reader's own note.
         var comment = document.createElement('textarea');
         comment.className = 'fax-comment';
         comment.rows = 2;
         comment.maxLength = BODY_MAX;
         comment.placeholder = 'Add a comment (optional)…';
-
-        var counter = document.createElement('div');
-        counter.className = 'fax-comment-count';
-        var updateCount = function () {
-            counter.textContent = comment.value.length + '/' + BODY_MAX;
-        };
-        updateCount();
-        comment.addEventListener('input', updateCount);
-
-        commentWrap.appendChild(comment);
-        commentWrap.appendChild(counter);
+        var commentWrap = withCounter(comment, function () { return comment.value.length; }, BODY_MAX, true);
 
         var name = document.createElement('input');
         name.className = 'fax-name';
         name.type = 'text';
-        name.maxLength = 40;
+        name.maxLength = NAME_MAX;
         name.placeholder = 'Your name (optional)';
+        var nameWrap = withCounter(name, function () { return name.value.length; }, NAME_MAX, true);
 
         var actions = document.createElement('div');
         actions.className = 'fax-card-actions';
@@ -146,9 +152,9 @@
         actions.appendChild(send);
         actions.appendChild(cancel);
         actions.appendChild(status);
-        card.appendChild(quote);
+        card.appendChild(quoteWrap);
         card.appendChild(commentWrap);
-        card.appendChild(name);
+        card.appendChild(nameWrap);
         card.appendChild(actions);
         document.body.appendChild(card);
         place(card, anchor);

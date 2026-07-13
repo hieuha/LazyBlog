@@ -188,6 +188,86 @@
     text-shadow: 0 0 4px var(--primary-glow-strong);
 }
 
+/* ---------- Sidenotes (wide-screen footnote rendering) ----------
+   MarkdownRenderer::injectSidenotes() duplicates each footnote body into an
+   inline `<span class="sidenote">` after its `[^N]` reference. Default
+   (narrow/mobile): sidenotes hidden, the bottom `.footnotes` list shows.
+   Wide (>=1400px): each note is lifted out of flow and parked in the blank
+   right margin OUTSIDE the reading column — the post body keeps its full
+   width, the note sits beside its reference (Tufte-style margin note), and
+   the bottom list is hidden.
+
+   Breakpoint 1440px, not 1200px: `main` caps at 1020px, so the space right of
+   the body content box is main's 48px padding + (viewport-1020)/2 of outer
+   margin. That only clears the note width (200px + 28px gap) with room to
+   spare once the viewport is ~1440px wide. Body has `overflow-x: clip`, so a
+   note wider than that space would be silently cut — hence the hard gate +
+   bottom-list fallback below. */
+/* Unscoped hide so the sidenote copy never shows outside a `.post-body`
+   container — e.g. the editor's inline live-preview panel renders the same
+   server HTML but isn't `.post-body`, and would otherwise duplicate the note
+   text (inline copy + bottom list). Only the >=1440px rule below re-shows it. */
+.sidenote { display: none; }
+
+@media (min-width: 1440px) {
+    /* Positioned ancestor so each note anchors to the body's right edge. */
+    .post-body { position: relative; }
+    .post-body .footnotes { display: none; }
+
+    .post-body .sidenote {
+        display: block;
+        position: absolute;
+        /* left:100% = right edge of the body content box; the note then lives
+           entirely in the margin to the right, never inside the text column.
+           `top` stays auto so it sits at its in-flow position — level with the
+           reference line. */
+        left: 100%;
+        margin-left: 28px;
+        width: 200px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        letter-spacing: 0.3px;
+        color: var(--text-dim);
+        text-align: left;
+    }
+    .post-body .sidenote-num { color: var(--accent); margin-right: 5px; }
+    .post-body .sidenote a { color: var(--accent); text-decoration: none; }
+    .post-body .sidenote a:hover {
+        color: var(--primary);
+        text-shadow: 0 0 4px var(--primary-glow-strong);
+    }
+    /* The number acts as a "jump back" handle — post.js blinks the matching
+       `[N]` reference when it's clicked. */
+    .post-body .sidenote-num { cursor: pointer; }
+}
+
+/* ---------- Footnote <-> reference cross-highlight ----------
+   Applied by post.js (auto-removed on animationend). The same `fn-lit`
+   highlight runs both ways: clicking a `[N]` reference lights its note, and
+   clicking a note's number lights the `[N]` reference. */
+.post-body .fn-lit {
+    animation: fn-lit 1.4s ease-out;
+    border-radius: 3px;
+}
+/* Bold highlight: a solid phosphor wash (inverted text for contrast) that
+   fades back to the element's resting style. */
+@keyframes fn-lit {
+    0%, 15% {
+        background-color: var(--primary);
+        color: var(--bg);
+        text-shadow: none;
+    }
+    100% {
+        background-color: transparent;
+        color: var(--primary);
+        text-shadow: 0 0 8px var(--primary-glow-strong);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .post-body .fn-lit { animation-duration: 0.01ms; }
+}
+
 /* ---------- Section tag (used by views) ---------- */
 .section-tag, [class*="section"] > .callsign {
     font-family: 'Share Tech Mono', monospace;

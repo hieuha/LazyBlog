@@ -61,6 +61,16 @@ final class MarkdownRenderer
     {
         $this->injected = [];
 
+        // Normalize non-breaking spaces (U+00A0) to ordinary spaces.
+        // Contenteditable editors (the Zen writer) emit U+00A0 when the
+        // author types spaces — especially trailing or consecutive ones —
+        // and CommonMark treats U+00A0 as a normal character, not
+        // whitespace. That silently breaks structural parsing: e.g.
+        // `[^2]:<nbsp>note` stops being recognized as a footnote definition
+        // and folds into the previous note, leaving the `[^2]` reference
+        // unrendered. Regular spaces restore correct block parsing.
+        $markdown = str_replace("\u{00A0}", ' ', $markdown);
+
         $pre = $this->preprocessStandaloneVideos($markdown);
         $pre = $this->preprocessStandaloneImages($pre);
         $pre = $this->preprocessYouTube($pre);
@@ -73,6 +83,7 @@ final class MarkdownRenderer
         $html = $this->postprocessFreqTags($html);
         $html = $this->postprocessFigures($html);
         $html = $this->postprocessLinkTargets($html);
+        $html = $this->injectSidenotes($html);
         $html = $this->injectHeadingIds($html);
         $toc = $this->extractToc($html);
 
@@ -317,6 +328,79 @@ final class MarkdownRenderer
             fn (array $m): string => $this->injected[(int) $m[1]] ?? '',
             $html,
         );
+    }
+
+    /**
+     * Tufte-style sidenotes. Duplicate each footnote body into an inline
+     * `<span class="sidenote">` placed right after its `[^N]` reference. The
+     * bottom `<div class="footnotes">` list emitted by CommonMark is left
+     * untouched — CSS decides which copy is visible:
+     *   - narrow viewports: sidenotes hidden, bottom list shows (the fallback)
+     *   - wide viewports (>=1200px): notes float into a reserved right gutter
+     *     and the bottom list is hidden (see components.css).
+     *
+     * A `<span>` (inline) wrapper is used rather than `<aside>`/`<div>` so the
+     * node stays valid inside the enclosing `<p>`; the note body is unwrapped
+     * to inline content for the same reason. No-op when the post has no
+     * footnotes.
+     */
+    private function injectSidenotes(string $html): string
+    {
+        if (!preg_match('/<div class="footnotes"[^>]*>.*?<\/div>/s', $html, $block)) {
+            return $html;
+        }
+
+        // Map footnote label → inline body (backref stripped, <p> unwrapped).
+        $defs = [];
+        if (preg_match_all(
+            '/<li class="footnote" id="fn:([^"]+)"[^>]*>(.*?)<\/li>/s',
+            $block[0],
+            $items,
+            PREG_SET_ORDER,
+        )) {
+            foreach ($items as $it) {
+                $defs[$it[1]] = $this->sidenoteBody($it[2]);
+            }
+        }
+        if ($defs === []) {
+            return $html;
+        }
+
+        // Insert a sidenote span after each matching reference. The visible
+        // number ($m[2]) is CommonMark's sequential index, so the sidenote
+        // marker matches the inline `[N]`.
+        return (string) preg_replace_callback(
+            '/<sup id="fnref:([^"]+)"><a class="footnote-ref"[^>]*>(.*?)<\/a><\/sup>/s',
+            static function (array $m) use ($defs): string {
+                if (!isset($defs[$m[1]])) {
+                    return $m[0];
+                }
+                return $m[0]
+                    . '<span class="sidenote" role="note">'
+                    . '<span class="sidenote-num">' . $m[2] . '</span> '
+                    . $defs[$m[1]]
+                    . '</span>';
+            },
+            $html,
+        );
+    }
+
+    /**
+     * Turn a footnote `<li>` inner HTML into inline sidenote content: drop the
+     * `↩` back-reference link and unwrap block `<p>` paragraphs (multiple
+     * paragraphs join with a line break) so the result is safe inside a
+     * `<span>`.
+     */
+    private function sidenoteBody(string $inner): string
+    {
+        $inner = (string) preg_replace(
+            '/(?:&nbsp;|\s)*<a class="footnote-backref"[^>]*>.*?<\/a>/s',
+            '',
+            $inner,
+        );
+        $inner = (string) preg_replace('/<\/p>\s*<p>/s', '<br /><br />', $inner);
+        $inner = (string) preg_replace('/^\s*<p>|<\/p>\s*$/s', '', trim($inner));
+        return trim($inner);
     }
 
     /**

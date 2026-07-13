@@ -83,6 +83,45 @@ check(
     str_contains($out, 'class="footnote-backref"'),
 );
 
+// Sidenotes: each footnote body is duplicated into an inline span after the
+// reference (wide-screen margin note), while the bottom list is preserved for
+// the narrow-screen fallback.
+$out = $renderer->render("Claim.[^1] More.[^two]\n\n[^1]: Source **A**.\n\n[^two]: Source B.")['html'];
+check(
+    'sidenotes: inline span injected after reference',
+    str_contains($out, '</sup><span class="sidenote" role="note">'),
+);
+check(
+    'sidenotes: number marker matches sequential index',
+    str_contains($out, '<span class="sidenote-num">2</span> Source B.'),
+);
+check(
+    'sidenotes: body keeps inline markup, drops backref link',
+    // Backref survives only in the bottom list (once per note), never copied
+    // into a sidenote — so the count equals the footnote count, not double.
+    str_contains($out, 'Source <strong>A</strong>.</span>')
+        && substr_count($out, 'class="footnote-backref"') === 2,
+);
+check(
+    'sidenotes: bottom .footnotes list preserved for mobile fallback',
+    str_contains($out, 'class="footnotes"') && str_contains($out, 'class="footnote-backref"'),
+);
+check(
+    'sidenotes: no-op when post has no footnotes',
+    !str_contains($renderer->render("Just text, no notes.")['html'], 'class="sidenote"'),
+);
+
+// Non-breaking spaces (U+00A0), which contenteditable editors insert for typed
+// spaces, must be normalized to real spaces before CommonMark — otherwise a
+// `[^id]:<nbsp>body` definition is not recognized and folds into the previous
+// note, leaving the reference unrendered.
+$nbsp = "\u{00A0}";
+$out = $renderer->render("a[^1] b[^2] c.\n\n[^1]: One.\n[^2]:{$nbsp}Two.{$nbsp}end.")['html'];
+check(
+    'footnotes: nbsp after [^id]: still parses as its own definition',
+    str_contains($out, 'id="fn:2"') && !str_contains($out, '[^2]'),
+);
+
 // --- Highlight (==text==) ------------------------------------------------
 $out = $renderer->render("This is ==important== news.")['html'];
 check(

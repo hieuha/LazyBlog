@@ -275,6 +275,15 @@
                 + '<span class="md-link-source">' + S_OPEN + '](' + u + ')' + S_CLOSE + '</span>'
                 + '</a>';
         });
+        // Footnote reference [^id] — style as a small superscript marker.
+        // Runs AFTER the link/image passes so their `[...]` tails are already
+        // consumed and can't be mis-captured. Every source char (`[^`, id,
+        // `]`) stays in textContent so caret offsets remain aligned; the id
+        // is limited to CommonMark-ish label chars so stray brackets like a
+        // `[^_^]` emoticon aren't swallowed.
+        html = html.replace(/\[\^([A-Za-z0-9_-]+)\]/g,
+            '<sup class="wb-fnref">' + S_OPEN + '[^' + S_CLOSE
+            + '<span class="wb-fnref-id">$1</span>' + S_OPEN + ']' + S_CLOSE + '</sup>');
         // Swap the triple-marker placeholders back to their real chars so
         // textContent equals the source markdown (caret offset invariant).
         if (html.indexOf(STAR_PH) >= 0) html = html.split(STAR_PH).join('*');
@@ -398,6 +407,21 @@
             return;
         }
 
+        // Footnote definition `[^id]: body` — dim the `[^id]:` marker (id in
+        // accent) and render the body inline. Keeps every source char in
+        // textContent so caret offsets stay aligned.
+        var fnDefMatch = md.match(/^(\[\^)([A-Za-z0-9_-]+)(\]:\s?)([\s\S]*)$/);
+        if (fnDefMatch) {
+            block.innerHTML = '<p class="wb-fndef">'
+                + syntaxSpan(fnDefMatch[1])
+                + '<span class="wb-fnref-id">' + esc(fnDefMatch[2]) + '</span>'
+                + syntaxSpan(fnDefMatch[3])
+                + renderInline(fnDefMatch[4])
+                + '</p>';
+            block.dataset.kind = 'fndef';
+            return;
+        }
+
         block.innerHTML = renderInline(md);
         block.dataset.kind = 'p';
     }
@@ -468,7 +492,11 @@
         for (var i = 0; i < blocks.length; i++) {
             // Re-sync data-md from current textContent when the block is
             // the active edit target (textContent is fresh, data-md may lag).
-            var md = blocks[i].textContent || '';
+            // Strip non-breaking spaces (U+00A0) that contenteditable inserts
+            // for typed spaces — saved as-is they read as literal chars and
+            // break Markdown block parsing (e.g. a `[^id]:<nbsp>` footnote
+            // definition stops being recognized). Normalize to real spaces.
+            var md = (blocks[i].textContent || '').replace(/\u00a0/g, ' ');
             var isImg = IMAGE_LINE_RE.test(md);
             if (i > 0) {
                 // Two consecutive image-only blocks join with a single

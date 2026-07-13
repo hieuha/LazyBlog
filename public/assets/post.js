@@ -175,3 +175,104 @@
         document.body.removeChild(ta);
     }
 })();
+
+/* ---------- Footnote <-> reference cross-highlight ----------
+   Clicking a `[N]` reference lights its note; clicking a note's number lights
+   the `[N]` reference. Both directions use the same `fn-lit` highlight. Works
+   in both render modes:
+     - wide (>=1440px): the note is the `.sidenote` span right after the ref's
+       <sup>; the bottom .footnotes list is hidden.
+     - narrow: the note is the `<li id="fn:LABEL">` in the bottom list; the
+       `.sidenote` is hidden. The `↩` backref covers note→ref there.
+   Element relationships (sup#fnref:LABEL, li#fn:LABEL, sidenote = next sibling
+   of the sup) do the mapping — no server-side data attributes needed. */
+(function () {
+    var refs = document.querySelectorAll('.post-body sup[id^="fnref:"] .footnote-ref');
+    if (!refs.length) { return; }
+
+    function flash(el, cls) {
+        if (!el) { return; }
+        el.classList.remove(cls);
+        void el.offsetWidth; // reflow so re-adding restarts the animation
+        el.classList.add(cls);
+        el.addEventListener('animationend', function handler() {
+            el.classList.remove(cls);
+            el.removeEventListener('animationend', handler);
+        });
+    }
+
+    // Light BOTH copies of the note — the `.sidenote` span (wide) and the
+    // bottom-list `<li>` (narrow). Only one is displayed at a time, and a
+    // display:none element simply won't animate, so this needs no viewport
+    // check.
+    refs.forEach(function (ref) {
+        ref.addEventListener('click', function () {
+            var sup = ref.parentNode;
+            var side = sup.nextElementSibling;
+            if (side && side.classList.contains('sidenote')) { flash(side, 'fn-lit'); }
+            flash(document.getElementById('fn:' + sup.id.slice('fnref:'.length)), 'fn-lit');
+        });
+    });
+
+    // Sidenote number → light up the matching reference.
+    document.querySelectorAll('.post-body .sidenote').forEach(function (side) {
+        var num = side.querySelector('.sidenote-num') || side;
+        num.addEventListener('click', function () {
+            var sup = side.previousElementSibling;
+            var ref = sup ? sup.querySelector('.footnote-ref') : null;
+            flash(ref, 'fn-lit');
+        });
+    });
+
+    // Bottom-list backref (↩) → light up the matching reference (narrow mode).
+    document.querySelectorAll('.post-body .footnote-backref').forEach(function (back) {
+        back.addEventListener('click', function () {
+            var sup = document.getElementById((back.getAttribute('href') || '#').slice(1));
+            var ref = sup ? sup.querySelector('.footnote-ref') : null;
+            flash(ref, 'fn-lit');
+        });
+    });
+})();
+
+/* ---------- Sidenote de-overlap (wide-screen margin notes) ----------
+   Each `.sidenote` is `position:absolute` anchored to its reference line, so
+   a long note whose next reference sits a line or two below will overlap the
+   following note. Walk the notes top-to-bottom and, whenever one starts
+   before the previous one ends, push it down with margin-top so they stack
+   with a gap. No-op on narrow screens where the notes are `display:none`. */
+(function () {
+    var notes = document.querySelectorAll('.post-body .sidenote');
+    if (!notes.length) { return; }
+    var GAP = 14;
+
+    function layout() {
+        // Reset first so shrinking the note count / widening the screen recomputes cleanly.
+        notes.forEach(function (n) { n.style.transform = ''; });
+        // Bail entirely when the notes aren't rendered as margin notes.
+        if (getComputedStyle(notes[0]).display === 'none') { return; }
+
+        var prevBottom = -Infinity;
+        notes.forEach(function (n) {
+            // Natural (untransformed) document-relative top of this note.
+            var t = n.getBoundingClientRect().top + window.pageYOffset;
+            var shift = 0;
+            if (t < prevBottom + GAP) {
+                shift = (prevBottom + GAP) - t;
+                // translateY reliably moves a position:absolute element and,
+                // unlike margin, doesn't get folded into the static-position math.
+                n.style.transform = 'translateY(' + shift + 'px)';
+            }
+            prevBottom = t + shift + n.offsetHeight;
+        });
+    }
+
+    var raf;
+    function schedule() {
+        window.cancelAnimationFrame(raf);
+        raf = window.requestAnimationFrame(layout);
+    }
+
+    schedule();
+    window.addEventListener('load', schedule);   // re-run once webfonts settle
+    window.addEventListener('resize', schedule);
+})();

@@ -738,6 +738,16 @@ html, body {
     opacity: 0.85;
 }
 
+/* Footnote reference [^id] — a superscript marker. The `[^` and `]` are
+   `.md-syntax` (dim while editing the block, SR-only otherwise, so an
+   inactive block shows just the accent-tinted id like a real footnote). */
+.writer-editor .wb-fnref { font-size: 0.8em; }
+.writer-editor .wb-fnref-id { color: var(--accent); }
+.writer-body.is-light .writer-editor .wb-fnref-id { color: var(--accent-dim); }
+
+/* Footnote definition line `[^id]: body` reads as secondary metadata. */
+.writer-editor .wb-fndef { color: var(--text-dim); }
+
 .writer-editor a {
     /* Link text shares the body colour — the dotted underline + theme-
        tinted decoration is the only visual link cue. Keeps the reading

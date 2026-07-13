@@ -96,9 +96,7 @@ operators in prose (e.g. `result == expected`).
 ## Footnotes
 
 Inline reference plus a definition block. The reference renders as a
-bracketed superscript link; the definition gets collected into a
-`<div class="footnotes">` section at the bottom of the post with a back
-arrow (`↩`) returning to the reference.
+bracketed superscript link.
 
 ```markdown
 The dish saw first light at 0413 UTC.[^pass]
@@ -108,6 +106,23 @@ The dish saw first light at 0413 UTC.[^pass]
 
 The footnote ID can be any token (`[^1]`, `[^pass]`, `[^author-note]`) —
 multiple references to the same ID reuse the same definition.
+
+**Where the note appears depends on the viewport:**
+
+- On wide screens (≥ 1440px) each note is lifted into the right margin as a
+  Tufte-style sidenote, level with its reference, leaving the reading column
+  full width.
+- On narrower screens the notes collapse into a `<div class="footnotes">`
+  section at the bottom of the post, each with a back arrow (`↩`) returning
+  to its reference.
+
+Clicking a reference lights up its note; clicking a note's number lights up
+the reference — so the pair is easy to trace either way.
+
+> **Tip:** put each `[^id]: …` definition on its own line. A stray
+> non-breaking space right after the colon (some editors insert one for a
+> typed space) is normalized automatically, but a definition that shares a
+> line with another note's text won't be recognized.
 
 ---
 

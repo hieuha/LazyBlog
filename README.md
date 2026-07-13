@@ -38,6 +38,12 @@ Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
 collapse into a CSS Grid gallery (`count-2` through `count-6`) with
 title-attribute captions. YouTube URLs still auto-embed as iframes.
 
+**Margin sidenotes.** Standard `[^id]` footnotes render as Tufte-style
+sidenotes: on wide screens each note floats into the right margin level with
+its reference, leaving the reading column full width; narrower screens fall
+back to the bottom footnote list. Clicking a reference lights its note and
+vice versa, and stacked notes auto-space so they never overlap.
+
 **Series with halftone-dot covers.** A multi-part series (any post
 with `series: my-slug` in its frontmatter) shows up at `/series` and
 `/series/{slug}` — and now carries a manifest sidecar

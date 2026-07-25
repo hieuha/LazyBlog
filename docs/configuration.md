@@ -48,6 +48,7 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/tags/{tag}` | Posts filtered by tag (`?page=N`) |
 | `/archive` | Posting heatmap + chronological list grouped by year |
 | `/search?q=...` | Diacritic-insensitive search across title, tags, body |
+| `/search?q=...&format=json` | Same search as JSON (top 8 hits) — feeds the `Ctrl/Cmd+K` command palette |
 | `/about` | Operator profile page — 404 when `content/about.md` is missing |
 | `/feed.xml` | RSS 2.0 of the latest 20 posts (ETag + 304) |
 | `/llms.txt` | Site index per [llmstxt.org](https://llmstxt.org) — posts, series, tags (no body content; follow the post `/posts/{slug}.md` for raw markdown) |

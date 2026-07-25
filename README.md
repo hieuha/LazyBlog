@@ -44,6 +44,18 @@ its reference, leaving the reading column full width; narrower screens fall
 back to the bottom footnote list. Clicking a reference lights its note and
 vice versa, and stacked notes auto-space so they never overlap.
 
+**Universal shortcuts.** `Ctrl/Cmd + K` opens a terminal-prompt command
+palette from any page: live post search (same diacritic-insensitive
+engine as `/search`, protected posts stay body-unindexed) plus
+jump-to-page navigation — core tabs and plugin tabs alike. `Ctrl + ,`
+opens the same palette in theme mode to toggle the phosphor color.
+`↑`/`↓` select, `Enter` runs, `Esc` closes. With an admin session the
+palette adds quick actions — `NEW POST` plus the about / series /
+security canvases — and on a post page `EDIT THIS POST` / `ZEN THIS
+POST` jump straight into editing; anonymous page source never lists
+the admin routes. Shortcuts stand down while a form field or editor
+has focus, so EasyMDE's own `Cmd+K` keeps inserting links.
+
 **Series with halftone-dot covers.** A multi-part series (any post
 with `series: my-slug` in its frontmatter) shows up at `/series` and
 `/series/{slug}` — and now carries a manifest sidecar
@@ -183,6 +195,7 @@ Backup with `rsync`. Restore in seconds.
 │  Series with covers   ·  Bayer-dither WebP + manifest│
 │  Password-protected   ·  bcrypt + session unlock HUD │
 │  Search + Archive     ·  reading-progress meter     │
+│  Ctrl/Cmd+K palette   ·  Ctrl+, theme switcher      │
 │  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
 │  Writing streak card  ·  JSON-driven badge catalog  │

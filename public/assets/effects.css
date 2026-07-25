@@ -200,3 +200,122 @@ body.is-home { animation: flicker 8s infinite; }
     transition: width 0.08s linear;
 }
 body.editor-fullscreen-active .read-progress { display: none; }
+
+/* ---------- Command palette (palette.js — Ctrl/Cmd+K, Ctrl+,) ----------
+   Terminal-prompt overlay: `>` prompt, mono type, phosphor tokens. Sits
+   above the reading-progress bar (z 1100) and everything else. */
+.cmdk-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 1200;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 12vh 16px 16px;
+}
+/* `display: flex` above would silently override the UA's [hidden] rule,
+   leaving the overlay visible after close — restate it explicitly. */
+.cmdk-overlay[hidden] { display: none; }
+.cmdk-panel {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        0 0 24px var(--primary-glow-strong);
+    font-family: 'Share Tech Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+}
+.cmdk-prompt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+}
+.cmdk-prompt {
+    color: var(--primary);
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    line-height: 1;
+    text-shadow: 0 0 8px var(--primary-glow-strong);
+}
+.cmdk-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    caret-color: var(--primary);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    letter-spacing: 1px;
+}
+.cmdk-input::placeholder { color: var(--text-dim); }
+.cmdk-results {
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+    overflow-y: auto;
+}
+.cmdk-results:empty { display: none; }
+.cmdk-item {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    align-items: baseline;
+    gap: 0 10px;
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+}
+.cmdk-item.is-selected,
+.cmdk-item:hover {
+    background: var(--primary-glow);
+    color: var(--primary);
+}
+.cmdk-marker {
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--primary-glow-strong);
+    white-space: pre;
+}
+.cmdk-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+.cmdk-hint {
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+.cmdk-snippet {
+    grid-column: 2 / -1;
+    color: var(--text-dim);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cmdk-status {
+    padding: 0 14px 6px;
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 1px;
+    min-height: 0;
+}
+.cmdk-status:empty { display: none; }
+.cmdk-hints {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 2px;
+}

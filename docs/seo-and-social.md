@@ -103,6 +103,21 @@ plugins and RSS parsers. Aggregators can use this to identify feeds
 originating from a LazyBlog instance (e.g. via
 `str_contains($generatorText, 'LazyBlog')`).
 
+## Sitemap
+
+`/sitemap.xml` — standard sitemap for search-engine discovery. Lists home,
+`/archive`, `/about` (when the page exists), `/series` + each series detail
+page, and every published post with `<lastmod>` from the post file's mtime.
+Password-protected posts are excluded (same precedent as `feed.xml` and
+`llms.txt` — their public URL only serves the unlock form). `/search` and
+tag pages are deliberately omitted as thin listings. Cached at
+`content/.sitemap.xml`, invalidated together with the feed + llms caches on
+every post save; served with ETag + `304 Not Modified`.
+
+Crawlers probe `/sitemap.xml` by convention, but for fastest indexing
+submit it once in [Google Search Console](https://search.google.com/search-console)
+and [Bing Webmaster Tools](https://www.bing.com/webmasters).
+
 ## Testing your previews
 
 Each platform caches preview metadata for days to weeks. After updating

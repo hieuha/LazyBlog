@@ -30,6 +30,7 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
                           │   admin ─┘   │ MarkdownRenderer │    │
                           │   feed       │ FeedBuilder      │    │
                           │   llms       │ LlmsBuilder      │    │
+                          │   sitemap    │ SitemapBuilder   │    │
                           └──────────────┴──────────┬───────┘    │
                                                     │
                                                     ▼
@@ -147,6 +148,7 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `FileWriter` | Atomic write helper | tempnam in target dir + rename — never corrupts on crash |
 | `LlmsBuilder` | Generate llms.txt (sections: Posts, Series, Tags) | Reads index; lazily reads bodies for summary excerpt; skips protected entries; output follows llmstxt.org |
 | `FeedBuilder` | Generate RSS 2.0 XML | DOMDocument (not string concat); filters protected entries BEFORE slicing limit; description-only items (no `content:encoded` body — readers click through for the full post) |
+| `SitemapBuilder` | Generate sitemap.xml | DOMDocument; home/archive/about/series/posts; skips protected posts, `/search`, tag pages; `lastmod` from post-file mtime; cache invalidated with feed + llms |
 | `Searcher` | Full-text index on title + tags + body | Indexes protected post title + tags only; body never indexed; snippet placeholder for protected posts |
 | `GamificationCalculator` | Pure streak + badge evaluation logic | Takes post timestamps + arrays in, emits unlocked-badge list; memoises per-unit longest-streak |
 | `BadgeRegistry` | Load and validate badge catalogue | Reads `content/badges.json`; silently omits entries with unknown kind |

@@ -259,6 +259,7 @@ final class PostRepository
         @unlink($this->indexPath);
         @unlink($this->contentDir . '/.llms.txt');
         @unlink($this->contentDir . '/.feed.xml');
+        @unlink($this->contentDir . '/.sitemap.xml');
     }
 
     /**
@@ -467,10 +468,11 @@ final class PostRepository
         FileWriter::writeAtomic($this->indexPath, $json);
 
         // Index rebuild means posts may have changed — invalidate downstream
-        // caches so /llms.txt and /feed.xml regenerate on next request instead
-        // of serving stale data.
+        // caches so /llms.txt, /feed.xml and /sitemap.xml regenerate on next
+        // request instead of serving stale data.
         @unlink($this->contentDir . '/.llms.txt');
         @unlink($this->contentDir . '/.feed.xml');
+        @unlink($this->contentDir . '/.sitemap.xml');
     }
 
     private function loadFromFile(string $file): ?Post

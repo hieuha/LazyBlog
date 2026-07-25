@@ -18,9 +18,9 @@ minute.
 as a three-section index — `## Posts` (each with a short summary),
 `## Series` (multi-part collections with manifest descriptions), and
 `## Tags` — so language models and tooling can ingest a sectioned
-catalogue of the entire blog without scraping HTML. Valid RSS 2.0 too
-— and an `article:published_time` that carries full ISO datetime
-precision when you bother to set it.
+catalogue of the entire blog without scraping HTML. Valid RSS 2.0 and
+a `sitemap.xml` too — and an `article:published_time` that carries
+full ISO datetime precision when you bother to set it.
 
 **Operator-flex `/about` page.** A Duolingo-style streak flame tracks
 your writing cadence — day, week, month, or year, you pick. A
@@ -196,7 +196,7 @@ Backup with `rsync`. Restore in seconds.
 │  Password-protected   ·  bcrypt + session unlock HUD │
 │  Search + Archive     ·  reading-progress meter     │
 │  Ctrl/Cmd+K palette   ·  Ctrl+, theme switcher      │
-│  SEO + JSON-LD        ·  Open Graph + Twitter Card  │
+│  SEO + JSON-LD        ·  OG + Twitter + sitemap     │
 │  CSP + session hard.  ·  CSRF + atomic file writes  │
 │  Writing streak card  ·  JSON-driven badge catalog  │
 │  GFM tables           ·  admonitions + freq-tags    │

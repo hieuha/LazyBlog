@@ -215,6 +215,9 @@ body.editor-fullscreen-active .read-progress { display: none; }
     align-items: flex-start;
     padding: 12vh 16px 16px;
 }
+/* `display: flex` above would silently override the UA's [hidden] rule,
+   leaving the overlay visible after close — restate it explicitly. */
+.cmdk-overlay[hidden] { display: none; }
 .cmdk-panel {
     width: 100%;
     max-width: 640px;

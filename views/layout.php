@@ -495,6 +495,10 @@ $favicon = 'data:image/svg+xml,'
 <?php endif; ?>
 
 <script defer src="<?= Http::e(Http::asset('assets/site.js')) ?>"></script>
+<?php /* Universal command palette — Ctrl/Cmd+K search + navigation,
+     Ctrl+, theme mode. Harvests commands from the header nav + theme
+     picker rendered above, so it loads on every layout.php page. */ ?>
+<script defer src="<?= Http::e(Http::asset('assets/palette.js')) ?>"></script>
 <?php if ($isPost): ?>
     <?php
     // Prism syntax highlighting for fenced code blocks. Loaded only on

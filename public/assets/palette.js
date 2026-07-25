@@ -37,6 +37,34 @@
         return cmds;
     }
 
+    function adminCommands() {
+        // Seeded by layout.php only when an admin session exists — the
+        // auth gate lives server-side, this just consumes the list.
+        var defs = window.LB_ADMIN_COMMANDS || [];
+        var cmds = [];
+        for (var i = 0; i < defs.length; i++) {
+            cmds.push({ kind: 'nav', label: defs[i].label, hint: defs[i].href, href: defs[i].href });
+        }
+        return cmds;
+    }
+
+    function contextCommands() {
+        // Post pages render [ EDIT ] / [ ZEN ] links for admins — surface
+        // them as commands scoped to the post being read.
+        var links = document.querySelectorAll('.view-source-link-edit');
+        var cmds = [];
+        for (var i = 0; i < links.length; i++) {
+            var label = links[i].textContent.replace(/[\[\]]/g, '').trim();
+            cmds.push({
+                kind: 'nav',
+                label: label + ' THIS POST',
+                hint: links[i].getAttribute('href'),
+                href: links[i].getAttribute('href')
+            });
+        }
+        return cmds;
+    }
+
     function themeCommands() {
         var btns = document.querySelectorAll('#theme-picker [data-theme-set]');
         var cmds = [];
@@ -168,7 +196,9 @@
         var q = input.value.trim();
         var ql = q.toLowerCase();
 
-        var cmds = mode === 'theme' ? themeCommands() : navCommands().concat(themeCommands());
+        var cmds = mode === 'theme'
+            ? themeCommands()
+            : contextCommands().concat(navCommands(), adminCommands(), themeCommands());
         if (ql !== '') {
             cmds = cmds.filter(function (c) {
                 return c.label.toLowerCase().indexOf(ql) >= 0
@@ -263,10 +293,9 @@
         } else if (e.key === 'Enter') {
             e.preventDefault();
             run(items[selected]);
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            close();
         }
+        /* Escape is handled by the document-level listener below so it
+           works regardless of where focus sits. */
     }
 
     function isEditable(t) {
@@ -277,6 +306,14 @@
 
     document.addEventListener('keydown', function (e) {
         var paletteOpen = overlay && !overlay.hidden;
+        /* Escape always dismisses the palette, no matter where focus sits
+           (the input has its own handler, but focus can land on the panel
+           after a mouse interaction). */
+        if (e.key === 'Escape' && paletteOpen) {
+            e.preventDefault();
+            close();
+            return;
+        }
         /* Ctrl/Cmd+K — toggle palette. Skipped inside form fields so editor
            shortcuts (EasyMDE link insert) keep their binding. */
         if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey

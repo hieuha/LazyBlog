@@ -498,6 +498,18 @@ $favicon = 'data:image/svg+xml,'
 <?php /* Universal command palette — Ctrl/Cmd+K search + navigation,
      Ctrl+, theme mode. Harvests commands from the header nav + theme
      picker rendered above, so it loads on every layout.php page. */ ?>
+<?php if (App\Auth::check()): ?>
+    <?php /* Admin quick actions for the palette. Rendered server-side so
+         the auth gate stays in PHP and anonymous page source never lists
+         admin routes. `/admin` itself is covered by the [ ADMIN ] nav
+         link the palette already harvests. */ ?>
+    <script>window.LB_ADMIN_COMMANDS = [
+        {label: 'NEW POST',        href: '/admin/new'},
+        {label: 'ADMIN: ABOUT',    href: '/admin/about'},
+        {label: 'ADMIN: SERIES',   href: '/admin/series'},
+        {label: 'ADMIN: SECURITY', href: '/admin/security'}
+    ];</script>
+<?php endif; ?>
 <script defer src="<?= Http::e(Http::asset('assets/palette.js')) ?>"></script>
 <?php if ($isPost): ?>
     <?php

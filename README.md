@@ -49,9 +49,12 @@ palette from any page: live post search (same diacritic-insensitive
 engine as `/search`, protected posts stay body-unindexed) plus
 jump-to-page navigation — core tabs and plugin tabs alike. `Ctrl + ,`
 opens the same palette in theme mode to toggle the phosphor color.
-`↑`/`↓` select, `Enter` runs, `Esc` closes. Shortcuts stand down while
-a form field or editor has focus, so EasyMDE's own `Cmd+K` keeps
-inserting links.
+`↑`/`↓` select, `Enter` runs, `Esc` closes. With an admin session the
+palette adds quick actions — `NEW POST` plus the about / series /
+security canvases — and on a post page `EDIT THIS POST` / `ZEN THIS
+POST` jump straight into editing; anonymous page source never lists
+the admin routes. Shortcuts stand down while a form field or editor
+has focus, so EasyMDE's own `Cmd+K` keeps inserting links.
 
 **Series with halftone-dot covers.** A multi-part series (any post
 with `series: my-slug` in its frontmatter) shows up at `/series` and

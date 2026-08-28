@@ -56,6 +56,21 @@ POST` jump straight into editing; anonymous page source never lists
 the admin routes. Shortcuts stand down while a form field or editor
 has focus, so EasyMDE's own `Cmd+K` keeps inserting links.
 
+**Quote cards from a text selection.** Highlight a passage in any post
+and a `[ § SHARE QUOTE ]` chip floats above it; clicking opens a modal
+that renders the quote onto a canvas card in the reader's own phosphor
+theme — pick the theme background or the post's own image blurred
+behind a dark scrim, pick 9:16 / 4:5 / 1:1, then download a PNG or copy
+a `#:~:text=` deep link that scrolls straight back to the sentence.
+Everything happens client-side in Canvas 2D: no endpoint, no
+dependency, nothing written to disk, and the colours are read from the
+live CSS variables so the card matches whichever phosphor you are
+reading in. Footnote sidenotes are stripped out of the quote rather
+than swallowed mid-sentence, cross-origin images are refused before
+they can taint the canvas, and password-protected posts never emit the
+feature at all — even after a correct password, since a downloadable
+image would carry gated prose past the wall for good. Desktop only.
+
 **Series with halftone-dot covers.** A multi-part series (any post
 with `series: my-slug` in its frontmatter) shows up at `/series` and
 `/series/{slug}` — and now carries a manifest sidecar

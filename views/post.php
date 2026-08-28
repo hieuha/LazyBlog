@@ -23,7 +23,26 @@ $renderTocList = function () use ($toc): void {
 };
 ?>
 
-<article class="post-article">
+<?php
+// share-quote.js reads author + title off these attributes instead of
+// scraping .section-tag — that line carries the date, the lock badge, the
+// author, AND arbitrary plugin fragments via slotPostMeta(), so any regex
+// over it breaks the moment a plugin is enabled.
+//
+// `data-quote-share` is the mount gate and is omitted entirely for
+// password-protected posts — even after a correct password unlocks the
+// session. A quote card is a downloadable image: once rendered it carries
+// gated prose past the password wall forever, so the feature stays off for
+// those posts at the source rather than behind a client-side check.
+//
+// $post->author is already final here: PostRepository::resolveAuthor()
+// applies the DEFAULT_AUTHOR fallback while constructing the Post. Do NOT
+// reach for $siteAuthor — that only exists in views/layout.php's scope.
+?>
+<article class="post-article"
+    data-quote-author="<?= Http::e($post->author ?? '') ?>"
+    data-quote-title="<?= Http::e($post->title) ?>"
+    <?php if (!$post->isProtected()): ?>data-quote-share="1"<?php endif; ?>>
     <?php
     // Plugin-contributed meta fragments (e.g. view-counter "1 lượt xem").
     // Returned as plain text and appended inline to the transmission tag

@@ -1,0 +1,244 @@
+/* =========================================================================
+   LazyBlog — share-quote
+   Bôi text trong .post-body → popup → modal canvas → tải PNG.
+   Route-scoped: layout.php chỉ nạp sheet này trên /posts/*, nên các
+   route khác không trả phí cho rule không dùng.
+   Mọi class mang tiền tố `.sq-` để không đụng `.cmdk-*` của palette.js.
+   ========================================================================= */
+
+/* ---------- Selection popup ----------
+   `position: absolute` với toạ độ tài liệu (không `fixed`), nên popup trôi
+   theo đoạn text khi trang cuộn. z-index 1090 nằm ngay dưới thanh
+   .read-progress (1100) và dưới command palette (1200) — popup không bao
+   giờ che hai thứ đó. */
+.sq-popup {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1090;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    color: var(--primary);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        0 0 12px var(--primary-glow);
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+/* `display` above stays at the UA default, but the popup also carries
+   `transform` + positioning — restate [hidden] explicitly for the same
+   reason .cmdk-overlay does, so a future `display:` addition can't
+   silently leave it on screen. */
+.sq-popup[hidden] { display: none; }
+.sq-popup:hover {
+    border-color: var(--primary);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        0 0 18px var(--primary-glow-strong);
+}
+.sq-popup:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sq-popup { transition: none; }
+}
+
+/* ---------- Modal ----------
+   Khung mượn từ .cmdk-overlay (effects.css) để hai overlay của site hành xử
+   giống nhau. Khác: z-index 1150 — trên .read-progress (1100) nhưng dưới
+   command palette (1200), nên Ctrl+K vẫn mở palette đè lên modal. */
+.sq-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 1150;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+/* `display: flex` above would silently override the UA's [hidden] rule,
+   leaving the overlay visible after close — restate it explicitly, same as
+   .cmdk-overlay does. */
+.sq-overlay[hidden] { display: none; }
+
+.sq-panel {
+    width: 100%;
+    max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 14px 16px 16px;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        0 0 24px var(--primary-glow-strong);
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.sq-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.sq-head-label {
+    color: var(--primary);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+}
+.sq-close {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 2px 8px 4px;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease;
+}
+.sq-close:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.sq-canvas-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+/* Canvas backing store là 1080×H (× dpr); CSS co preview cho vừa modal mà
+   không đụng tới độ phân giải file xuất ra. */
+.sq-canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 52vh;
+    object-fit: contain;
+    border: 1px solid var(--border);
+}
+
+.sq-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 14px;
+}
+.sq-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sq-group-label {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+}
+
+.sq-swatch {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background-color: var(--bg);
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    transition: border-color 0.12s ease;
+}
+.sq-swatch[hidden] { display: none; }
+.sq-swatch:hover { border-color: var(--primary); }
+/* Trạng thái chọn: viền + dấu tick, không chỉ màu — cùng thông tin đó cũng
+   nằm trong aria-pressed cho screen reader. */
+.sq-swatch.is-active {
+    border-color: var(--primary);
+    box-shadow: 0 0 8px var(--primary-glow);
+    position: relative;
+}
+.sq-swatch.is-active::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 0.9rem;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}
+
+.sq-ratio {
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease;
+}
+.sq-ratio:hover { border-color: var(--primary); color: var(--primary); }
+.sq-ratio.is-active {
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+
+.sq-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.sq-actions button {
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.sq-actions button:hover { border-color: var(--primary); }
+/* Download là hành động chính của modal — nút đặc, hai nút còn lại viền. */
+.sq-actions .sq-download {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--bg);
+}
+
+.sq-panel :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sq-close,
+    .sq-swatch,
+    .sq-ratio,
+    .sq-actions button { transition: none; }
+}
+
+/* Trạng thái flash sau khi bấm — nút tự khoá ~1.6s để không bấm chồng. */
+.sq-actions button:disabled {
+    opacity: 0.65;
+    cursor: default;
+}

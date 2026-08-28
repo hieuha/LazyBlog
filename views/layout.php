@@ -283,8 +283,9 @@ $favicon = 'data:image/svg+xml,'
     // Stylesheets split by concern, each with its own ?v= cache-bust.
     // base/effects/components/post are universal (touched by header,
     // footer, post-page-title used on /about, post-body code-block HUD
-    // for any markdown body). pages.css + about.css are route-scoped —
-    // see "Frontend assets" rule in .claude/rules/development-rules.md.
+    // for any markdown body). pages.css + about.css + share-quote.css are
+    // route-scoped — see "Frontend assets" rule in
+    // .claude/rules/development-rules.md.
     // Load order matters: base defines tokens, the rest consume them.
     foreach (['assets/base.css', 'assets/effects.css', 'assets/components.css',
               'assets/post.css'] as $css):
@@ -306,6 +307,15 @@ $favicon = 'data:image/svg+xml,'
     <?php endif; ?>
     <?php if ($path === '/about'): ?>
         <link rel="stylesheet" href="<?= Http::e(Http::asset('assets/about.css')) ?>">
+    <?php endif; ?>
+    <?php
+    // share-quote.css — selection popup + canvas modal, post pages only.
+    // Gate on $path (not $isPost): up here $isPost means "a Post object was
+    // passed", which is a different question from "the URL is a post page".
+    // Matching the $path form keeps it consistent with pages/about/admin.
+    ?>
+    <?php if (str_starts_with($path, '/posts/')): ?>
+        <link rel="stylesheet" href="<?= Http::e(Http::asset('assets/share-quote.css')) ?>">
     <?php endif; ?>
     <?php if (str_starts_with($path, '/admin')): ?>
         <link rel="stylesheet" href="<?= Http::e(Http::asset('assets/admin.css')) ?>">
@@ -534,6 +544,11 @@ $favicon = 'data:image/svg+xml,'
         });
     </script>
     <script defer src="<?= Http::e(Http::asset('assets/post.js')) ?>"></script>
+    <?php /* Selection → quote-card modal. Separate file from post.js: the
+         two share no state, and post.js is already long enough. Self-gates
+         on `data-quote-share` (absent on protected posts) and on desktop
+         pointer + width, so it costs one parse and exits on mobile. */ ?>
+    <script defer src="<?= Http::e(Http::asset('assets/share-quote.js')) ?>"></script>
 <?php endif; ?>
 <?php
 // Plugin JS, route-scoped (computed alongside plugin CSS at top of <head>).

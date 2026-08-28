@@ -46,6 +46,15 @@ Set automatically in `views/layout.php`:
 
 Admin editor auto-populates the `image:` field from the first body image when editing, so you usually get social previews without extra work.
 
+**Quote cards are not part of this chain.** The share-quote feature
+(`public/assets/share-quote.js`) renders a selected passage onto a canvas
+entirely in the reader's browser and hands the PNG straight to their
+download folder. No URL is minted, nothing is written to disk, and no meta
+tag references it — the `og:image` chain above is unchanged whether or not
+a reader ever makes a card. The two features only overlap in that a quote
+card may use the post's first body image as a blurred background, read from
+the same `.post-body img` the chain's step 2 looks at.
+
 ## `/series/{slug}` SEO
 
 Series detail pages carry their own meta:

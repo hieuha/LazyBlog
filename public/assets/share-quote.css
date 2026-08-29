@@ -10,46 +10,33 @@
    `position: absolute` với toạ độ tài liệu (không `fixed`), nên popup trôi
    theo đoạn text khi trang cuộn. z-index 1090 nằm ngay dưới thanh
    .read-progress (1100) và dưới command palette (1200) — popup không bao
-   giờ che hai thứ đó. */
+   giờ che hai thứ đó.
+   Chỉ lo vị trí + nền đục. Diện mạo (viền, màu, font mono, letter-spacing,
+   hover glow) thừa hưởng từ class dùng chung `.header-btn` trong base.css,
+   đúng như nút "[ FAX THIS ]" của plugin fax — nhờ vậy hai nút nổi trên bài
+   viết trông giống nhau và cùng đổi da theo theme. */
 .sq-popup {
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1090;
     transform: translateX(-50%);
-    padding: 6px 12px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
+    /* Nền đục giữ nút đọc được khi nó đè lên chữ trong bài. */
+    background: var(--bg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
     white-space: nowrap;
-    color: var(--primary);
-    background: var(--panel);
-    border: 1px solid var(--accent);
-    border-radius: 3px;
-    box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.6),
-        0 0 12px var(--primary-glow);
-    cursor: pointer;
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 /* `display` above stays at the UA default, but the popup also carries
    `transform` + positioning — restate [hidden] explicitly for the same
    reason .cmdk-overlay does, so a future `display:` addition can't
    silently leave it on screen. */
 .sq-popup[hidden] { display: none; }
-.sq-popup:hover {
-    border-color: var(--primary);
-    box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.6),
-        0 0 18px var(--primary-glow-strong);
-}
+/* `.header-btn:hover` đổi `background` sang glow trong suốt; ghi đè lại
+   bằng nền đục để chữ dưới nút không lộ ra khi rê chuột. */
+.sq-popup:hover { background: var(--panel); }
 .sq-popup:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .sq-popup { transition: none; }
 }
 
 /* ---------- Modal ----------

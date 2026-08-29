@@ -88,10 +88,12 @@
        Dựng lazy lần đầu cần, giống cách palette.js dựng overlay của nó. */
     function buildPopup() {
         popup = document.createElement('button');
-        popup.className = 'sq-popup';
+        // header-btn = style nút dùng chung của site (giống nút [ FAX THIS ]);
+        // sq-popup chỉ thêm phần định vị nổi trên trang.
+        popup.className = 'header-btn sq-popup';
         popup.type = 'button';
         popup.hidden = true;
-        popup.textContent = '[ § SHARE QUOTE ]';
+        popup.textContent = '[ SHARE QUOTE ]';
         /* Không dùng aria-live: popup là một hành động tuỳ chọn xuất hiện
            theo thao tác của người dùng, không phải thông tin cần thông báo
            chen ngang. Nhãn mô tả trên nút là đủ. */

@@ -230,7 +230,7 @@
         panel.setAttribute('aria-label', 'Share quote');
 
         var head = el('div', 'sq-head');
-        head.appendChild(el('span', 'sq-head-label', '§ SHARE QUOTE'));
+        head.appendChild(el('span', 'sq-head-label', 'SHARE QUOTE'));
         var close = el('button', 'sq-close', '×');
         close.type = 'button';
         close.setAttribute('aria-label', 'Close');

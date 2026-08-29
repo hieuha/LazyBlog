@@ -244,26 +244,33 @@
 
         controls = el('div', 'sq-controls');
 
+        /* Không có nhãn chữ "BACKGROUND" / "RATIO": cả hàng phải nằm gọn
+           trên một dòng, và hai chữ đó tốn nhiều bề ngang hơn chính các nút
+           chúng mô tả. Ngữ nghĩa vẫn đủ cho screen reader qua
+           `role="group"` + `aria-label`, và người dùng chuột có `title`. */
         var bgGroup = el('div', 'sq-group');
         bgGroup.setAttribute('role', 'group');
         bgGroup.setAttribute('aria-label', 'Background');
-        bgGroup.appendChild(el('span', 'sq-group-label', 'BACKGROUND'));
         var themeSwatch = groupButton('sq-swatch', 'bg', 'theme', '');
         themeSwatch.setAttribute('aria-label', 'Theme background');
+        themeSwatch.title = 'Theme background';
         imageSwatch = groupButton('sq-swatch', 'bg', 'image', '');
         imageSwatch.setAttribute('aria-label', 'Post image background');
+        imageSwatch.title = 'Post image background';
         bgGroup.appendChild(themeSwatch);
         bgGroup.appendChild(imageSwatch);
 
         var ratioGroup = el('div', 'sq-group');
         ratioGroup.setAttribute('role', 'group');
         ratioGroup.setAttribute('aria-label', 'Aspect ratio');
-        ratioGroup.appendChild(el('span', 'sq-group-label', 'RATIO'));
         Object.keys(RATIOS).forEach(function (r) {
-            ratioGroup.appendChild(groupButton('sq-ratio', 'ratio', r, r));
+            var b = groupButton('sq-ratio', 'ratio', r, r);
+            b.title = 'Aspect ratio ' + r;
+            ratioGroup.appendChild(b);
         });
 
         controls.appendChild(bgGroup);
+        controls.appendChild(el('span', 'sq-divider'));
         controls.appendChild(ratioGroup);
 
         /* Event delegation trên cả hàng control thay vì 5 listener rời —
@@ -280,15 +287,21 @@
         var actions = el('div', 'sq-actions');
         var copyBtn = el('button', 'sq-copy', '[ COPY LINK ]');
         copyBtn.type = 'button';
-        var dlBtn = el('button', 'sq-download', '[ ⬇ DOWNLOAD PNG ]');
+        var dlBtn = el('button', 'sq-download', '[ ⬇ DOWNLOAD ]');
         dlBtn.type = 'button';
+        dlBtn.title = 'Download PNG';
         actions.appendChild(copyBtn);
         actions.appendChild(dlBtn);
 
+        /* Một hàng duy nhất: control bên trái, hành động dồn sang phải. Hai
+           hàng riêng làm chân modal nặng và đẩy canvas lên cao. */
+        var toolbar = el('div', 'sq-toolbar');
+        toolbar.appendChild(controls);
+        toolbar.appendChild(actions);
+
         panel.appendChild(head);
         panel.appendChild(wrap);
-        panel.appendChild(controls);
-        panel.appendChild(actions);
+        panel.appendChild(toolbar);
         overlay.appendChild(panel);
         document.body.appendChild(overlay);
 

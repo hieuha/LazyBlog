@@ -61,9 +61,10 @@
 
 .sq-panel {
     width: 100%;
-    /* 600 chứ không phải 560: hàng control ở chân modal cần đúng chừng đó
-       bề ngang để nằm trọn một dòng khi bài có cả swatch ảnh. */
-    max-width: 600px;
+    /* Bề rộng do hàng control ở chân modal quyết định, không phải canvas:
+       hai swatch + ba nút tỉ lệ + hai nút hành động phải nằm trọn một dòng
+       kể cả khi bài có ảnh nền để chọn. Đo tại 640px còn dư ~30px. */
+    max-width: 640px;
     max-height: 92vh;
     overflow-y: auto;
     padding: 14px 16px 16px;
@@ -169,14 +170,13 @@
     background: var(--border);
 }
 
-/* Swatch là ô tròn nên ghi đè bề ngang + bo góc, nhưng giữ đúng chiều cao
-   chung để nó ngang hàng với các nút chữ. Selector phải mang cả `.sq-toolbar`
-   để thắng `.sq-toolbar button` ở trên — nếu không, `border-radius: 3px` và
-   padding ngang của khuôn chung biến ô tròn thành ô chữ nhật. */
+/* Swatch dùng đúng khuôn chữ nhật của nút ratio — một hàng control mà nửa
+   trái tròn nửa phải vuông thì đọc ra như hai hệ thống ghép lại. Chỉ ghi đè
+   những gì thực sự riêng: bề ngang cố định (nút này không có nhãn chữ để tự
+   giãn) và cách ảnh nền lấp đầy ô. */
 .sq-toolbar .sq-swatch {
-    width: var(--sq-ctl-h);
+    width: 46px;
     padding: 0;
-    border-radius: 50%;
     background-color: var(--bg);
     background-size: cover;
     background-position: center;

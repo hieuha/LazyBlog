@@ -191,9 +191,12 @@
        Dùng `src`, KHÔNG `currentSrc`: MarkdownRenderer gắn loading="lazy"
        cho mọi ảnh trong body, nên ảnh nằm dưới màn hình có `currentSrc`
        rỗng và swatch bị ẩn oan trên chính những bài ảnh nằm sâu. `src`
-       luôn trả URL tuyệt đối đã resolve, bất kể đã tải hay chưa; phase 4
-       tự `new Image()` tải lại và trình duyệt dùng cache nếu có. Repo
-       không dùng srcset ở đâu cả nên `currentSrc` không bù lại được gì. */
+       luôn trả URL tuyệt đối đã resolve, bất kể đã tải hay chưa. Repo
+       không dùng srcset ở đâu cả nên `currentSrc` không bù lại được gì.
+
+       Hàm này chỉ trả lời "URL có same-origin không", KHÔNG trả lời "ảnh
+       có tải được không" — file có thể đã bị xoá khỏi /uploads. openModal()
+       phải probe thật qua loadImage() trước khi hiện swatch. */
     function usableBgImage() {
         var img = document.querySelector('.post-body img');
         if (!img || !img.src) return null;
@@ -203,6 +206,24 @@
             return null;
         }
         return img.src;
+    }
+
+    /* Tải ảnh một lần cho cả vòng đời trang, resolve `null` khi lỗi thay vì
+       reject — ảnh 404 thì rơi về nền theme, không để canvas trắng. Cùng
+       promise này phục vụ hai việc: probe xem có nên hiện swatch không, và
+       lấy ảnh thật lúc vẽ. Không set `crossOrigin`: URL đã được lọc chỉ còn
+       same-origin, và thêm thuộc tính đó vào ảnh same-origin có thể gây fail
+       ngược nếu server không gửi CORS header. */
+    var imageCache = {};
+    function loadImage(url) {
+        if (imageCache[url]) return imageCache[url];
+        imageCache[url] = new Promise(function (res) {
+            var im = new Image();
+            im.onload = function () { res(im); };
+            im.onerror = function () { res(null); };
+            im.src = url;
+        });
+        return imageCache[url];
     }
 
     function el(tag, cls, text) {
@@ -363,11 +384,18 @@
            khác, bài này chưa chắc có ảnh dùng được. */
         state.bg = 'theme';
 
-        imageSwatch.hidden = !state.bgImage;
+        /* Ẩn trước, chỉ hiện khi ảnh thật sự tải được. Một swatch trỏ vào
+           ảnh đã mất file vẫn bấm được nhưng canvas âm thầm rơi về nền
+           theme — nút có mà không làm gì là kiểu hỏng khó chịu nhất. */
+        imageSwatch.hidden = true;
+        imageSwatch.style.backgroundImage = '';
         if (state.bgImage) {
-            imageSwatch.style.backgroundImage = 'url("' + state.bgImage.replace(/"/g, '%22') + '")';
-        } else {
-            imageSwatch.style.backgroundImage = '';
+            var probed = state.bgImage;
+            imageSwatch.style.backgroundImage = 'url("' + probed.replace(/"/g, '%22') + '")';
+            loadImage(probed).then(function (im) {
+                if (state.bgImage !== probed) return;   // đã mở lại với ảnh khác
+                imageSwatch.hidden = !im;
+            });
         }
 
         syncPressed();
@@ -555,12 +583,7 @@
        còn same-origin, và thêm thuộc tính đó vào ảnh same-origin có thể
        gây fail ngược nếu server không gửi CORS header. */
     function loadBg() {
-        return new Promise(function (res) {
-            var im = new Image();
-            im.onload = function () { res(im); };
-            im.onerror = function () { res(null); };
-            im.src = state.bgImage;
-        });
+        return loadImage(state.bgImage);
     }
 
     function paint(bgImg) {

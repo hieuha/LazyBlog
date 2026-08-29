@@ -130,3 +130,8 @@ worktrees/
 # Local 2-blog federation test instance
 .env.blog-b
 /content-b
+
+# Vigolium audit scanner artifacts (generated locally)
+/vigolium-results/codeql-artifacts/
+/vigolium-results/codeql-queries/
+/vigolium-results/semgrep-res/

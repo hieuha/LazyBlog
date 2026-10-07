@@ -84,6 +84,10 @@ readers find the feed without a URL hint.
 | `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp`. Accepts PNG/JPEG/WebP up to 25 MB raw. **Server-side PHP-FPM limits still apply** — bump `upload_max_filesize=25M`, `post_max_size=30M`, `memory_limit=256M` in php.ini (or drop them in `public/.user.ini`) to actually let 25 MB uploads through, otherwise PHP rejects with `UPLOAD_ERR_INI_SIZE` before the controller even sees the file |
 | `POST /admin/upload-artifact` | Interactive HTML artifact upload — `.html`/`.htm`, text content, ≤ 5 MB, stored verbatim at `content/artifacts/{slug}-{6hex}.html`. Returns `{id, url, title, markdown}` where `markdown` is the ready `::: artifact` block |
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |
+| `GET /admin/artifacts` | Artifact library — every uploaded artifact with the posts / drafts / `/about` embedding it; `?filter=unused` shows orphans |
+| `POST /admin/artifacts/upload` | Same validation as `/admin/upload-artifact`, form post + redirect back with a flash |
+| `POST /admin/artifacts/{id}/replace` | Overwrite an existing artifact in place — ID kept, every embed picks up the new version (browsers may cache the old one ≤ 5 min) |
+| `POST /admin/artifacts/{id}/delete` | CSRF-protected unlink; embeds still pointing at it render "artifact not found" |
 | `GET /admin/series` | Discovered series + manifest/cover state |
 | `GET /admin/series/{slug}` · `POST /admin/series/{slug}` | Edit title, description, cover image |
 | `POST /admin/series/{slug}/preview` | Ordered-dither preview only — writes `.preview.webp` for confirm-before-commit |

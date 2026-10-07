@@ -838,7 +838,8 @@ button.admin-btn-sm { font-size: 10px; }
    override leaves the action cell snapped to the top. Desktop-only
    because the mobile rules below collapse cells into block stacks. */
 @media (min-width: 601px) {
-    .admin-series-table td {
+    .admin-series-table td,
+    .admin-artifacts-table td {
         vertical-align: middle !important;
         padding-top: 10px;
         padding-bottom: 10px;
@@ -848,10 +849,12 @@ button.admin-btn-sm { font-size: 10px; }
        which breaks table-cell vertical alignment — flex items center
        within the flex container's intrinsic height, not the row's table-
        cell height, so EDIT / DEL MANIFEST end up at a different baseline
-       than the cover thumb and date in the same row. Force this table
+       than the cover thumb and date in the same row (and the cell's bottom
+       border drops out of line with the row's). Force these tables
        back to `display: table-cell` and lay the buttons out as a small
        inline-block cluster that honours the cell's `vertical-align`. */
-    .admin-series-table td.admin-row-actions {
+    .admin-series-table td.admin-row-actions,
+    .admin-artifacts-table td.admin-row-actions {
         display: table-cell !important;
         white-space: nowrap;
         text-align: left;
@@ -861,17 +864,21 @@ button.admin-btn-sm { font-size: 10px; }
        EDIT (an <a>) stays vertically centered like DEL MANIFEST (a
        <button> with native text-centering). Only the wrapping <form>
        needs the inline-block + middle align shim. */
-    .admin-series-table td.admin-row-actions .admin-btn {
+    .admin-series-table td.admin-row-actions .admin-btn,
+    .admin-artifacts-table td.admin-row-actions .admin-btn {
         vertical-align: middle;
         margin-right: 6px;
     }
-    .admin-series-table td.admin-row-actions form {
+    .admin-series-table td.admin-row-actions form,
+    .admin-artifacts-table td.admin-row-actions form {
         display: inline-block;
         vertical-align: middle;
         margin-right: 6px;
     }
     .admin-series-table td.admin-row-actions form:last-child,
-    .admin-series-table td.admin-row-actions .admin-btn:last-child {
+    .admin-artifacts-table td.admin-row-actions form:last-child,
+    .admin-series-table td.admin-row-actions .admin-btn:last-child,
+    .admin-artifacts-table td.admin-row-actions .admin-btn:last-child {
         margin-right: 0;
     }
 }

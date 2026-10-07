@@ -375,6 +375,9 @@ fenced code blocks render as literal text, not embeds.
 
 Upload a self-contained `.html` page (Claude / ChatGPT / Codex artifact,
 max 5 MB) with the **cube** button in the editor toolbar (desktop + mobile).
+The cube first opens a picker of already-uploaded artifacts with a live
+preview, so one artifact can be embedded in several posts without
+re-uploading; `[ UPLOAD NEW .HTML ]` there goes to the file chooser.
 It is stored at `content/artifacts/{id}.html` and the editor inserts a
 block in the same family as `::: story`:
 

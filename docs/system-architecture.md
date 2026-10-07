@@ -261,6 +261,7 @@ Public visitors transparently warm the caches. No cron, no service.
 │       ├── share-quote.js                (selection → Canvas 2D quote card → PNG; /posts/* only, desktop, unprotected posts)
 │       ├── admin.css                     (admin-only)
 │       ├── admin-editor.js               (admin-only)
+│       ├── admin-artifact-picker.js      (admin editors; cube-button artifact library dialog)
 │       └── admin-security.js             (admin-only; /admin/security + /admin/login when WEBAUTHN=true)
 ├── src/                                  ← outside web root
 ├── views/                                ← outside web root

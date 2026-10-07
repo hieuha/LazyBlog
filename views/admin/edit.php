@@ -284,5 +284,6 @@ Body of the story card.
 <!-- Font Awesome 4 is loaded universally from layout.php (drives the
      EasyMDE toolbar glyphs + the .post-lock fa-lock badge). -->
 <script defer src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<script defer src="<?= App\Http::e(App\Http::asset('assets/admin-artifact-picker.js')) ?>"></script>
 <script defer src="<?= App\Http::e(App\Http::asset('assets/admin-editor.js')) ?>"></script>
 <script defer src="<?= App\Http::e(App\Http::asset('assets/artifact-embed.js')) ?>"></script>

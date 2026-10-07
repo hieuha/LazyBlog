@@ -371,6 +371,50 @@ fenced code blocks render as literal text, not embeds.
 
 ---
 
+## Interactive HTML artifacts
+
+Upload a self-contained `.html` page (Claude / ChatGPT / Codex artifact,
+max 5 MB) with the **cube** button in the editor toolbar (desktop + mobile).
+It is stored at `content/artifacts/{id}.html` and the editor inserts a
+block in the same family as `::: story`:
+
+```markdown
+::: artifact id="tcp-handshake-a1b2c3" title="TCP handshake, step by step"
+Optional **markdown** note shown under the frame.
+:::
+```
+
+- `id` — required, the uploaded artifact's ID (`[a-z0-9-]`). A missing or
+  malformed `id` leaves the block as plain text.
+- `title` — optional caption in the title bar (pre-filled from the page's
+  `<title>` on upload).
+- Body — optional markdown note under the frame; leave empty for none.
+
+Renders as a framed, interactive embed: title bar, fullscreen button
+(where the browser supports it), `OPEN ↗` link to the artifact in its own
+tab. The frame is the full column width and auto-fits the artifact's
+content height, so responsive artifacts reflow on phones like the rest of
+the post. A bare `/artifacts/{id}` path in prose is just text.
+
+Behaviour inside the sandbox (see `docs/security.md`):
+
+- Scripts, forms, modals, popups and downloads work; CDN scripts load.
+- `localStorage` / `sessionStorage` work but are **in-memory** — state
+  resets on reload. Cookies and IndexedDB are unavailable.
+- Height-only resizes caused by the auto-fit are hidden from the
+  artifact's `resize` listeners (they would otherwise feed back into the
+  fit); width changes — rotation, fullscreen — still reach it.
+- Pages sized `min-height: 100vh` keep the default frame height and
+  scroll inside it; use fullscreen / `OPEN ↗` for app-like artifacts.
+- Before uploading, resize the window a few times with the artifact open:
+  generated canvas code that re-reads sizes it wrote doubles on each
+  resize (worse on retina), which shows up as soon as you go fullscreen.
+
+Like `::: story`, the block is matched even inside fenced code. Artifact
+URLs are public even when the post is password-protected.
+
+---
+
 ## Admonitions
 
 Two block-level callouts using a `:::` fence.

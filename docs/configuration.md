@@ -58,6 +58,7 @@ You can still edit posts by writing markdown files into `content/posts/`.
 | `/plugin-assets/{slug}/{file}` | Plugin asset (CSS/JS/image/font). Served only when the plugin is enabled. Cache-busted via `?v=<mtime>`. See [`plugin-development.md`](plugin-development.md) |
 | `/series` | Index of all multi-part series — manifest-backed dot covers when present, QR fallback otherwise |
 | `/series/{slug}` | Single series with banner cover + ordered post list |
+| `/artifacts/{id}` | Uploaded interactive HTML artifact, embedded by `::: artifact` blocks. Served by PHP with `Content-Security-Policy: sandbox …` (no `allow-same-origin` → opaque origin, also on direct open), `X-Robots-Tag: noindex`, `Cache-Control: private, max-age=300`. ID regex `[a-z0-9-]` |
 | `/series-assets/{slug}/{file}` | Series cover image (`cover.webp` only). Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg`), realpath jail. Cache `max-age=86400` |
 | `/stalk` | Opt-in plugin: aggregated feed reader for LazyBlog friend blogs. Requires `PLUGINS=stalk`. See [`plugins/stalk/README.md`](../plugins/stalk/README.md) |
 
@@ -81,6 +82,7 @@ readers find the feed without a URL hint.
 | `POST /admin/remove-password/{slug}` | One-click: strip `password_hash:` from the post's frontmatter |
 | `POST /admin/preview` | Server-side markdown render for EasyMDE preview pane |
 | `POST /admin/upload` | Image upload — strips metadata, resizes to ≤1600px, returns `{url}` pointing at `/uploads/YYYY/MM/...webp`. Accepts PNG/JPEG/WebP up to 25 MB raw. **Server-side PHP-FPM limits still apply** — bump `upload_max_filesize=25M`, `post_max_size=30M`, `memory_limit=256M` in php.ini (or drop them in `public/.user.ini`) to actually let 25 MB uploads through, otherwise PHP rejects with `UPLOAD_ERR_INI_SIZE` before the controller even sees the file |
+| `POST /admin/upload-artifact` | Interactive HTML artifact upload — `.html`/`.htm`, text content, ≤ 5 MB, stored verbatim at `content/artifacts/{slug}-{6hex}.html`. Returns `{id, url, title, markdown}` where `markdown` is the ready `::: artifact` block |
 | `GET /admin/about` · `POST /admin/about/save` | Manage `content/about.md` — same EasyMDE editor + avatar upload reuses `/admin/upload` |
 | `GET /admin/series` | Discovered series + manifest/cover state |
 | `GET /admin/series/{slug}` · `POST /admin/series/{slug}` | Edit title, description, cover image |

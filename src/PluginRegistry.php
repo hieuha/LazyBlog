@@ -33,6 +33,7 @@ final class PluginRegistry
         '/llms.txt',
         '/feed.xml',
         '/plugin-assets',
+        '/artifacts',
         '/admin',
         '/posts',
         '/tags',

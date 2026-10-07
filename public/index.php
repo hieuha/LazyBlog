@@ -57,7 +57,10 @@ header(
     // Cloudflare Web Analytics POSTs the beacon to cloudflareinsights.com —
     // without this entry the script loads but every event is blocked.
     . "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com; "
-    . "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
+    // 'self' frames the post-embedded HTML artifacts (/artifacts/{id}).
+    // Those responses carry their own sandbox CSP, so framing them does
+    // not hand their scripts this origin.
+    . "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com; "
     . "frame-ancestors 'self'; "
     . "base-uri 'self'; "
     . "form-action 'self';"
@@ -100,6 +103,7 @@ $admin = new App\Controllers\AdminController($repo);
 $archive = new App\Controllers\ArchiveController($repo);
 $search = new App\Controllers\SearchController(new App\Searcher($repo));
 $upload = new App\Controllers\UploadController(__DIR__ . '/../content');
+$artifactCtl = new App\Controllers\ArtifactController(new App\ArtifactStore(__DIR__ . '/../content'));
 $series = new App\Controllers\SeriesController($repo, $seriesManifest);
 $seriesAssetCtl = new App\Controllers\SeriesAssetController($seriesManifest);
 $seriesCoverProcessor = new App\SeriesCoverProcessor($seriesManifest);
@@ -144,6 +148,7 @@ $router->post('/admin/set-password/{slug}', fn (array $p) => $admin->setPassword
 $router->post('/admin/remove-password/{slug}', fn (array $p) => $admin->removePassword($p));
 $router->post('/admin/preview', fn () => $admin->preview());
 $router->post('/admin/upload', fn () => $upload->upload());
+$router->post('/admin/upload-artifact', fn () => $artifactCtl->upload());
 $router->get('/admin/about', fn () => $adminAboutCtl->editForm());
 $router->post('/admin/about/save', fn () => $adminAboutCtl->save());
 $router->get('/admin/security', fn () => $adminSecurityCtl->index());
@@ -166,6 +171,7 @@ $router->post('/posts/{slug}/unlock', fn (array $p) => $post->unlockSubmit($p));
 $router->get('/posts/{slug}.md', fn (array $p) => $post->raw($p));
 $router->get('/posts/{slug}', fn (array $p) => $post->show($p));
 $router->get('/tags/{tag}', fn (array $p) => $tag->show($p));
+$router->get('/artifacts/{id}', fn (array $p) => $artifactCtl->serve($p));
 $router->get('/series', fn () => $series->index());
 $router->get('/series/{slug}', fn (array $p) => $series->show($p));
 $router->get('/llms.txt', fn () => $llmsCtl->index());

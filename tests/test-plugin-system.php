@@ -172,6 +172,7 @@ $cases = [
     ['/feed.xml', 'foo', false, 'core /feed.xml reserved'],
     ['/llms.txt', 'foo', false, 'core /llms.txt reserved'],
     ['/llms-full.txt', 'foo', false, 'core /llms-full.txt reserved'],
+    ['/artifacts/x-1a2b3c', 'foo', false, 'core /artifacts/* reserved'],
     ['/plugin-assets', 'foo', false, 'plugin-assets prefix reserved'],
     ['/plugin-assets/foo/x.css', 'foo', false, 'plugin-assets/* reserved'],
     ['/admin', 'foo', false, 'bare /admin reserved'],

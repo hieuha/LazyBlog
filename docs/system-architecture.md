@@ -157,6 +157,8 @@ build step. Everything runs in a single Caddy + php-fpm container pair.
 | `SeriesManifest` | Sidecar metadata for series under `content/series/{slug}/manifest.json` (title, description, updated_at) | Pure model — no HTTP / no Imagick. `load()` returns null for missing or malformed JSON; `save()` is atomic via `FileWriter` |
 | `SeriesCoverProcessor` | Convert uploaded image → 1-bit Atkinson dither WebP with transparent background | Hard dep on `ext-imagick` (`isAvailable()` gate); downscale-only (never upscale a small upload); preview / commit two-phase flow |
 | `SeriesAssetController` | Serve `content/series/{slug}/{file}` at `/series-assets/{slug}/{file}` | Slug + filename regex, MIME allowlist (`webp`/`png`/`jpg`/`jpeg` only — no `json`/`php`), realpath jail |
+| `ArtifactStore` | Validate + store uploaded HTML artifacts at `content/artifacts/{slug}-{6hex}.html`; title from `<title>` | `.html/.htm`, `text/*` magic bytes, ≤ 5 MB; ID regex before any path join; owns the shared `SANDBOX_FLAGS` |
+| `ArtifactController` | `POST /admin/upload-artifact`, `GET /artifacts/{id}` | Sandbox CSP (opaque origin, no `allow-same-origin`); injects in-memory Web Storage shim + content-height reporter |
 | `AdminSeriesController` | CRUD for series manifest + cover (list / edit / preview / save / delete) | Auth + CSRF + slug regex on every endpoint; manifest-delete keeps posts untouched (discovery still works via frontmatter) |
 | `WebAuthnCredential` | Readonly DTO for a registered FIDO2 credential | Holds `{id, publicKey (PEM), counter, name, transports, aaguid, createdAt, lastUsedAt}`; immutable; `withCounter()` returns a fresh instance |
 | `WebAuthnCredentialStore` | Atomic JSON storage at `content/admin/webauthn-credentials.json` | tempnam + LOCK_EX + rename for every write; per-operator `user_handle` generated once and pinned; duplicate credential IDs rejected on add() |
@@ -275,6 +277,7 @@ Public visitors transparently warm the caches. No cron, no service.
     │   ├── .llms.txt
     │   └── .feed.xml
     ├── uploads/                          ← admin-uploaded images (year/month subdirs)
+    ├── artifacts/                        ← uploaded HTML artifacts (PHP-served, sandboxed)
     ├── series/                           ← series manifests + covers
     ├── admin/                            ← operator-only — never web-served
     │   └── webauthn-credentials.json     ← FIDO2 credential store (gitignored by `/content/*`)

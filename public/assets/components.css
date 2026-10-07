@@ -364,6 +364,98 @@
     border: 0;
 }
 
+/* ---------- Interactive HTML artifact embeds (/artifacts/{id}) ----------
+   Full article-column width; the default height is a starting point only —
+   artifact-embed.js resizes the iframe to the height the artifact reports.
+   Artifacts bring their own palette, so the frame gets a neutral white
+   canvas (what most generated pages assume) inside a themed title bar. */
+.artifact-embed {
+    width: 100%;
+    margin: 28px 0;
+    border: 1px solid var(--primary-dim);
+    background: var(--panel);
+}
+.artifact-embed-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--primary-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--primary);
+}
+.artifact-embed-label {
+    flex: none;
+    color: var(--accent);
+}
+.artifact-embed-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.artifact-embed-actions {
+    flex: none;
+    display: flex;
+    gap: 6px;
+}
+.artifact-embed-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border: 1px solid var(--primary-dim);
+    background: transparent;
+    color: var(--primary);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+.artifact-embed-btn:hover,
+.artifact-embed-btn:focus-visible {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+}
+.artifact-embed-btn[hidden] {
+    display: none;
+}
+.artifact-embed iframe {
+    display: block;
+    width: 100%;
+    height: min(70vh, 560px);
+    border: 0;
+    background: #fff;
+}
+.artifact-embed-note {
+    padding: 8px 12px;
+    border-top: 1px solid var(--primary-dim);
+    font-size: 14px;
+    color: var(--text-dim);
+}
+.artifact-embed-note > :first-child { margin-top: 0; }
+.artifact-embed-note > :last-child { margin-bottom: 0; }
+.artifact-embed:fullscreen .artifact-embed-note {
+    display: none;
+}
+.artifact-embed:fullscreen {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+.artifact-embed:fullscreen iframe {
+    flex: 1;
+    /* Beats the inline height artifact-embed.js sets for in-page fitting. */
+    height: auto !important;
+}
+@media (max-width: 600px) {
+    .artifact-embed-label {
+        display: none;
+    }
+}
+
 /* ---------- Table of Contents (base styles; floating variant in post.css) ---------- */
 .toc {
     background: var(--panel);

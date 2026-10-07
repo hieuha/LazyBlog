@@ -74,6 +74,7 @@ final class MarkdownRenderer
         $pre = $this->preprocessStandaloneVideos($markdown);
         $pre = $this->preprocessStandaloneImages($pre);
         $pre = $this->preprocessYouTube($pre);
+        $pre = $this->preprocessArtifacts($pre);
         $pre = $this->preprocessAdmonitions($pre);
         $html = (string) $this->converter->convert($pre);
         $html = $this->reinjectStashed($html);
@@ -128,6 +129,56 @@ final class MarkdownRenderer
             $out[] = $line;
         }
         return implode("\n", $out);
+    }
+
+    /**
+     * `::: artifact id="{id}" title="Caption"` … `:::` block → stashed,
+     * sandboxed iframe embed. Same block family as `::: story`: `title` is
+     * optional, the body is optional markdown shown as a note under the
+     * frame. A block whose `id` is missing or malformed is left as plain
+     * text so the author sees the mistake. The editor's artifact-upload
+     * button inserts this shape (ArtifactController::embedBlock).
+     *
+     * The iframe starts at a CSS default height; artifact-embed.js then
+     * fits it to the height the artifact reports (see ArtifactController).
+     */
+    private function preprocessArtifacts(string $md): string
+    {
+        return (string) preg_replace_callback(
+            '/^:::[ \t]*artifact(?P<attrs>[^\n]*)\n(?:(?P<body>.*?)\n)?^:::[ \t]*$/sm',
+            function (array $m): string {
+                if (!preg_match('/\bid\s*=\s*"(' . ArtifactStore::ID_PATTERN . ')"/', $m['attrs'], $idm)) {
+                    return $m[0];
+                }
+                $caption = preg_match('/\btitle\s*=\s*"([^"]*)"/', $m['attrs'], $tm) ? trim($tm[1]) : '';
+                $src = Http::e('/artifacts/' . $idm[1]);
+                $title = Http::e($caption !== '' ? $caption : 'Interactive artifact');
+                $body = trim($m['body'] ?? '');
+                $note = $body !== ''
+                    ? '<div class="artifact-embed-note">' . $this->converter->convert($body) . '</div>'
+                    : '';
+
+                return $this->stash(
+                    '<figure class="artifact-embed">'
+                    . '<figcaption class="artifact-embed-bar">'
+                    . '<span class="artifact-embed-label">[ ARTIFACT ]</span>'
+                    . '<span class="artifact-embed-title">' . $title . '</span>'
+                    . '<span class="artifact-embed-actions">'
+                    . '<button type="button" class="artifact-embed-btn" data-artifact-fullscreen hidden'
+                    . ' title="Fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand" aria-hidden="true"></i></button>'
+                    . '<a class="artifact-embed-btn" href="' . $src . '" target="_blank" rel="noopener"'
+                    . ' title="Open in a new tab">OPEN <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>'
+                    . '</span>'
+                    . '</figcaption>'
+                    . '<iframe src="' . $src . '" title="' . $title . '" loading="lazy"'
+                    . ' sandbox="' . ArtifactStore::SANDBOX_FLAGS . '"'
+                    . ' allow="fullscreen; clipboard-write" data-artifact></iframe>'
+                    . $note
+                    . '</figure>'
+                );
+            },
+            $md,
+        );
     }
 
     /**

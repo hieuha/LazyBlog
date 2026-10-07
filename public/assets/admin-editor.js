@@ -76,18 +76,50 @@
     // `dither=true` flips the server routing to PostImageDitherer
     // instead of ImageProcessor; the response shape is identical.
     function runImageUpload(file, dither, onSuccess, onError) {
-        var label = dither ? 'Dithering ' : 'Uploading ';
-        showUploadStatus(label + (file.name || 'image') + '…');
+        var form = new FormData();
+        form.append('file', file);
+        if (dither) form.append('dither', '1');
+        var label = (dither ? 'Dithering ' : 'Uploading ') + (file.name || 'image') + '…';
+        postUpload('/admin/upload', form, label, function (data) { onSuccess(data.url); }, onError);
+    }
+
+    // Interactive HTML artifact upload. The server answers with the
+    // ready-made `::: artifact id="…" title="…"` block so the markdown
+    // syntax lives in one place (ArtifactController::embedBlock).
+    function runArtifactUpload(file, onSuccess, onError) {
+        var form = new FormData();
+        form.append('file', file);
+        postUpload('/admin/upload-artifact', form, 'Uploading artifact ' + (file.name || '') + '…',
+            function (data) { onSuccess(data.markdown); }, onError);
+    }
+
+    // Hidden one-shot .html picker shared by the EasyMDE and mobile
+    // toolbar ARTIFACT buttons.
+    function pickArtifact(onMarkdown) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.html,.htm,text/html';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.onchange = function () {
+            var f = input.files && input.files[0];
+            document.body.removeChild(input);
+            if (!f) return;
+            runArtifactUpload(f, onMarkdown, function (msg) { window.alert(msg); });
+        };
+        input.click();
+    }
+
+    // Shared POST + response handling for every upload endpoint. Calls
+    // onSuccess with the parsed JSON body.
+    function postUpload(endpoint, form, statusText, onSuccess, onError) {
+        showUploadStatus(statusText);
         // Re-read the meta tag each call so token rotation (e.g. on
         // login) doesn't leave a stale value cached in closure.
         var meta = document.querySelector('meta[name="csrf-token"]');
         var token = meta ? meta.getAttribute('content') : '';
 
-        var form = new FormData();
-        form.append('file', file);
-        if (dither) form.append('dither', '1');
-
-        fetch('/admin/upload', {
+        fetch(endpoint, {
             method: 'POST',
             headers: { 'X-CSRF-Token': token },
             body: form,
@@ -116,7 +148,7 @@
                     onError('Upload failed (HTTP ' + r.status + '): ' + (data.error || 'unknown'));
                     return;
                 }
-                onSuccess(data.url);
+                onSuccess(data);
             });
         }).catch(function (e) {
             hideUploadStatus();
@@ -291,6 +323,17 @@
                     className: 'fa fa-th',
                     title: 'Upload + Bayer dither',
                 },
+                {
+                    name: 'upload-artifact',
+                    action: function (editor) {
+                        pickArtifact(function (block) {
+                            // `:::` fences must start at column 0.
+                            editor.codemirror.replaceSelection('\n' + block + '\n');
+                        });
+                    },
+                    className: 'fa-solid fa-cube',
+                    title: 'Upload interactive HTML artifact',
+                },
                 '|', 'table', '|',
                 {
                     name: 'highlight',
@@ -453,6 +496,7 @@
             { label: '```', title: 'Code fence',                        action: insertCodeFence },
             { icon: 'fa-solid fa-link',            title: 'Link',                action: insertLink },
             { icon: 'fa-solid fa-cloud-arrow-up',  title: 'Upload image (multi)', action: function () { fileInput.click(); } },
+            { icon: 'fa-solid fa-cube',            title: 'Upload HTML artifact', action: function (ta) { pickArtifact(function (block) { insertBlock(block)(ta); }); } },
             { label: '!',  title: 'Highlight callout',                 action: insertBlock('::: highlight\nKey fact or callout.\n:::') },
             { icon: 'fa-solid fa-comment',         title: 'Story card',          action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
             { icon: 'fa-solid fa-eye',             title: 'Preview',             action: function () { openMobilePreview(textarea); } },

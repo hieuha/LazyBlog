@@ -32,7 +32,9 @@ final class PluginRegistry
     private const RESERVED_PREFIXES = [
         '/llms.txt',
         '/feed.xml',
+        '/sitemap.xml',
         '/plugin-assets',
+        '/series-assets',
         '/artifacts',
         '/admin',
         '/posts',
@@ -40,6 +42,7 @@ final class PluginRegistry
         '/series',
         '/archive',
         '/search',
+        '/writer',
         '/about',
         '/healthz',
         '/',

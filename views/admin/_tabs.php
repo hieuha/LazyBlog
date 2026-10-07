@@ -2,7 +2,7 @@
 /**
  * Shared admin section tabs.
  *
- * Renders `[ POSTS ]  [ SERIES ]  [ PLUGINS ]  [ SECURITY ]  [ LOG OUT ]`
+ * Renders `[ POSTS ]  [ SERIES ]  [ ARTIFACTS ]  [ PLUGINS ]  [ SECURITY ]  [ LOG OUT ]`
  * consistently across every admin index view (post list, series list,
  * security keys). The active tab carries the dotted underline + bright
  * color + an inline count `(N)` so the operator sees the metric for
@@ -11,9 +11,10 @@
  * the row without paying its way.
  *
  * Caller contract:
- *   `$activeTab`   : one of 'posts' | 'plugins' | 'security' | 'series'
+ *   `$activeTab`   : one of 'posts' | 'plugins' | 'security' | 'series' | 'artifacts'
  *   `$total`       : optional int — post count (only used when activeTab='posts')
  *   `$seriesCount` : optional int — series count (only used when activeTab='series')
+ *   `$artifactCount` : optional int — artifact count (only used when activeTab='artifacts')
  *
  * Plugin + security active counts are derived inline (cheap: plugin
  * registry already booted, credentials store is one small JSON read).
@@ -22,6 +23,7 @@
 /** @var string $activeTab */
 /** @var int|null $total */
 /** @var int|null $seriesCount */
+/** @var int|null $artifactCount */
 
 use App\Auth;
 use App\Csrf;
@@ -44,6 +46,10 @@ $seriesLabel = $activeTab === 'series' && isset($seriesCount)
     ? '[ SERIES (' . (int) $seriesCount . ') ]'
     : '[ SERIES ]';
 
+$artifactsLabel = $activeTab === 'artifacts' && isset($artifactCount)
+    ? '[ ARTIFACTS (' . (int) $artifactCount . ') ]'
+    : '[ ARTIFACTS ]';
+
 $ariaCurrent = static fn (string $name): string => $activeTab === $name
     ? 'aria-current="page" aria-selected="true"'
     : 'aria-selected="false"';
@@ -54,6 +60,9 @@ $ariaCurrent = static fn (string $name): string => $activeTab === $name
     </a>
     <a class="admin-tab" role="tab" href="/admin/series" <?= $ariaCurrent('series') ?>>
         <?= Http::e($seriesLabel) ?>
+    </a>
+    <a class="admin-tab" role="tab" href="/admin/artifacts" <?= $ariaCurrent('artifacts') ?>>
+        <?= Http::e($artifactsLabel) ?>
     </a>
     <?php if ($enabledPlugins !== []): ?>
         <a class="admin-tab" role="tab" href="/admin?tab=plugins" <?= $ariaCurrent('plugins') ?>>

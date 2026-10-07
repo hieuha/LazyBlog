@@ -1329,3 +1329,61 @@ input[type="file"].admin-file-input::file-selector-button:hover,
     font-size: 13px;
     margin: 12px 0 18px;
 }
+
+/* ---------- Artifact library (/admin/artifacts) ---------- */
+.admin-artifacts-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin-bottom: 14px;
+}
+.admin-artifacts-upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+/* <label> triggers styled as buttons (UPLOAD, REPLACE) wrap a hidden file input. */
+label.admin-btn { cursor: pointer; }
+.admin-artifacts-hint {
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+}
+.admin-artifacts-filter {
+    display: flex;
+    gap: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+.admin-artifacts-filter a {
+    color: var(--text-dim);
+    text-decoration: none;
+}
+.admin-artifacts-filter a[aria-current="page"] {
+    color: var(--primary);
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+}
+.admin-artifact-id {
+    color: var(--primary-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-artifact-usage a { text-decoration: none; }
+.admin-artifact-usage a:hover { text-decoration: underline dashed; }
+.admin-artifact-unused,
+.admin-artifact-draft {
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 1px 5px;
+    border: 1px dashed var(--primary-dim);
+    color: var(--text-dim);
+}

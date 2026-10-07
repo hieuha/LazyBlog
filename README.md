@@ -38,16 +38,19 @@ Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
 collapse into a CSS Grid gallery (`count-2` through `count-6`) with
 title-attribute captions. YouTube URLs still auto-embed as iframes.
 
-**Interactive HTML artifacts.** Upload a self-contained `.html` page —
+**Interactive HTML artifacts.** Drop in a self-contained `.html` page —
 the kind Claude, ChatGPT or Codex generate to illustrate a technical
-post — with the cube button in the editor, and a
-`::: artifact id="…" title="…"` block embeds it inline: full column width,
-auto-fitted to its content height, fullscreen + open-in-tab controls.
-Every artifact runs under a `sandbox` CSP without `allow-same-origin`, so
-its scripts (and the CDNs they pull) can animate and react to input but
-never touch the blog's cookies, storage, or page. The `/admin/artifacts`
-tab lists every artifact with the posts embedding it, and replaces one in
-place (same ID, every embed updates) or deletes orphans. See
+post — and one line embeds it inline:
+`::: artifact id="…" title="…" :::`. Full column width, auto-fitted to
+its content height, fullscreen + open-in-tab controls; the block form
+adds a markdown note under the frame. The editor's cube button opens a
+picker of every uploaded artifact with a live preview (filter,
+`↑`/`↓` + `Enter`), or uploads a new one. Every artifact runs under a
+`sandbox` CSP without `allow-same-origin`, so its scripts (and the CDNs
+they pull) can animate and react to input but never touch the blog's
+cookies, storage, or page. The `/admin/artifacts` tab lists every
+artifact with the posts embedding it, and replaces one in place (same
+ID, every embed updates) or deletes orphans. See
 `docs/markdown-syntax.md` → "Interactive HTML artifacts".
 
 **Margin sidenotes.** Standard `[^id]` footnotes render as Tufte-style
@@ -69,7 +72,7 @@ the admin routes. Shortcuts stand down while a form field or editor
 has focus, so EasyMDE's own `Cmd+K` keeps inserting links.
 
 **Quote cards from a text selection.** Highlight a passage in any post
-and a `[ § SHARE QUOTE ]` chip floats above it; clicking opens a modal
+and a `[ SHARE QUOTE ]` chip floats above it; clicking opens a modal
 that renders the quote onto a canvas card in the reader's own phosphor
 theme — pick the theme background or the post's own image blurred
 behind a dark scrim, pick 9:16 / 4:5 / 1:1, then download a PNG or copy
@@ -215,13 +218,15 @@ Backup with `rsync`. Restore in seconds.
 │  Browser admin UI     ·  EasyMDE + server-side prev │
 │  Mobile mini-toolbar  ·  IME-safe phone editor      │
 │  Zen Writer Mode      ·  iA-style typewriter focus  │
-│  Image column-width   ·  duotone tint + hover-orig │
+│  Image column-width   ·  duotone tint + hover-orig  │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
 │  HTML artifacts       ·  sandboxed, auto-height     │
+│  Artifact picker      ·  live preview + library tab │
+│  Quote cards          ·  canvas PNG + #:~:text link │
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
-│  Series with covers   ·  Bayer-dither WebP + manifest│
-│  Password-protected   ·  bcrypt + session unlock HUD │
+│  Series with covers   ·  Bayer-dither WebP manifest │
+│  Password-protected   ·  bcrypt + session unlock    │
 │  Search + Archive     ·  reading-progress meter     │
 │  Ctrl/Cmd+K palette   ·  Ctrl+, theme switcher      │
 │  SEO + JSON-LD        ·  OG + Twitter + sitemap     │
@@ -256,6 +261,12 @@ docker compose up -d --build
 docker compose exec app composer install
 open http://localhost:8080
 ```
+
+Port 8080 taken by something else? `WEB_PORT=8090 docker compose up -d`
+and open `http://localhost:8090` instead. Forgot the local admin
+password? `docker compose exec -it app php scripts/hash-password.php`,
+paste the printed `ADMIN_PASSWORD_HASH=…` line into `.env`, then
+`docker compose restart app`.
 
 **Local dev (no Docker):**
 
@@ -303,7 +314,9 @@ playbook.
 ```
 LazyBlog/
 ├── public/              # web root (front controller + assets)
-│   └── assets/          # base/effects/components/post/pages.css + admin.css + admin-editor.js
+│   └── assets/          # CSS split by concern (base/effects/components/post/pages/admin…)
+│                        # + route-scoped JS (site, palette, post, share-quote, artifact-embed,
+│                        #   admin-editor, admin-artifact-picker)
 ├── src/                 # PHP — Router, Controllers, PostRepository, MarkdownRenderer, Http...
 │   ├── Badges/          # gamification: BadgeKinds (compute templates) + BadgeRegistry (loader)
 │   ├── Plugin.php       # plugin contract — implemented by each enabled plugin

@@ -132,52 +132,65 @@ final class MarkdownRenderer
     }
 
     /**
-     * `::: artifact id="{id}" title="Caption"` … `:::` block → stashed,
-     * sandboxed iframe embed. Same block family as `::: story`: `title` is
-     * optional, the body is optional markdown shown as a note under the
-     * frame. A block whose `id` is missing or malformed is left as plain
-     * text so the author sees the mistake. The editor's artifact-upload
-     * button inserts this shape (ArtifactController::embedBlock).
+     * `::: artifact id="{id}" title="Caption" :::` one-liner, or the block
+     * form `::: artifact id="…" title="…"` … `:::` whose body is optional
+     * markdown shown as a note under the frame — same family as
+     * `::: story`. Either becomes a stashed, sandboxed iframe embed. `title`
+     * is optional. A block whose `id` is missing or malformed is left as
+     * plain text so the author sees the mistake. The editor inserts the
+     * one-liner (ArtifactController::embedBlock).
+     *
+     * One-liners are matched first: a block opener never ends in `:::`,
+     * so the two patterns cannot claim each other's lines.
      *
      * The iframe starts at a CSS default height; artifact-embed.js then
      * fits it to the height the artifact reports (see ArtifactController).
      */
     private function preprocessArtifacts(string $md): string
     {
+        $md = (string) preg_replace_callback(
+            '/^:::[ \t]*artifact(?P<attrs>[^\n]*?)[ \t]+:::[ \t]*$/m',
+            fn (array $m): string => $this->artifactEmbed($m[0], $m['attrs'], ''),
+            $md,
+        );
         return (string) preg_replace_callback(
             '/^:::[ \t]*artifact(?P<attrs>[^\n]*)\n(?:(?P<body>.*?)\n)?^:::[ \t]*$/sm',
-            function (array $m): string {
-                if (!preg_match('/\bid\s*=\s*"(' . ArtifactStore::ID_PATTERN . ')"/', $m['attrs'], $idm)) {
-                    return $m[0];
-                }
-                $caption = preg_match('/\btitle\s*=\s*"([^"]*)"/', $m['attrs'], $tm) ? trim($tm[1]) : '';
-                $src = Http::e('/artifacts/' . $idm[1]);
-                $title = Http::e($caption !== '' ? $caption : 'Interactive artifact');
-                $body = trim($m['body'] ?? '');
-                $note = $body !== ''
-                    ? '<div class="artifact-embed-note">' . $this->converter->convert($body) . '</div>'
-                    : '';
-
-                return $this->stash(
-                    '<figure class="artifact-embed">'
-                    . '<figcaption class="artifact-embed-bar">'
-                    . '<span class="artifact-embed-label">[ ARTIFACT ]</span>'
-                    . '<span class="artifact-embed-title">' . $title . '</span>'
-                    . '<span class="artifact-embed-actions">'
-                    . '<button type="button" class="artifact-embed-btn" data-artifact-fullscreen hidden'
-                    . ' title="Fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand" aria-hidden="true"></i></button>'
-                    . '<a class="artifact-embed-btn" href="' . $src . '" target="_blank" rel="noopener"'
-                    . ' title="Open in a new tab">OPEN <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>'
-                    . '</span>'
-                    . '</figcaption>'
-                    . '<iframe src="' . $src . '" title="' . $title . '" loading="lazy"'
-                    . ' sandbox="' . ArtifactStore::SANDBOX_FLAGS . '"'
-                    . ' allow="fullscreen; clipboard-write" data-artifact></iframe>'
-                    . $note
-                    . '</figure>'
-                );
-            },
+            fn (array $m): string => $this->artifactEmbed($m[0], $m['attrs'], $m['body'] ?? ''),
             $md,
+        );
+    }
+
+    /** Stashed embed HTML for one artifact block, or $source unchanged on a bad id. */
+    private function artifactEmbed(string $source, string $attrs, string $body): string
+    {
+        if (!preg_match('/\bid\s*=\s*"(' . ArtifactStore::ID_PATTERN . ')"/', $attrs, $idm)) {
+            return $source;
+        }
+        $caption = preg_match('/\btitle\s*=\s*"([^"]*)"/', $attrs, $tm) ? trim($tm[1]) : '';
+        $src = Http::e('/artifacts/' . $idm[1]);
+        $title = Http::e($caption !== '' ? $caption : 'Interactive artifact');
+        $body = trim($body);
+        $note = $body !== ''
+            ? '<div class="artifact-embed-note">' . $this->converter->convert($body) . '</div>'
+            : '';
+
+        return $this->stash(
+            '<figure class="artifact-embed">'
+            . '<figcaption class="artifact-embed-bar">'
+            . '<span class="artifact-embed-label">[ ARTIFACT ]</span>'
+            . '<span class="artifact-embed-title">' . $title . '</span>'
+            . '<span class="artifact-embed-actions">'
+            . '<button type="button" class="artifact-embed-btn" data-artifact-fullscreen hidden'
+            . ' title="Fullscreen" aria-label="Fullscreen"><i class="fa-solid fa-expand" aria-hidden="true"></i></button>'
+            . '<a class="artifact-embed-btn" href="' . $src . '" target="_blank" rel="noopener"'
+            . ' title="Open in a new tab">OPEN <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>'
+            . '</span>'
+            . '</figcaption>'
+            . '<iframe src="' . $src . '" title="' . $title . '" loading="lazy"'
+            . ' sandbox="' . ArtifactStore::SANDBOX_FLAGS . '"'
+            . ' allow="fullscreen; clipboard-write" data-artifact></iframe>'
+            . $note
+            . '</figure>'
         );
     }
 

@@ -227,11 +227,14 @@ HTML;
         return self::HEAD_RUNTIME . "\n" . $html;
     }
 
-    /** Markdown block the editor inserts — parsed by MarkdownRenderer. */
+    /**
+     * One-line markdown embed the editor inserts — parsed by MarkdownRenderer.
+     * Authors who want a note under the frame switch to the block form.
+     */
     public static function embedBlock(string $id, string $title): string
     {
         $caption = trim(str_replace('"', "'", $title));
-        return '::: artifact id="' . $id . '"' . ($caption !== '' ? ' title="' . $caption . '"' : '') . "\n:::";
+        return '::: artifact id="' . $id . '"' . ($caption !== '' ? ' title="' . $caption . '"' : '') . ' :::';
     }
 
     /** @return never */

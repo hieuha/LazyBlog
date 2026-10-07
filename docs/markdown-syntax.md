@@ -379,7 +379,14 @@ The cube first opens a picker of already-uploaded artifacts with a live
 preview, so one artifact can be embedded in several posts without
 re-uploading; `[ UPLOAD NEW .HTML ]` there goes to the file chooser.
 It is stored at `content/artifacts/{id}.html` and the editor inserts a
-block in the same family as `::: story`:
+one-line embed:
+
+```markdown
+::: artifact id="tcp-handshake-a1b2c3" title="TCP handshake, step by step" :::
+```
+
+To add a note under the frame, use the block form instead — same family
+as `::: story`:
 
 ```markdown
 ::: artifact id="tcp-handshake-a1b2c3" title="TCP handshake, step by step"
@@ -387,11 +394,13 @@ Optional **markdown** note shown under the frame.
 :::
 ```
 
+The one-liner's closing `:::` needs a space before it.
+
 - `id` — required, the uploaded artifact's ID (`[a-z0-9-]`). A missing or
   malformed `id` leaves the block as plain text.
 - `title` — optional caption in the title bar (pre-filled from the page's
   `<title>` on upload).
-- Body — optional markdown note under the frame; leave empty for none.
+- Body — block form only: optional markdown note under the frame.
 
 Renders as a framed, interactive embed: title bar, fullscreen button
 (where the browser supports it), `OPEN ↗` link to the artifact in its own

@@ -45,6 +45,9 @@ own scripts, so isolation comes from the browser sandbox, not filtering:
 - Height messages from artifacts are matched by `event.source` and only a
   clamped number is used; parent never evals artifact data.
 - IDs are regex-validated (`[a-z0-9-]`) before any filesystem access.
+- Library endpoints (`/admin/artifacts`, `…/upload`, `…/{id}/replace`,
+  `…/{id}/delete`) are auth-gated; mutations also require CSRF. Replace
+  runs the same validation as upload and only overwrites an existing ID.
 
 ## Image upload
 

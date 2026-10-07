@@ -45,7 +45,9 @@ post — with the cube button in the editor, and a
 auto-fitted to its content height, fullscreen + open-in-tab controls.
 Every artifact runs under a `sandbox` CSP without `allow-same-origin`, so
 its scripts (and the CDNs they pull) can animate and react to input but
-never touch the blog's cookies, storage, or page. See
+never touch the blog's cookies, storage, or page. The `/admin/artifacts`
+tab lists every artifact with the posts embedding it, and replaces one in
+place (same ID, every embed updates) or deletes orphans. See
 `docs/markdown-syntax.md` → "Interactive HTML artifacts".
 
 **Margin sidenotes.** Standard `[^id]` footnotes render as Tufte-style
@@ -329,6 +331,7 @@ LazyBlog/
 │   ├── test-plugin-system.php  # plugin registry + manifest + asset matcher
 │   ├── test-plugin-events.php  # post.save event broadcast to plugins
 │   ├── test-artifact-embeds.php # artifact store, sandbox serve, ::: artifact render
+│   ├── test-artifact-library.php # artifact list / replace / delete + usage scan
 │   ├── test-graffiti-*.php     # graffiti plugin: boot, friends, inbox,
 │   │                           # energy, outbox, rate-limit, moderation, render
 │   └── test-stalk-*.php        # stalk plugin: friend-store, post-cache, config,

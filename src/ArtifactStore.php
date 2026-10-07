@@ -62,12 +62,90 @@ final class ArtifactStore
     }
 
     /**
-     * Validate + persist an uploaded artifact.
+     * Every stored artifact, newest first.
+     *
+     * @return list<array{id:string,title:string,size:int,mtime:int}>
+     */
+    public function all(): array
+    {
+        $out = [];
+        foreach (glob($this->dir() . '/*.html') ?: [] as $path) {
+            $id = basename($path, '.html');
+            if (!self::validId($id)) {
+                continue;
+            }
+            $html = (string) @file_get_contents($path);
+            $out[] = [
+                'id' => $id,
+                'title' => self::extractTitle($html) ?? $id,
+                'size' => (int) @filesize($path),
+                'mtime' => (int) @filemtime($path),
+            ];
+        }
+        usort($out, static fn (array $a, array $b): int => [$b['mtime'], $a['id']] <=> [$a['mtime'], $b['id']]);
+        return $out;
+    }
+
+    /**
+     * Validate + persist an uploaded artifact under a fresh ID.
      *
      * @return array{id:string,title:string}
      * @throws RuntimeException with a user-facing message on rejection
      */
     public function save(string $tmpPath, string $originalName): array
+    {
+        $html = $this->validatedUpload($tmpPath, $originalName);
+        $baseName = (string) pathinfo($originalName, PATHINFO_FILENAME);
+
+        $slug = SlugUtil::fromTitle($baseName);
+        $slug = substr($slug !== '' ? $slug : 'artifact', 0, 60);
+        $slug = rtrim($slug, '-');
+
+        $dir = $this->dir();
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new RuntimeException('Cannot create artifact directory. Check server logs.');
+        }
+
+        do {
+            $id = $slug . '-' . bin2hex(random_bytes(3));
+        } while (is_file($dir . '/' . $id . '.html'));
+
+        FileWriter::writeAtomic($dir . '/' . $id . '.html', $html);
+
+        return ['id' => $id, 'title' => self::extractTitle($html) ?? trim($baseName)];
+    }
+
+    /**
+     * Overwrite an existing artifact in place. The ID — and therefore every
+     * `::: artifact` block pointing at it — stays the same, so fixing a
+     * buggy artifact never means editing the posts that embed it.
+     *
+     * @return array{id:string,title:string}
+     * @throws RuntimeException
+     */
+    public function replace(string $id, string $tmpPath, string $originalName): array
+    {
+        $path = $this->path($id);
+        if ($path === null) {
+            throw new RuntimeException('Artifact not found.');
+        }
+        $html = $this->validatedUpload($tmpPath, $originalName);
+        FileWriter::writeAtomic($path, $html);
+        return ['id' => $id, 'title' => self::extractTitle($html) ?? $id];
+    }
+
+    public function delete(string $id): bool
+    {
+        $path = $this->path($id);
+        return $path !== null && @unlink($path);
+    }
+
+    /**
+     * Shared upload checks for save() and replace().
+     *
+     * @throws RuntimeException
+     */
+    private function validatedUpload(string $tmpPath, string $originalName): string
     {
         $ext = strtolower((string) pathinfo($originalName, PATHINFO_EXTENSION));
         if (!isset(self::ACCEPTED_EXT[$ext])) {
@@ -90,26 +168,7 @@ final class ArtifactStore
             throw new RuntimeException("Unsupported artifact type: {$mime}.");
         }
 
-        $html = (string) file_get_contents($tmpPath);
-        $baseName = (string) pathinfo($originalName, PATHINFO_FILENAME);
-        $title = self::extractTitle($html) ?? trim($baseName);
-
-        $slug = SlugUtil::fromTitle($baseName);
-        $slug = substr($slug !== '' ? $slug : 'artifact', 0, 60);
-        $slug = rtrim($slug, '-');
-
-        $dir = $this->dir();
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            throw new RuntimeException('Cannot create artifact directory. Check server logs.');
-        }
-
-        do {
-            $id = $slug . '-' . bin2hex(random_bytes(3));
-        } while (is_file($dir . '/' . $id . '.html'));
-
-        FileWriter::writeAtomic($dir . '/' . $id . '.html', $html);
-
-        return ['id' => $id, 'title' => $title];
+        return (string) file_get_contents($tmpPath);
     }
 
     /** First `<title>` of the document, whitespace-collapsed and length-capped. */

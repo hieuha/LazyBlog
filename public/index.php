@@ -103,7 +103,8 @@ $admin = new App\Controllers\AdminController($repo);
 $archive = new App\Controllers\ArchiveController($repo);
 $search = new App\Controllers\SearchController(new App\Searcher($repo));
 $upload = new App\Controllers\UploadController(__DIR__ . '/../content');
-$artifactCtl = new App\Controllers\ArtifactController(new App\ArtifactStore(__DIR__ . '/../content'));
+$artifactStore = new App\ArtifactStore(__DIR__ . '/../content');
+$artifactCtl = new App\Controllers\ArtifactController($artifactStore);
 $series = new App\Controllers\SeriesController($repo, $seriesManifest);
 $seriesAssetCtl = new App\Controllers\SeriesAssetController($seriesManifest);
 $seriesCoverProcessor = new App\SeriesCoverProcessor($seriesManifest);
@@ -115,6 +116,10 @@ $writerCtl = new App\Controllers\WriterController($repo);
 $webauthnStore = new App\WebAuthnCredentialStore();
 $webAuthn = new App\WebAuthn($webauthnStore);
 $adminSecurityCtl = new App\Controllers\AdminSecurityController($webauthnStore, $webAuthn);
+$adminArtifactsCtl = new App\Controllers\AdminArtifactsController(
+    $artifactStore,
+    new App\ArtifactUsageScanner($repo, $aboutRepo->path()),
+);
 
 $router = new App\Router();
 
@@ -164,6 +169,10 @@ $router->post('/admin/series/{slug}/preview', fn (array $p) => $adminSeries->pre
 $router->post('/admin/series/{slug}/attach', fn (array $p) => $adminSeries->attach($p));
 $router->post('/admin/series/{slug}/rename', fn (array $p) => $adminSeries->rename($p));
 $router->post('/admin/series/{slug}/delete', fn (array $p) => $adminSeries->delete($p));
+$router->get('/admin/artifacts', fn () => $adminArtifactsCtl->index());
+$router->post('/admin/artifacts/upload', fn () => $adminArtifactsCtl->upload());
+$router->post('/admin/artifacts/{id}/replace', fn (array $p) => $adminArtifactsCtl->replace($p));
+$router->post('/admin/artifacts/{id}/delete', fn (array $p) => $adminArtifactsCtl->delete($p));
 $router->get('/admin', fn () => $admin->index());
 
 // Public.

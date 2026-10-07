@@ -413,6 +413,21 @@ Behaviour inside the sandbox (see `docs/security.md`):
 Like `::: story`, the block is matched even inside fenced code. Artifact
 URLs are public even when the post is password-protected.
 
+### Artifact library (`/admin/artifacts`)
+
+The **ARTIFACTS** admin tab lists every uploaded artifact, newest first,
+with the posts (drafts flagged) and `/about` page that embed it, found by
+scanning markdown for `::: artifact id="…"`. Filter `UNUSED` shows orphans.
+Per row:
+
+- `VIEW` — open the artifact in its own (sandboxed) tab.
+- `COPY` — copy a ready `::: artifact` block to the clipboard.
+- `REPLACE` — upload a new version under the **same ID**, so every post
+  embedding it updates without edits (browsers may keep the old copy for
+  up to 5 minutes).
+- `DEL` — delete the file; the confirm dialog names the posts still
+  embedding it, which then render "artifact not found".
+
 ---
 
 ## Admonitions

@@ -517,6 +517,7 @@ $favicon = 'data:image/svg+xml,'
         {label: 'NEW POST',        href: '/admin/new'},
         {label: 'ADMIN: ABOUT',    href: '/admin/about'},
         {label: 'ADMIN: SERIES',   href: '/admin/series'},
+        {label: 'ADMIN: ARTIFACTS', href: '/admin/artifacts'},
         {label: 'ADMIN: SECURITY', href: '/admin/security'}
     ];</script>
 <?php endif; ?>

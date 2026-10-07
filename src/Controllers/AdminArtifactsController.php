@@ -14,6 +14,7 @@ use App\Http;
  * Admin library for uploaded HTML artifacts.
  *
  *   GET  /admin/artifacts                — list (+ `?filter=unused`)
+ *   GET  /admin/artifacts?format=json    — same list for the editor's picker
  *   POST /admin/artifacts/upload         — add a new artifact
  *   POST /admin/artifacts/{id}/replace   — overwrite in place, ID kept
  *   POST /admin/artifacts/{id}/delete    — remove the file
@@ -32,6 +33,10 @@ final class AdminArtifactsController
     public function index(): void
     {
         Auth::requireAuth();
+        if (($_GET['format'] ?? '') === 'json') {
+            $this->json();
+            return;
+        }
 
         $usage = $this->usage->usageById();
         $artifacts = [];
@@ -57,6 +62,34 @@ final class AdminArtifactsController
             'maxMb' => ArtifactStore::MAX_BYTES / 1024 / 1024,
             'flash' => $this->consumeFlash(),
         ]);
+    }
+
+    /**
+     * The library as JSON for the editor's artifact picker: pick an existing
+     * artifact (with live preview) instead of re-uploading the same file.
+     */
+    private function json(): void
+    {
+        $usage = $this->usage->usageById();
+        $items = [];
+        foreach ($this->store->all() as $a) {
+            $items[] = [
+                'id' => $a['id'],
+                'title' => $a['title'],
+                'size' => $a['size'],
+                'mtime' => $a['mtime'],
+                'usedIn' => count($usage[$a['id']] ?? []),
+                'block' => ArtifactController::embedBlock($a['id'], $a['title']),
+            ];
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        echo json_encode([
+            'artifacts' => $items,
+            'sandbox' => ArtifactStore::SANDBOX_FLAGS,
+            'maxBytes' => ArtifactStore::MAX_BYTES,
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     public function upload(): void

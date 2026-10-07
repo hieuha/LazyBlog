@@ -1394,3 +1394,142 @@ label.admin-btn { cursor: pointer; }
     border: 1px dashed var(--primary-dim);
     color: var(--text-dim);
 }
+
+/* ---------- Artifact picker (editor cube button) ----------
+   Driven by admin-artifact-picker.js: list of uploaded artifacts on the
+   left, sandboxed live preview on the right, upload-new as the escape
+   hatch. Stacks vertically on phones. */
+.artifact-picker-open { overflow: hidden; }
+.artifact-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;   /* above EasyMDE fullscreen (9999) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: admin-confirm-fade 0.18s ease;
+}
+.artifact-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.artifact-picker-panel {
+    position: relative;
+    width: min(1100px, 94vw);
+    height: min(720px, 88vh);
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 1px var(--primary-glow), 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+.artifact-picker-head,
+.artifact-picker-foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+.artifact-picker-head { border-bottom: 1px solid var(--border); }
+.artifact-picker-foot { border-top: 1px solid var(--border); }
+.artifact-picker-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    white-space: nowrap;
+}
+.artifact-picker-search { flex: 1 1 auto; min-width: 0; margin: 0; }
+.artifact-picker-spacer { flex: 1 1 auto; }
+.artifact-picker-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(240px, 34%) 1fr;
+}
+.artifact-picker-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+}
+.artifact-picker-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 14px;
+    border-bottom: 1px dashed var(--border);
+    border-left: 2px solid transparent;
+    cursor: pointer;
+}
+.artifact-picker-item:hover { background: var(--primary-glow); }
+.artifact-picker-item[aria-selected="true"] {
+    border-left-color: var(--primary);
+    background: var(--primary-glow);
+}
+.artifact-picker-item-title { color: var(--text); font-size: 14px; line-height: 1.35; }
+.artifact-picker-item[aria-selected="true"] .artifact-picker-item-title { color: var(--primary); }
+.artifact-picker-item-meta,
+.artifact-picker-item-usage {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.artifact-picker-item-usage { color: var(--primary-dim); letter-spacing: 1px; }
+.artifact-picker-item-usage.is-unused { color: var(--text-dim); }
+.artifact-picker-preview {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.artifact-picker-preview-bar {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    min-height: 32px;
+}
+.artifact-picker-preview-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artifact-picker-preview-open { color: var(--primary); text-decoration: none; white-space: nowrap; }
+.artifact-picker-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    border: 0;
+    background: #fff;   /* most generated artifacts assume a light page */
+}
+.artifact-picker-frame[hidden] { display: none; }
+.artifact-picker-placeholder {
+    margin: auto;
+    padding: 24px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+}
+.artifact-picker-placeholder[hidden] { display: none; }
+@media (max-width: 700px) {
+    .artifact-picker-panel { width: 100vw; height: 100dvh; border: 0; }
+    .artifact-picker-body { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; }
+    .artifact-picker-list { border-right: 0; border-bottom: 1px solid var(--border); }
+    .artifact-picker-tag { display: none; }
+    .artifact-picker-foot { gap: 8px; padding: 10px 12px; }
+    .artifact-picker-cancel { display: none; }   /* ESC in the header closes */
+}
+.artifact-picker .admin-btn { white-space: nowrap; }
+.artifact-picker .admin-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }

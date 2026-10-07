@@ -93,9 +93,23 @@
             function (data) { onSuccess(data.markdown); }, onError);
     }
 
-    // Hidden one-shot .html picker shared by the EasyMDE and mobile
-    // toolbar ARTIFACT buttons.
+    // Toolbar ARTIFACT buttons (EasyMDE + mobile): open the library picker
+    // (admin-artifact-picker.js) to reuse an uploaded artifact, falling
+    // through to the OS file chooser when the user asks to upload a new
+    // one — or straight to it if the picker script failed to load.
     function pickArtifact(onMarkdown) {
+        if (window.LazyArtifactPicker) {
+            window.LazyArtifactPicker.open({
+                onInsert: onMarkdown,
+                onUpload: function () { uploadNewArtifact(onMarkdown); }
+            });
+        } else {
+            uploadNewArtifact(onMarkdown);
+        }
+    }
+
+    // Hidden one-shot .html file input.
+    function uploadNewArtifact(onMarkdown) {
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = '.html,.htm,text/html';
@@ -332,7 +346,7 @@
                         });
                     },
                     className: 'fa-solid fa-cube',
-                    title: 'Upload interactive HTML artifact',
+                    title: 'Insert interactive HTML artifact',
                 },
                 '|', 'table', '|',
                 {
@@ -496,7 +510,7 @@
             { label: '```', title: 'Code fence',                        action: insertCodeFence },
             { icon: 'fa-solid fa-link',            title: 'Link',                action: insertLink },
             { icon: 'fa-solid fa-cloud-arrow-up',  title: 'Upload image (multi)', action: function () { fileInput.click(); } },
-            { icon: 'fa-solid fa-cube',            title: 'Upload HTML artifact', action: function (ta) { pickArtifact(function (block) { insertBlock(block)(ta); }); } },
+            { icon: 'fa-solid fa-cube',            title: 'Insert HTML artifact', action: function (ta) { pickArtifact(function (block) { insertBlock(block)(ta); }); } },
             { label: '!',  title: 'Highlight callout',                 action: insertBlock('::: highlight\nKey fact or callout.\n:::') },
             { icon: 'fa-solid fa-comment',         title: 'Story card',          action: insertBlock('::: story icon="🌕" title="A story"\nBody.\n:::') },
             { icon: 'fa-solid fa-eye',             title: 'Preview',             action: function () { openMobilePreview(textarea); } },

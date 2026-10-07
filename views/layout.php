@@ -521,6 +521,13 @@ $favicon = 'data:image/svg+xml,'
     ];</script>
 <?php endif; ?>
 <script defer src="<?= Http::e(Http::asset('assets/palette.js')) ?>"></script>
+<?php /* Fits /artifacts/{id} iframes to their reported content height
+     + fullscreen button. Only where rendered markdown can embed one: post
+     pages and /about (the admin editors load it from their own views for
+     the live preview). */ ?>
+<?php if ($isPost || $path === '/about'): ?>
+    <script defer src="<?= Http::e(Http::asset('assets/artifact-embed.js')) ?>"></script>
+<?php endif; ?>
 <?php if ($isPost): ?>
     <?php
     // Prism syntax highlighting for fenced code blocks. Loaded only on

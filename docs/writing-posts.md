@@ -81,12 +81,12 @@ The editor (EasyMDE pinned to 2.18.0) includes:
   - heading · bold · italic · strikethrough
   - quote · unordered-list · ordered-list · task-list · highlight-mark
   - code · link
-  - image · upload-image · upload-dither
+  - image · upload-image · upload-dither · upload-artifact
   - table
   - highlight-callout · story
   - preview · side-by-side · fullscreen
   - guide
-- Custom buttons: `!` inserts `::: highlight`, `💬` inserts `::: story icon="..." title="..."`
+- Custom buttons: `!` inserts `::: highlight`, `💬` inserts `::: story icon="..." title="..."`, the cube (`fa-cube`) uploads an interactive `.html` artifact and inserts `::: artifact id="..." title="..."` (see `docs/markdown-syntax.md` → "Interactive HTML artifacts")
 - `Cmd-P` toggle preview, `F9` side-by-side, `F11` fullscreen
 - Tag chip input — type a tag + Enter/comma to add, click `×` or Backspace to remove
 - Series input auto-slugifies as you type — Vietnamese diacritics get
@@ -154,6 +154,7 @@ Mini-toolbar buttons:
 | `` ``` `` | Code fence (`` ```...``` ``) with leading-newline guard |
 | 🔗 (`fa-link`) | Link — prompts for URL + text |
 | 📤 (`fa-cloud-upload`) | Upload image — opens native file picker (multi-select) |
+| 🧊 (`fa-cube`) | Upload interactive HTML artifact — inserts `::: artifact id="…" title="…"` |
 | `!` | Insert `::: highlight` callout admonition |
 | 💬 (`fa-comment`) | Insert `::: story` card |
 | 👁 (`fa-eye`) | Preview — opens iframe modal that loads the post page stylesheet bundle |

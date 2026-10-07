@@ -38,6 +38,16 @@ Hermes-style autoplay loop muted ambient. Adjacent `![]()` lines
 collapse into a CSS Grid gallery (`count-2` through `count-6`) with
 title-attribute captions. YouTube URLs still auto-embed as iframes.
 
+**Interactive HTML artifacts.** Upload a self-contained `.html` page —
+the kind Claude, ChatGPT or Codex generate to illustrate a technical
+post — with the cube button in the editor, and a
+`::: artifact id="…" title="…"` block embeds it inline: full column width,
+auto-fitted to its content height, fullscreen + open-in-tab controls.
+Every artifact runs under a `sandbox` CSP without `allow-same-origin`, so
+its scripts (and the CDNs they pull) can animate and react to input but
+never touch the blog's cookies, storage, or page. See
+`docs/markdown-syntax.md` → "Interactive HTML artifacts".
+
 **Margin sidenotes.** Standard `[^id]` footnotes render as Tufte-style
 sidenotes: on wide screens each note floats into the right margin level with
 its reference, leaving the reading column full width; narrower screens fall
@@ -205,6 +215,7 @@ Backup with `rsync`. Restore in seconds.
 │  Zen Writer Mode      ·  iA-style typewriter focus  │
 │  Image column-width   ·  duotone tint + hover-orig │
 │  YouTube auto-embed   ·  .webm/.mp4 → <video>       │
+│  HTML artifacts       ·  sandboxed, auto-height     │
 │  Image gallery grid   ·  caption via title-attr     │
 │  Plugins (opt-in)     ·  drop folder, set PLUGINS=  │
 │  Series with covers   ·  Bayer-dither WebP + manifest│
@@ -305,6 +316,7 @@ LazyBlog/
 │   └── stalk/           # pull-only LazyBlog feed reader at /stalk (top-N latest per friend)
 ├── content/             # markdown posts + about + badges.json (mostly gitignored)
 │   ├── posts/           # YYYY-MM-DD-slug.md
+│   ├── artifacts/       # uploaded interactive HTML artifacts (sandbox-served)
 │   ├── about.md         # /about page source
 │   ├── badges.json      # streak + badge catalogue (allowlisted in .gitignore)
 │   └── plugins/         # plugin-private storage (gitignored, backed up via rsync)
@@ -316,6 +328,7 @@ LazyBlog/
 │   ├── test-gamification.php   # streak math
 │   ├── test-plugin-system.php  # plugin registry + manifest + asset matcher
 │   ├── test-plugin-events.php  # post.save event broadcast to plugins
+│   ├── test-artifact-embeds.php # artifact store, sandbox serve, ::: artifact render
 │   ├── test-graffiti-*.php     # graffiti plugin: boot, friends, inbox,
 │   │                           # energy, outbox, rate-limit, moderation, render
 │   └── test-stalk-*.php        # stalk plugin: friend-store, post-cache, config,

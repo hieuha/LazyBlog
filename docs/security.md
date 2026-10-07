@@ -27,6 +27,25 @@ Acceptable because posts are author-only. If multi-author writing is added
 later, switch to `'escape'` and re-implement admonition reinjection on the
 escaped form.
 
+## Interactive HTML artifacts
+
+Uploaded artifacts (`POST /admin/upload-artifact`, auth + CSRF, `.html`
+text ≤ 5 MB) are stored **verbatim** in `content/artifacts/` and run their
+own scripts, so isolation comes from the browser sandbox, not filtering:
+
+- `GET /artifacts/{id}` is served by PHP (never the static file server)
+  with `Content-Security-Policy: sandbox allow-scripts allow-forms
+  allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads;
+  frame-ancestors 'self'`. No `allow-same-origin` → opaque origin even when
+  the URL is opened directly: no access to blog cookies, storage, the
+  parent DOM, or credentialed same-origin responses. No
+  `allow-top-navigation` → can't redirect the reader.
+- The embedding `<iframe>` repeats the same `sandbox` flags.
+- Fetch directives are left open on purpose (artifacts pull CDNs).
+- Height messages from artifacts are matched by `event.source` and only a
+  clamped number is used; parent never evals artifact data.
+- IDs are regex-validated (`[a-z0-9-]`) before any filesystem access.
+
 ## Image upload
 
 `/admin/upload` is a state-changing endpoint guarded by:
@@ -201,7 +220,7 @@ Content-Security-Policy: default-src 'self';
     font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:;
     img-src 'self' data: https:;
     connect-src 'self';
-    frame-src https://www.youtube-nocookie.com https://www.youtube.com;
+    frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com;
     frame-ancestors 'self';
     base-uri 'self';
     form-action 'self';

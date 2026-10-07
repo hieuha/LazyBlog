@@ -11,6 +11,7 @@ content/
 ├── posts/                  # your authored markdown files (PRESERVE)
 ├── uploads/                # admin-UI image uploads, year/month subdirs (PRESERVE)
 ├── series/                 # series manifests + dithered covers (PRESERVE)
+├── artifacts/              # uploaded interactive HTML artifacts (PRESERVE)
 ├── admin/                  # operator-only — WebAuthn credential store (PRESERVE)
 ├── plugins/                # plugin-private storage (PRESERVE)
 ├── .index.json             # frontmatter cache — regenerated on demand (SKIP)
@@ -20,7 +21,7 @@ content/
 
 The `.*` dotfiles are caches that rebuild automatically when posts change,
 so the only state you really need to preserve is `content/posts/`,
-`content/uploads/`, `content/series/`, `content/admin/`, and
+`content/uploads/`, `content/series/`, `content/artifacts/`, `content/admin/`, and
 `content/plugins/` (if any plugins store persistent state). The script
 archives the whole `content/` directory which is simpler — caches add a few
 KB, uploads and series cover WebPs add whatever you've uploaded (typically

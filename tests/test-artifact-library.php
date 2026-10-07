@@ -92,6 +92,8 @@ note
 
 ::: artifact id="{$a['id']}"
 :::
+
+::: artifact id="oneliner-abc123" title="One" :::
 MD);
 file_put_contents($root . '/posts/2026-10-02-draft-uses-other.md', <<<MD
 ---
@@ -116,6 +118,7 @@ check('usage: post found, duplicate embeds counted once', count($usage[$a['id']]
 check('usage: attribute order does not matter, drafts flagged', ($usage['other-abc123'][0]['draft'] ?? null) === true);
 check('usage: /about counted', ($usage['other-abc123'][1]['url'] ?? '') === '/about');
 check('usage: bare path in prose is not usage', !isset($usage['ghost-000000']));
+check('usage: one-line embed counted', ($usage['oneliner-abc123'][0]['title'] ?? '') === 'Uses Alpha');
 
 echo "\n{$pass} passed, {$fail} failed\n";
 exit($fail === 0 ? 0 : 1);

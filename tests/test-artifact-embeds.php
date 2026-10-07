@@ -111,11 +111,11 @@ check('inject: fragment gets shim first, reporter last', str_starts_with($frag, 
 
 check(
     'embedBlock: caption quotes neutralised',
-    ArtifactController::embedBlock('a-1b2c3d', 'Say "hi"') === "::: artifact id=\"a-1b2c3d\" title=\"Say 'hi'\"\n:::",
+    ArtifactController::embedBlock('a-1b2c3d', 'Say "hi"') === "::: artifact id=\"a-1b2c3d\" title=\"Say 'hi'\" :::",
 );
 check(
     'embedBlock: no title attr when caption empty',
-    ArtifactController::embedBlock('a-1b2c3d', '') === "::: artifact id=\"a-1b2c3d\"\n:::",
+    ArtifactController::embedBlock('a-1b2c3d', '') === "::: artifact id=\"a-1b2c3d\" :::",
 );
 
 // --- Renderer ------------------------------------------------------------
@@ -140,6 +140,21 @@ check('render: malformed id left as text', !str_contains($badId, '<iframe'));
 
 $noId = $r->render("::: artifact title=\"x\"\n:::\n")['html'];
 check('render: missing id left as text', !str_contains($noId, '<iframe'));
+
+$one = $r->render("Intro\n\n" . ArtifactController::embedBlock($id, 'One <liner>') . "\n\nOutro\n")['html'];
+check('render: one-liner embeds', substr_count($one, '<iframe') === 1
+    && str_contains($one, 'One &lt;liner&gt;') && !str_contains($one, 'artifact-embed-note'));
+check('render: one-liner leaves no stray :::', !str_contains($one, ':::')
+    && str_contains($one, '<p>Intro</p>') && str_contains($one, '<p>Outro</p>'));
+
+$mixed = $r->render("::: artifact id=\"{$id}\" :::\n\n::: artifact id=\"{$id}\" title=\"B\"\nnote B\n:::\n\n::: artifact id=\"{$id}\":::\n")['html'];
+check('render: one-liners and block form side by side', substr_count($mixed, '<iframe') === 2
+    && substr_count($mixed, 'artifact-embed-note') === 1 && str_contains($mixed, 'note B'));
+check('render: closing ::: needs a space before it', str_contains($mixed, 'id=&quot;' . $id . '&quot;:::')
+    || str_contains($mixed, 'id="' . $id . '":::'));
+
+$badOne = $r->render("::: artifact id=\"../etc\" :::\n")['html'];
+check('render: one-liner with malformed id left as text', !str_contains($badOne, '<iframe'));
 
 $inline = $r->render("See /artifacts/{$id} for details.\n")['html'];
 check('render: bare path is not an embed', !str_contains($inline, '<iframe'));

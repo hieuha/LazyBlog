@@ -459,6 +459,24 @@ reopen the tab after an accidental close. Cleared from localStorage after succes
 **Unsaved-changes guard** — navigating away with unsaved edits triggers a
 browser confirm. Cleared on actual SAVE.
 
+## Artifact library (`/admin/artifacts`)
+
+The **ARTIFACTS** tab (also `ADMIN: ARTIFACTS` in the `Ctrl/Cmd+K`
+palette) manages uploaded HTML artifacts outside the post editor:
+
+- Upload a `.html` page directly — no post needed yet. Then `COPY` the
+  ready `::: artifact` block and paste it into any post.
+- `USED IN` lists the posts (drafts flagged `DRAFT`) and `/about` that
+  embed each artifact; click one to open its editor. `UNUSED` filters to
+  orphans left behind by deleted or rewritten posts.
+- `REPLACE` uploads a fixed version under the **same ID**, so posts never
+  need editing. Readers whose browser already loaded the old version may
+  see it for up to 5 minutes.
+- `DEL` warns with the list of posts still embedding the artifact.
+
+Embed syntax and sandbox behaviour: `docs/markdown-syntax.md` →
+"Interactive HTML artifacts".
+
 ## Password-protected posts
 
 Lock a single post behind a password without changing the rest of the

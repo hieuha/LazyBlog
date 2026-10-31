@@ -1,6 +1,11 @@
 services:
   app:
-    build: .
+    # `pull: true` — always check the registry for a newer php:8.2-fpm-alpine
+    # base before building. Without it a stale local base (PHP < 8.2.35,
+    # PHP2Shell CVE-2026-109618/109619) silently wins on `compose up --build`.
+    build:
+      context: .
+      pull: true
     container_name: lazyblog-app
     volumes:
       - .:/var/www/html
@@ -36,7 +41,9 @@ services:
   # GRAFFITI_DEV=1, so the in-container outbox actually reaches the host
   # port mapping.
   app-b:
-    build: .
+    build:
+      context: .
+      pull: true
     container_name: lazyblog-app-b
     profiles: ["blog-b"]
     volumes:

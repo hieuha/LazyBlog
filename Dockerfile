@@ -1,3 +1,8 @@
+# SECURITY: base tag floats on purpose so a rebuild picks up patch
+# releases, but never ship an image with PHP < 8.2.35 — that is the
+# PHP2Shell fix line (CVE-2026-109618 / CVE-2026-109619, fixed
+# 2026-10-21). Always build with `docker build --pull` or
+# `docker compose build --pull` so a stale local base cannot win.
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \

@@ -8,6 +8,8 @@ namespace Plugins\Graffiti;
  * Thin curl wrapper for outbound HTTP from the outbox + catalogue fetcher.
  *
  * - HTTPS enforced unless GRAFFITI_DEV=1 (consistent with Inbox HTTPS gate)
+ * - Destination host vetted by PeerUrlGuard (no loopback / private /
+ *   metadata targets) and pinned to the vetted IPs; redirects never followed
  * - Total timeout 5s, connect timeout 3s — never block an admin page render
  * - Returns a normalised result so callers don't have to parse curl errors
  *
@@ -34,6 +36,10 @@ final class HttpSender
         if (!self::isHttpsOrDev($url)) {
             return self::result(0, '', 'url_not_https', true);
         }
+        $guard = PeerUrlGuard::check($url);
+        if (!$guard['ok']) {
+            return self::result(0, '', $guard['reason'], true);
+        }
         $url = self::rewriteForDocker($url);
 
         $payload = json_encode($jsonBody, JSON_UNESCAPED_SLASHES);
@@ -59,6 +65,8 @@ final class HttpSender
             ],
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_MAXREDIRS      => 0,
+            // Connect only to the addresses PeerUrlGuard vetted (no re-resolve).
+            CURLOPT_RESOLVE        => $guard['pin'] !== null ? [$guard['pin']] : [],
         ]);
 
         $body = curl_exec($ch);
@@ -78,6 +86,10 @@ final class HttpSender
         if (!self::isHttpsOrDev($url)) {
             return self::result(0, '', 'url_not_https', true);
         }
+        $guard = PeerUrlGuard::check($url);
+        if (!$guard['ok']) {
+            return self::result(0, '', $guard['reason'], true);
+        }
         $url = self::rewriteForDocker($url);
 
         $ch = curl_init($url);
@@ -95,6 +107,8 @@ final class HttpSender
             ],
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_MAXREDIRS      => 0,
+            // Connect only to the addresses PeerUrlGuard vetted (no re-resolve).
+            CURLOPT_RESOLVE        => $guard['pin'] !== null ? [$guard['pin']] : [],
         ]);
 
         $body = curl_exec($ch);

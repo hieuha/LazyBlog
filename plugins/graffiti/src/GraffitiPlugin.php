@@ -25,6 +25,7 @@ require_once __DIR__ . '/NonceCache.php';
 require_once __DIR__ . '/PayloadValidator.php';
 require_once __DIR__ . '/RateLimiter.php';
 require_once __DIR__ . '/Inbox.php';
+require_once __DIR__ . '/PeerUrlGuard.php';
 require_once __DIR__ . '/HttpSender.php';
 require_once __DIR__ . '/CatalogueFetcher.php';
 require_once __DIR__ . '/Outbox.php';
@@ -308,13 +309,32 @@ final class GraffitiPlugin implements Plugin
             return;
         }
 
+        // The token proves WHO is calling, not that their data is safe: hold
+        // handle + endpoint to the same rules as the admin paste path
+        // (InviteCodec::decode). The endpoint must stay on the origin we
+        // health-probed at invite time, otherwise a peer (or token thief)
+        // could repoint our token-bearing deliveries at any URL.
+        if ($handle !== '') {
+            $handle = InviteCodec::normalizeHandle($handle);
+            if ($handle === null) {
+                http_response_code(422);
+                echo json_encode(['status' => 'rejected', 'reason' => 'invalid_handle']);
+                return;
+            }
+        }
+        if ($endpoint !== '' && !InviteCodec::sameOrigin($endpoint, (string) ($friend['blog_url'] ?? ''))) {
+            http_response_code(422);
+            echo json_encode(['status' => 'rejected', 'reason' => 'invalid_endpoint']);
+            return;
+        }
+
         $patch = [
             'outgoing_token' => $reciprocal,
             'state'          => 'active',
             'completed_at'   => time(),
         ];
         if ($handle !== '')   $patch['handle'] = $handle;
-        if ($endpoint !== '') $patch['graffiti_endpoint'] = $endpoint;
+        if ($endpoint !== '') $patch['graffiti_endpoint'] = rtrim($endpoint, '/');
         $friends->update((string) $friend['id'], $patch);
 
         echo json_encode(['status' => 'accepted']);
@@ -606,9 +626,12 @@ final class GraffitiPlugin implements Plugin
         $url = rtrim($blogUrl, '/') . '/graffiti/health';
         $res = HttpSender::get($url);
         if ($res['transport_failed'] || $res['status'] !== 200) {
-            $why = $res['transport_failed']
-                ? 'cannot reach ' . $blogUrl
-                : "target returned HTTP {$res['status']} (graffiti plugin enabled there?)";
+            $why = match (true) {
+                in_array($res['error'], ['host_forbidden', 'host_unresolvable', 'host_missing'], true)
+                    => "{$blogUrl} refused ({$res['error']}) — peers must be public hosts",
+                $res['transport_failed'] => 'cannot reach ' . $blogUrl,
+                default => "target returned HTTP {$res['status']} (graffiti plugin enabled there?)",
+            };
             self::flash("health check failed: {$why}");
             return false;
         }

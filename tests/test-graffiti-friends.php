@@ -124,6 +124,34 @@ $bogusV = TokenGenerator::base64Url((string) json_encode([
 try { InviteCodec::decode($bogusV); fail('unsupported version rejected'); }
 catch (\Throwable $e) { ok('unsupported version rejected'); }
 
+// A peer-built block must not point deliveries away from its own blog.
+$crossOrigin = InviteCodec::encode([
+    'blog_url' => 'https://x.example',
+    'handle'   => 'h',
+    'endpoint' => 'https://attacker.example/graffiti/receive',
+    'token'    => str_repeat('A', 32),
+]);
+try { InviteCodec::decode($crossOrigin); fail('cross-origin endpoint rejected'); }
+catch (\Throwable $e) { ok('cross-origin endpoint rejected'); }
+
+// ---------------------------------------------------------------------------
+section('InviteCodec — sameOrigin + normalizeHandle (handshake-complete inputs)');
+
+assertTrue(InviteCodec::sameOrigin('https://b.example/graffiti/receive', 'https://B.example'), 'same host, case-insensitive');
+assertTrue(InviteCodec::sameOrigin('https://b.example:443/x', 'https://b.example'), 'explicit default port matches');
+assertTrue(!InviteCodec::sameOrigin('https://evil.example/graffiti/receive', 'https://b.example'), 'other host rejected');
+assertTrue(!InviteCodec::sameOrigin('http://b.example/graffiti/receive', 'https://b.example'), 'scheme downgrade rejected');
+assertTrue(!InviteCodec::sameOrigin('https://b.example:8443/', 'https://b.example'), 'other port rejected');
+assertTrue(!InviteCodec::sameOrigin('http://172.25.1.1:18096/', 'https://b.example'), 'internal URL rejected');
+assertTrue(!InviteCodec::sameOrigin('garbage', 'https://b.example'), 'non-URL rejected');
+
+assertEq("Harry's blog", InviteCodec::normalizeHandle("  Harry's blog "), 'apostrophes kept (escaped at render)');
+assertEq('Hà Nội', InviteCodec::normalizeHandle('Hà Nội'), 'non-ASCII kept');
+assertEq('ab', InviteCodec::normalizeHandle("a\x00\n\tb"), 'control chars stripped');
+assertEq(null, InviteCodec::normalizeHandle("\x01\x02 "), 'nothing left → null');
+assertEq(null, InviteCodec::normalizeHandle(str_repeat('a', 81)), '>80 bytes → null');
+assertEq(null, InviteCodec::normalizeHandle("\xff\xfe"), 'invalid UTF-8 → null');
+
 // ---------------------------------------------------------------------------
 section('FriendStore — CRUD');
 

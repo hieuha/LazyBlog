@@ -115,7 +115,8 @@ $lastRefreshHuman = $lastRefresh > 0 ? date('Y-m-d H:i T', $lastRefresh) : 'neve
                             <form method="post"
                                   action="/admin/stalk/remove/<?= Http::e($id) ?>"
                                   class="stalk-admin-remove-form"
-                                  onsubmit="return confirm('Remove @<?= Http::e($hdl) ?>? Cached posts will be wiped from /stalk.');">
+                                  data-confirm="Remove @<?= Http::e($hdl) ?>? Cached posts will be wiped from /stalk."
+                                  data-confirm-danger="1">
                                 <input type="hidden" name="_csrf" value="<?= Http::e($csrf) ?>">
                                 <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">[ REMOVE ]</button>
                             </form>

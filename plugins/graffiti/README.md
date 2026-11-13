@@ -142,6 +142,12 @@ handle, endpoint}`. A's `pending` row flips to `active` in the same
 round-trip — no second paste needed from A. If A is offline during step 2,
 fall back to the two-paste flow (B's reply block is still stashed).
 
+The token only authenticates the caller; the body is validated like a
+pasted block. `endpoint` must share scheme + host + port with the
+`blog_url` A health-probed at invite time (else `422 invalid_endpoint`),
+and `handle` is trimmed, stripped of control chars and capped at 80 bytes
+(else `422 invalid_handle`). Neither check flips the row to `active`.
+
 ### Revoke
 
 Admin → Friends → `[REVOKE]`. Plugin captures the row before delete,
@@ -313,6 +319,15 @@ Anonymous visitors never see the modal (button isn't emitted).
 - Cookie HMAC secret derives from `SITE_URL + ADMIN_PASSWORD_HASH`:
   two blogs sharing infra cannot forge each other's session cookies,
   and rotating the admin password kills every active friend session.
+- Outbound SSRF guard (`PeerUrlGuard`): every health probe, catalogue
+  fetch and outbox POST resolves the peer host and refuses it if ANY
+  A/AAAA record is loopback, private, link-local/metadata, CGNAT,
+  multicast or reserved (`host_forbidden`). cURL is pinned to the vetted
+  IPs (`CURLOPT_RESOLVE`) so DNS rebinding can't swap the target, and
+  redirects are never followed.
+- Peer-supplied strings (handle, catalogue names) are untrusted: admin
+  views escape them for HTML and never interpolate them into inline JS
+  (confirm prompts go through the shared `data-confirm` modal).
 
 ---
 
@@ -327,6 +342,11 @@ Brings up a second blog (B) sharing the same code but using
 `8081` on host. `GRAFFITI_DEV=1` should be set on both `.env` files so
 HTTPS gate relaxes and outbound `localhost` URLs get rewritten to
 `host.docker.internal:<port>` for in-container loopback.
+
+Dev mode only exempts `localhost`, `127.0.0.1` and `host.docker.internal`
+from the SSRF guard — invite peers as `http://localhost:<port>`. Docker
+service names and private IPs stay blocked even with `GRAFFITI_DEV=1`.
+Never set `GRAFFITI_DEV` in production.
 
 ---
 
@@ -346,6 +366,7 @@ php tests/test-graffiti-friends.php       # friend handshake + revoke
 php tests/test-graffiti-inbox.php         # receive + nonces + rate limit
 php tests/test-graffiti-energy.php        # mint + debit + idempotency
 php tests/test-graffiti-outbox.php        # queue + retry + backoff
+php tests/test-graffiti-peer-url-guard.php # outbound SSRF guard + DNS pin
 php tests/test-graffiti-cross-spray.php   # magic link + cookie + xs path
 ```
 

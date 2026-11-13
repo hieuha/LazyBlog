@@ -76,11 +76,14 @@ final class InviteCodec
 
         $blogUrl  = self::requireHttpsUrl((string) $data['blog_url'], 'blog_url');
         $endpoint = self::requireHttpsUrl((string) $data['endpoint'], 'endpoint');
-        $handle   = trim((string) $data['handle']);
+        $handle   = self::normalizeHandle((string) $data['handle']);
         $token    = (string) $data['token'];
 
-        if ($handle === '' || strlen($handle) > 80) {
-            throw new RuntimeException('invite handle empty or too long');
+        if (!self::sameOrigin($endpoint, $blogUrl)) {
+            throw new RuntimeException('invite endpoint must be on the blog_url origin');
+        }
+        if ($handle === null) {
+            throw new RuntimeException('invite handle empty, too long or not valid text');
         }
         if (!preg_match('/^[A-Za-z0-9_-]{20,}$/', $token)) {
             throw new RuntimeException('invite token malformed');
@@ -93,6 +96,43 @@ final class InviteCodec
             'endpoint' => $endpoint,
             'token'    => $token,
         ];
+    }
+
+    /**
+     * Peer-supplied display handle → trimmed, control characters stripped,
+     * 1..80 bytes of valid UTF-8. Null when nothing usable remains.
+     *
+     * Deliberately NOT a strict charset whitelist: handles default to
+     * DEFAULT_AUTHOR / SITE_TITLE, which legitimately hold spaces,
+     * apostrophes and non-ASCII. Views must escape for their context.
+     */
+    public static function normalizeHandle(string $handle): ?string
+    {
+        if (!mb_check_encoding($handle, 'UTF-8')) {
+            return null;
+        }
+        $handle = trim((string) preg_replace('/\p{Cc}+/u', '', $handle));
+        return ($handle === '' || strlen($handle) > 80) ? null : $handle;
+    }
+
+    /**
+     * True when both URLs share scheme, host and effective port. Used to
+     * pin a friend's delivery endpoint to the blog origin that was
+     * health-probed, so a peer can't redirect deliveries elsewhere.
+     */
+    public static function sameOrigin(string $a, string $b): bool
+    {
+        $pa = parse_url($a);
+        $pb = parse_url($b);
+        if ($pa === false || $pb === false || empty($pa['host']) || empty($pb['host'])) {
+            return false;
+        }
+        $origin = static function (array $p): string {
+            $scheme = strtolower((string) ($p['scheme'] ?? ''));
+            $port = (int) ($p['port'] ?? ($scheme === 'http' ? 80 : 443));
+            return $scheme . '://' . strtolower((string) $p['host']) . ':' . $port;
+        };
+        return $origin($pa) === $origin($pb);
     }
 
     /**

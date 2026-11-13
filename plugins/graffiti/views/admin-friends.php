@@ -64,7 +64,8 @@ require __DIR__ . '/admin-shell.php';
                                     <form method="post"
                                           action="/admin/graffiti/friends/revoke/<?= Http::e($id) ?>"
                                           class="graffiti-form graffiti-form-inline"
-                                          onsubmit="return confirm('Remove <?= Http::e($hdl) ?>?');">
+                                          data-confirm="Remove <?= Http::e($hdl) ?>?"
+                                          data-confirm-danger="1">
                                         <input type="hidden" name="_csrf" value="<?= Http::e($csrf) ?>">
                                         <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">REMOVE</button>
                                     </form>
